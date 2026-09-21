@@ -252,3 +252,88 @@ def exp_attention(cfg: Config, seeds, workers):
            f"- attended recall is less smeared (smear reduction, ms): {C.fmt(d_sm)} -> {'YES' if d_sm['beats'] else 'NOT DETECTED'}\n")
     C.save(out, cfg, runs, dict(conditions=summ, plv_shift=d_plv, smear_reduction=d_sm), rep)
     return out
+
+
+# ------------------------------------------------------------------ recall modes
+N_FOREIGN = 20
+
+
+def _recall_modes_worker(job):
+    """One run, plus the FOREIGN-STIMULUS null: is decoded recall closer to ITS stream than to 20 other
+    streams from the same generator? For uncued modes the circular-shift null is degenerate (the lag search
+    spans the record, so a shifted copy is searched over the same alignments), and this one is not."""
+    try:
+        from ..network import build_inputs, simulate
+        from ..recall.evaluate import evaluate
+        from ..decode import baselines, readout as ro
+        from ..frontend.filterbank import analyse
+        from ..frontend.io import synthetic_streams
+        cfg = Config.model_validate(job["cfg"]); dc = cfg.decode
+        inputs = build_inputs(C.get_streams({"n": 1}, cfg), cfg); res = simulate(cfg, inputs)
+        out, dec = evaluate(res, inputs, cfg)
+        Y = ro.resample_targets(inputs.env, inputs.env_rate, dc.rate_hz)
+        out["esn"] = baselines.esn_evaluate(inputs, res.timeline, cfg, Y, cfg.seed)
+        foreign = [ro.resample_targets(analyse(synthetic_streams(1, cfg.protocol.encode_s, seed=10_000 + cfg.seed * 100 + j)[0],
+                                               cfg.frontend, seconds=cfg.protocol.encode_s, keep_fine=False).env[None], inputs.env_rate, dc.rate_hz)
+                   for j in range(N_FOREIGN)]
+        max_lag = int((1.0 if cfg.protocol.recall_mode == "cue" else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)) * dc.rate_hz)
+        for rec, seg in zip(out["recall"], res.timeline.recalls()):
+            X = ro.activity_features(*res.spikes_e, res.n_exc, seg.t0, seg.t1, dc.rate_hz, dc.filter_tau_ms)
+            kg = int(round((seg.cue_s + 1.0) * dc.rate_hz)); m = min(len(X), len(Y)); pr = dec.predict(X[:m])[kg:]
+            own = float(np.nanmax(ro._lagged(pr, Y[kg:m], max_lag)))
+            oth = np.array([np.nanmax(ro._lagged(pr, F[kg:m], max_lag)) for F in foreign])
+            rec["foreign"] = dict(own=own, foreign_mean=float(oth.mean()), foreign_p95=float(np.percentile(oth, 95)),
+                                  p=float((1 + (oth >= own).sum()) / (1 + N_FOREIGN)))
+        out.update(tag=job["tag"], seed=cfg.seed, ok=True)
+        return out
+    except Exception as ex:
+        import traceback
+        return dict(ok=False, tag=job["tag"], seed=job["cfg"]["seed"], error=f"{type(ex).__name__}: {ex}", trace=traceback.format_exc()[-900:])
+
+
+def exp_recall_modes(cfg: Config, seeds, workers):
+    """cue vs no_cue (spontaneous replay under noise) vs nm_pulse (a neuromodulator pulse, no input)."""
+    out = C.results_dir("recall_modes")
+    conds = {}
+    for mode in ("cue", "no_cue", "nm_pulse"):
+        c = cfg.model_copy(deep=True); c.protocol.recall_mode = mode; conds[mode] = c
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import get_context
+    with ProcessPoolExecutor(max(workers, 1), mp_context=get_context("spawn")) as ex:
+        runs = list(ex.map(_recall_modes_worker, C.jobs_for(conds, seeds, {"n": 1})))
+    g = C.by_tag(runs)
+    rep = ("## Recall modes -- partial cue vs spontaneous replay vs NM pulse (one stream)\n\n"
+           "Uncued modes have no time reference, so the statistic that matters for them is the BEST-LAG r. It is tested two ways: "
+           "against a circular shift of the true envelope (DEGENERATE for uncued modes -- the lag search spans the record, so the "
+           "shifted copy is searched over the same alignments) and against 20 FOREIGN streams from the same generator "
+           "(is recall closer to ITS stream than to others?), which is the test that can actually answer. `pattern r` asks the rate-pattern question "
+           "instead: do the cells that fired during encoding fire during recall? Its baseline is the same correlation "
+           "for the pre-encoding settle period.\n\n")
+    summ = {}
+    for mode, rs in g.items():
+        rows = [("delay (sim s)", "recall E rate (Hz)", "spikes in window", "time-locked r (guarded)", "best-lag r", "shift-null 95th pct",
+                 "shift p<0.05 (seeds)", "foreign-stream r (mean)", "own - foreign", "foreign p<0.05 (seeds)", "ordering rho", "pattern r", "ESN time-locked r")]
+        summ[mode] = {}
+        for k in range(len(rs[0]["recall"])):
+            R = [r["recall"][k] for r in rs]
+            v = dict(rate=C.ci95([x["rate_e_hz"] for x in R]), spikes=float(np.mean([x["n_spikes"] for x in R])),
+                     locked=C.ci95([x["guarded_r"][0] for x in R]), best=C.ci95([x["bestlag"]["r"] for x in R]),
+                     null95=C.ci95([x["bestlag"]["null_shift_p95"] for x in R]), n_sig=int(sum(x["bestlag"]["p"] < 0.05 for x in R)),
+                     foreign=C.ci95([x["foreign"]["foreign_mean"] for x in R]), n_sig_f=int(sum(x["foreign"]["p"] < 0.05 for x in R)),
+                     own_minus=C.paired_diff([x["foreign"]["own"] for x in R], [x["foreign"]["foreign_mean"] for x in R]),
+                     ordering=C.ci95([x["ordering_rho"] for x in R]), pattern=C.ci95([x["pattern_r"] for x in R]),
+                     esn=C.ci95([r["esn"]["recall"][k]["guarded_r"][0] for r in rs]))
+            summ[mode][str(R[0]["delay_s"])] = v
+            rows.append((R[0]["delay_s"], C.fmt(v["rate"]), f"{v['spikes']:.0f}", C.fmt(v["locked"]), C.fmt(v["best"]), C.fmt(v["null95"]),
+                         f"{v['n_sig']}/{len(R)}", C.fmt(v["foreign"]), C.fmt(v["own_minus"]) + (" OWN WINS" if v["own_minus"]["beats"] else ""),
+                         f"{v['n_sig_f']}/{len(R)}", C.fmt(v["ordering"]), C.fmt(v["pattern"]), C.fmt(v["esn"])))
+        base = C.ci95([r["pattern_r_settle_baseline"] for r in rs])
+        last = [r["recall"][-1] for r in rs]
+        d_pat = C.paired_diff([x["pattern_r"] for x in last], [r["pattern_r_settle_baseline"] for r in rs])
+        summ[mode]["pattern_vs_settle"] = d_pat
+        expected = 0.05 * len(rs)
+        rep += (f"### `{mode}`\n\n" + _table(rows) + f"\n- pattern r, settle baseline: {C.fmt(base)}; recall (last delay) - baseline: {C.fmt(d_pat)} -> "
+                f"{'assembly REACTIVATES above baseline' if d_pat['beats'] else 'no reactivation above baseline'}\n"
+                f"- best-lag seeds at p<0.05: expect ~{expected:.1f} of {len(rs)} by chance at each delay\n\n")
+    C.save(out, cfg, runs, summ, rep)
+    return out

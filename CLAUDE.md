@@ -29,6 +29,12 @@ logic, not the network dynamics. **Population signal:** the LFP proxy follows th
 latency, so the Doelling phase-concentration test is *uninformative* here and cortical ~100 ms
 tracking is not reproduced; theta free vs reset left no trace.
 
+**Follow-up — the other recall modes (30 runs, bit-reproducible):** `cue`, `no_cue` and `nm_pulse` all
+fail identically; decoded recall is no closer to its own stream than to 20 foreign streams. **The NM
+pulse does not wake the network, it quiets it** (it raises the inhibitory set point and gains an input
+that is not there). The binding constraint is **silence** — ~13 spikes across 200 cells in 8.5 s, no
+self-sustaining activity — so the next step is a recall-phase drive with its own ablation.
+
 ## Run
 
 ```bash
@@ -43,7 +49,7 @@ uv pip install --python .venv/bin/python --no-build-isolation "cochlea @ git+htt
 .venv/bin/neurotape encode a.wav b.wav --config configs/default.yaml
 .venv/bin/neurotape encode --demo 2 --config configs/quick.yaml   # labelled synthetic streams
 .venv/bin/neurotape exp <name> --config configs/quick.yaml --seeds 10 --workers 6
-#   delay streams ablations baselines lehr population attention codec salience | all
+#   delay streams ablations baselines lehr population attention codec salience recall_modes | all
 ```
 
 Outputs: `results/<timestamp>_<name>/` — `config.yaml`, `runs.json` (every seed, including failed
@@ -132,7 +138,16 @@ src/neurotape/
     full build launched **275 clang processes** (load average 210) and starved every running
     simulation. `extra_make_args_unix = ["-j3"]`. And each experiment's fresh worker pool meant six
     full rebuilds, so build directories are now persistent *slots* claimed by a non-blocking flock.
-11. `state` is a `StateMonitor` method, and `w` collided with the adaptation variable — both
+11. **One seed, two answers.** The same (config, seed) gave one of exactly two spike trains depending on
+    the process. Not stale builds (a fresh build did it too) and not the cochlea (input spikes hashed
+    identical): it is a pure function of **`PYTHONHASHSEED`** — Brian2's code generation orders terms
+    by hash and `-ffast-math` rounds the orderings differently. Pinned for workers and the CLI; every
+    RNG-consuming object and synaptic pathway also has an explicit scheduling order. **The first
+    340-run results are unbiased but not bit-reproducible per seed.**
+12. **The circular-shift null over-fires on near-silent predictions** (6/10 seeds "significant" where a
+    foreign-stream null says 1/10), and is degenerate for uncued recall, where the lag search spans the
+    record. `recall_modes` tests against 20 foreign streams from the same generator instead.
+13. `state` is a `StateMonitor` method, and `w` collided with the adaptation variable — both
    renamed (`nstate`, `w_syn`).
 
 ## Not done — see ASSUMPTIONS.md § "What is NOT built"

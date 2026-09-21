@@ -140,8 +140,11 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     th_t, th, th_phase = build_theta(cfg, tl.total_s, onsets, cfg.seed)
     THETA = b2.TimedArray(th, dt=THETA_DT_S * second, name="ta_theta")
 
-    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA)
-    I = nmodel.make_group(net_c.n_inh, net_c.inh, cfg, "inh", NM, noise_scale, "inh", rng, THETA)
+    # Explicit, distinct `order` for every object that draws random numbers. They all share one RNG stream,
+    # and Brian2 breaks scheduling ties in a process-dependent order -- measured: the same seed gave one of
+    # TWO spike trains depending on the process. Both are valid realisations; only one is reproducible.
+    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA, order=0)
+    I = nmodel.make_group(net_c.n_inh, net_c.inh, cfg, "inh", NM, noise_scale, "inh", rng, THETA, order=1)
 
     # ---- input layer: spike trains + metadata from whichever front end produced them ----
     si = inputs.spikes_enc
@@ -175,7 +178,7 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     # ---- plastic E->E: calcium early phase + tagging and capture ----
     S_ee = b2.Synapses(E, E, stc.PLASTIC_MODEL, on_pre=stc.ON_PRE, on_post=stc.ON_POST,
                        delay=stc.delays(cfg), method="heun", namespace=stc.namespace(cfg),
-                       dt=cfg.plasticity.update_dt_ms * ms, name="ee")
+                       dt=cfg.plasticity.update_dt_ms * ms, name="ee", order=2)
     ee_i, ee_j = rand_conn(net_c.n_exc, net_c.n_exc, net_c.p_conn, no_self=True)
     S_ee.connect(i=ee_i, j=ee_j)
     S_ee.h = 1.0
@@ -202,6 +205,13 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
                      if rng.random() < cfg.gap.ee_p]
             g_ee = gapmod.conductance_for_cc(cfg.gap.ee_coupling_coefficient, net_c.exc.gL_nS)
             objs.append(gapmod.make_gap(E, pairs, g_ee, cfg.gap.modulation, "gap_ee"))
+
+    # Same reason, for spike propagation: two pathways adding into one variable (pre_ca and post both add
+    # to Ca) round differently depending on which runs first, and a chaotic network amplifies 1e-16.
+    k_order = 0
+    for syn in [o for o in objs if isinstance(o, b2.Synapses)]:
+        for pw in syn._pathways:
+            pw.order = k_order; k_order += 1
 
     # ---- monitors ----
     sm_e, sm_i = b2.SpikeMonitor(E, name="sp_e"), b2.SpikeMonitor(I, name="sp_i")

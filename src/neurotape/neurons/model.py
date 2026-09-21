@@ -121,11 +121,11 @@ def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
 
 def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArray,
                noise_scale: b2.TimedArray, name: str, rng: np.random.Generator,
-               theta: b2.TimedArray | None = None) -> b2.NeuronGroup:
+               theta: b2.TimedArray | None = None, order: int = 0) -> b2.NeuronGroup:
     ns = namespace(p, cfg, kind)
     ns.update(NM=NM, noise_scale=noise_scale, theta=theta if theta is not None else constant_array(0.0))
     g = b2.NeuronGroup(n, EQUATIONS, threshold=THRESHOLD, reset=RESET_CODE,
-                       refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name)
+                       refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV
     g.hT = 0.01
     g.I_bg = cfg.noise.I0_pA * pA

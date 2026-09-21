@@ -80,6 +80,16 @@ def evaluate(res, inputs, cfg: Config, targets: np.ndarray | None = None) -> dic
 
     # ---- recall probes: the SAME decoder, unchanged ----
     out["recall"] = []
+    # Uncued modes have no time reference: replay, if any, may start anywhere, so the lag search is wide.
+    # The null is searched over the SAME range, so the wider search is priced, not free.
+    max_lag_s = 1.0 if cfg.protocol.recall_mode == "cue" else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)
+    si_, st_ = res.spikes_e
+    count = lambda a, b: np.bincount(si_[(st_ >= a) & (st_ < b)], minlength=res.n_exc).astype(float)
+    enc_counts, settle = count(enc.t0, enc.t1), res.timeline.segment("settle")
+    def _pat(a, b):
+        c = count(a, b)
+        return float(np.corrcoef(c, enc_counts)[0, 1]) if c.std() > 0 and enc_counts.std() > 0 else float("nan")
+    out["pattern_r_settle_baseline"] = _pat(settle.t0, settle.t1)
     for seg in res.timeline.recalls():
         Xr = _features(res, seg.t0, seg.t1, cfg)
         m = min(len(Xr), len(Y))
@@ -94,8 +104,11 @@ def evaluate(res, inputs, cfg: Config, targets: np.ndarray | None = None) -> dic
         # conductances, adaptation and rebound still ringing), not of storage.
         kg = k0 + int(round(1.0 * dc.rate_hz))
         Cg = ro.crosstalk(pr[kg:], yt[kg:], S) if m - kg > 50 else np.full((S, S), np.nan)
-        bl = ro.bestlag_with_null(pr[kg:, colk], yt[kg:, colk], dc.rate_hz, 1.0, dc.n_surrogates, cfg.seed)
+        bl = ro.bestlag_with_null(pr[kg:, colk], yt[kg:, colk], dc.rate_hz, max_lag_s, dc.n_surrogates, cfg.seed)
         rec = dict(delay_s=seg.delay_s, delay_bio_s=seg.delay_s * cfg.time_compression,
+                   # RATE-PATTERN reactivation: do the cells that fired during encoding fire during recall?
+                   # (per-cell spike counts, guarded window) -- the question an STC assembly can answer.
+                   pattern_r=_pat(seg.t0 + seg.cue_s + 1.0, seg.t1), n_spikes=int(count(seg.t0 + seg.cue_s + 1.0, seg.t1).sum()),
                    guarded_r=[float(Cg[j, j]) for j in range(S)],
                    locked_r=[float(Cr[j, j]) for j in range(S)], crosstalk=Cr.tolist(),
                    bestlag=bl, ordering_rho=ro.ordering_score(pr[kg:, colk], yt[:, colk], dc.rate_hz),

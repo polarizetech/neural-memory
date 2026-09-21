@@ -3,7 +3,7 @@
   neurotape encode a.wav b.wav c.csv --config cfg.yaml      one full run: encode -> consolidate -> recall
   neurotape encode --demo 2 --config cfg.yaml               ... on labelled synthetic streams
   neurotape exp <name> --config cfg.yaml --seeds 10 --workers 4
-      names: delay streams ablations baselines lehr population attention codec salience all
+      names: delay streams ablations baselines lehr population attention codec salience recall_modes all
 """
 from __future__ import annotations
 
@@ -83,7 +83,8 @@ def cmd_exp(a) -> None:
     seeds = list(range(a.seeds))
     table = dict(delay=suite.exp_delay, streams=suite.exp_streams, ablations=suite.exp_ablations,
                  baselines=suite.exp_baselines, lehr=lehr.exp_lehr, population=suite.exp_population,
-                 attention=suite.exp_attention, codec=storage.exp_codec, salience=storage.exp_salience)
+                 attention=suite.exp_attention, codec=storage.exp_codec, salience=storage.exp_salience,
+                 recall_modes=suite.exp_recall_modes)
     names = list(table) if a.name == "all" else [a.name]
     if a.seeds < 10:
         print(f"NOTE: {a.seeds} seeds requested; the reporting standard for this project is >= 10.")
@@ -93,6 +94,10 @@ def cmd_exp(a) -> None:
 
 
 def main(argv=None) -> None:
+    import os, sys
+    if os.environ.get("NEUROTAPE_HASH_PINNED") != "1":      # the running interpreter's own hash seed is fixed
+        os.environ.update(PYTHONHASHSEED="0", NEUROTAPE_HASH_PINNED="1")   # at startup, so re-exec once
+        os.execv(sys.executable, [sys.executable, "-m", "neurotape.cli", *(sys.argv[1:] if argv is None else argv)])
     p = argparse.ArgumentParser(prog="neurotape", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
     e = sub.add_parser("encode"); e.add_argument("files", nargs="*"); e.add_argument("--config"); e.add_argument("--demo", type=int, default=0)
