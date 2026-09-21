@@ -176,6 +176,22 @@ arrangement (Grothe 2003) — `MEMORY`.
 | ephaptic form | `I_eph = g_eph · (V_field,network + V_field,neurophonic)` | **fields sum linearly; there is no field × field term** (asserted against the equation text). All nonlinearity is the membrane's. Sign: net inward synaptic current → depolarising |
 | distortion products | measured in the AN PSTH and in the network's population signal; **never added** | see `RESULTS.md` for what the Zilany model does and does not produce |
 
+### Retrieval-as-writing and iterative settling (2026-09-21) — all switches default OFF; every number is a placeholder
+
+**Hard rule, enforced by construction:** nothing outside the neurons holds the trace or does completion. Every
+gating or re-injection signal is computed from network-internal quantities (synaptic currents, calcium, the
+cells' own spikes). Stream labels, stored-assembly identity and decoder output are analysis-only and never feed
+back. The one exception is labelled as such: `eval.freeze_plasticity_at_recall` (C6) is an **evaluation mode,
+not biology**. With every switch off the equation text is hash-pinned to the published-results model.
+**Status: implemented and unit-tested; NO experiment has been run** — the operator's precondition (a drive
+condition beating the foreign-stream null) was not met.
+
+| component | parameter | value | status |
+|---|---|---|---|
+| **C1** `mechanisms.intrinsic_trace` | — | off | The trace **is the existing CREB-like variable** (no parallel state): raised by encoding activity via somatic calcium, acts bounded to [0, 1], slow decay (`creb.tau_s`). Needs `mechanisms.creb`. **It gates reactivation and allocation and cannot store content** — it is one scalar per cell, so its capacity is bounded by the cell count regardless of what was stored; content stays in the synapses. Operator-supplied sources for that limit, **unread**: *Nat Commun* 2025, s41467-025-66975-3; *J Neurosci* 2024, e0846232024 |
+| C1 | `intrinsic_trace.k_ahp` | 0.5 | placeholder: fraction of the AHP-like current removed at trace = 1 |
+| C1 | `intrinsic_trace.dVT_mV` | 2 mV | placeholder: extra threshold lowering at trace = 1, on top of `creb.dVT_mV` |
+
 ## What is NOT built, stated so nobody has to discover it
 
 - **CoNNear inversion (the PRIMARY playback) has never run.** No TensorFlow, no weights; weights are

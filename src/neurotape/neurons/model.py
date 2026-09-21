@@ -101,14 +101,25 @@ I_eph = g_eph*(V_field + nph(t)) : amp
 """
 
 
-def equations(nm_excitability: bool, ephaptic: bool = False) -> str:
-    """With the mechanism OFF the equation text is byte-identical to the model the published results came
-    from -- so the generated code, and therefore every spike, is too. Multiplying by a 1.0 gain instead would
-    change the expression tree, and under -ffast-math that is enough to diverge a chaotic network."""
-    eqs = EQUATIONS.replace("__EPH__", " + I_eph" if ephaptic else "") + (EPH_EQS if ephaptic else "")
+TRACE_EQS = """
+# --- C1 intrinsic excitability trace = the CREB-like variable, now also reducing adaptation ---
+tr_ahp = 1 - k_tr_ahp*clip(creb, 0, 1) : 1
+"""
+
+
+def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsic_trace: bool = False) -> str:
+    """Every optional mechanism adds TEXT only when it is on. With all of them off the equation text is
+    byte-identical to the model the published results came from (pinned by hash in tests/test_retrieval.py), so
+    the generated code -- and every spike -- is too. Multiplying by a 1.0 gain instead would change the
+    expression tree, and under -ffast-math that is enough to diverge a chaotic network."""
+    ahp, vt, extra = "", "", ""
     if nm_excitability:
-        return eqs.replace("__AHP__", "ahp_scale*").replace("__VTNM__", " - k_vt*nm_x") + NM_EXC_EQS
-    return eqs.replace("__AHP__", "").replace("__VTNM__", "")
+        ahp += "ahp_scale*"; vt += " - k_vt*nm_x"; extra += NM_EXC_EQS
+    if intrinsic_trace:
+        ahp += "tr_ahp*"; vt += " - k_tr_vt*clip(creb, 0, 1)"; extra += TRACE_EQS
+    if ephaptic:
+        extra += EPH_EQS
+    return (EQUATIONS.replace("__EPH__", " + I_eph" if ephaptic else "").replace("__AHP__", ahp).replace("__VTNM__", vt) + extra)
 
 
 RESET_CODE = "V = V_reset; w += b_adapt; Ca_s += Ca_spike"
@@ -134,6 +145,7 @@ def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
         k_inh=(nm.k_inh_pA if (kind == "inh" and m.nm_inhibitory_setpoint) else 0.0) * pA, nm_ref=nm.nm_ref,
         k_ahp=cfg.nm_excitability.strength * cfg.nm_excitability.ahp_block_per_nm,
         k_vt=cfg.nm_excitability.strength * cfg.nm_excitability.dVT_mV_per_nm * mV,
+        k_tr_ahp=cfg.intrinsic_trace.k_ahp, k_tr_vt=cfg.intrinsic_trace.dVT_mV * mV,
         theta_amp=(cfg.theta.amp_pA if cfg.theta.target in (kind, "both") else 0.0) * pA,
         tau_CaT=pl.tau_CaT_ms * ms, k_CaT=pl.k_CaT_per_nA_ms / (nA * ms),
         tau_Cas=cr.tau_Ca_soma_ms * ms, k_T_s=cr.k_T_per_nA_ms / (nA * ms),
@@ -155,7 +167,8 @@ def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArra
     eph = cfg.ephaptic.g_eph_nS > 0          # g_eph = 0 -> the term is ABSENT, so the generated code is unchanged
     if eph:
         ns.update(g_eph=cfg.ephaptic.g_eph_nS * nS, nph=nph if nph is not None else constant_array(0.0))
-    g = b2.NeuronGroup(n, equations(on, eph), threshold=THRESHOLD, reset=RESET_CODE,
+    exc = kind == "exc"
+    g = b2.NeuronGroup(n, equations(on, eph, intrinsic_trace=cfg.mechanisms.intrinsic_trace and exc), threshold=THRESHOLD, reset=RESET_CODE,
                        refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV
     g.hT = 0.01

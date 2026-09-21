@@ -249,6 +249,15 @@ class NmExcitability(_Strict):
     strength: float = 1.0
 
 
+class IntrinsicTrace(_Strict):
+    """C1. The per-cell intrinsic excitability trace IS the existing CREB-like variable (no parallel state):
+    raised by encoding activity (somatic calcium), bounded to [0, 1] where it acts, slow decay. With this
+    switch on it also REDUCES ADAPTATION and lowers threshold further. It gates reactivation and allocation;
+    it cannot store content (one scalar per cell) -- content stays in the synapses. Placeholders."""
+    k_ahp: float = Field(0.5, ge=0, le=1)   # fraction of the AHP-like current removed at trace = 1
+    dVT_mV: float = 2.0                     # extra threshold lowering at trace = 1 (on top of creb.dVT_mV)
+
+
 class Mechanisms(_Strict):
     """One switch per mechanism. All True = the full model."""
     t_current: bool = True
@@ -259,6 +268,7 @@ class Mechanisms(_Strict):
     tonic_drift: bool = True
     theta: bool = True                      # False = theta.mode forced to "off"
     nm_excitability: bool = False           # recall-phase drive candidate 1 (OFF: the published-results model)
+    intrinsic_trace: bool = False           # C1: the CREB-like trace also reduces adaptation / lowers threshold
     nm_inhibitory_setpoint: bool = True     # False = NM no longer biases the I cells
     plasticity: bool = True                 # False = frozen weights (a fixed spiking reservoir)
 
@@ -320,6 +330,7 @@ class Config(_Strict):
     neuromod: Neuromod = Neuromod()
     theta: Theta = Theta()
     nm_excitability: NmExcitability = NmExcitability()
+    intrinsic_trace: IntrinsicTrace = IntrinsicTrace()
     mso: MSO = MSO()
     ephaptic: Ephaptic = Ephaptic()
     attention: Attention = Attention()
@@ -327,6 +338,12 @@ class Config(_Strict):
     protocol: Protocol = Protocol()
     decode: Decode = Decode()
     sim: Sim = Sim()
+
+    @model_validator(mode="after")
+    def _deps(self):
+        if self.mechanisms.intrinsic_trace and not self.mechanisms.creb:
+            raise ValueError("mechanisms.intrinsic_trace reuses the CREB-like variable: it needs mechanisms.creb")
+        return self
 
     def compression_label(self) -> str:
         return (f"time compression {self.time_compression:g}x "
