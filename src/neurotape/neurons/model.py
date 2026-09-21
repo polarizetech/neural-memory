@@ -120,22 +120,28 @@ dff_lp/dt = (I_ff - ff_lp)/tau_mm : amp
 drec_lp/dt = (I_rec - rec_lp)/tau_mm : amp
 mism = abs(ff_lp - rec_lp)/(abs(ff_lp) + abs(rec_lp) + mm_eps) : 1
 """
+LABILITY_EQS = """
+# --- C3: lability opened by a recurrently-dominated spike, closing on its own ---
+dlab/dt = -lab/tau_lab : 1
+"""
 MISMATCH_EQS = """
 M_pop : 1
 """
 
 
-def reset_code(prior_drift: bool = False, prior_repulsion: bool = False) -> str:
+def reset_code(prior_drift: bool = False, prior_repulsion: bool = False, lability: bool = False) -> str:
     code = RESET_CODE
     if prior_drift:
         code += "; creb = creb*(1 - creb_erosion)"          # erosion PER USE, independent of any synaptic rate
     if prior_repulsion:
         code += "; u_use += use_per_spike"
+    if lability:
+        code += "; lab = lab + (1 - lab)*int(rec_lp > ff_lp)"   # reactivation = a spike driven by recurrence
     return code
 
 
 def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsic_trace: bool = False,
-              prior_repulsion: bool = False, mismatch: bool = False) -> str:
+              prior_repulsion: bool = False, mismatch: bool = False, lability: bool = False) -> str:
     """Every optional mechanism adds TEXT only when it is on. With all of them off the equation text is
     byte-identical to the model the published results came from (pinned by hash in tests/test_retrieval.py), so
     the generated code -- and every spike -- is too. Multiplying by a 1.0 gain instead would change the
@@ -147,8 +153,12 @@ def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsi
         ahp += "tr_ahp*"; vt += " - k_tr_vt*clip(creb, 0, 1)"; extra += TRACE_EQS
     if prior_repulsion:
         vt += " + k_rep*clip(u_use, 0, 1)"; extra += REPULSION_EQS
+    if mismatch or lability:
+        extra += CURRENT_TRACE_EQS
     if mismatch:
-        extra += CURRENT_TRACE_EQS + MISMATCH_EQS
+        extra += MISMATCH_EQS
+    if lability:
+        extra += LABILITY_EQS
     if ephaptic:
         extra += EPH_EQS
     return (EQUATIONS.replace("__EPH__", " + I_eph" if ephaptic else "").replace("__AHP__", ahp).replace("__VTNM__", vt) + extra)
@@ -178,6 +188,7 @@ def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
         k_ahp=cfg.nm_excitability.strength * cfg.nm_excitability.ahp_block_per_nm,
         k_vt=cfg.nm_excitability.strength * cfg.nm_excitability.dVT_mV_per_nm * mV,
         k_tr_ahp=cfg.intrinsic_trace.k_ahp, k_tr_vt=cfg.intrinsic_trace.dVT_mV * mV,
+        tau_lab=cfg.lability.tau_s * second,
         tau_mm=cfg.mismatch_gate.tau_ms * ms, mm_eps=cfg.mismatch_gate.eps_pA * pA,
         creb_erosion=cfg.prior_drift.erosion_per_spike, k_rep=cfg.prior_drift.repulsion_mV * mV,
         tau_use=cfg.prior_drift.tau_use_s * second, use_per_spike=cfg.prior_drift.use_per_spike,
@@ -205,8 +216,8 @@ def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArra
     exc = kind == "exc"
     mech = cfg.mechanisms
     g = b2.NeuronGroup(n, equations(on, eph, intrinsic_trace=mech.intrinsic_trace and exc, prior_repulsion=mech.prior_repulsion and exc,
-                                          mismatch=mech.mismatch_gate and exc),
-                       threshold=THRESHOLD, reset=reset_code(mech.prior_drift and exc, mech.prior_repulsion and exc),
+                                          mismatch=mech.mismatch_gate and exc, lability=mech.lability_window and exc),
+                       threshold=THRESHOLD, reset=reset_code(mech.prior_drift and exc, mech.prior_repulsion and exc, mech.lability_window and exc),
                        refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV
     g.hT = 0.01

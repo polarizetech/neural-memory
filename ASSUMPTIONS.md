@@ -197,6 +197,7 @@ condition beating the foreign-stream null) was not met.
 | C2 | `theta_low`, `theta_high` | 0.2, 0.6 | **placeholder. Declared sweep, fixed before any run: (0.1, 0.5), (0.2, 0.6), (0.3, 0.8); the whole sweep is to be reported.** Below low: retrieval only, the write is off. Between: lability window for the active assembly (C3). Above high: new-trace mode |
 | C2 | `z_protect`, `creb_ref` | 0.1, 0.2 | placeholder. In new-trace mode the write is scaled by the postsynaptic cell's allocation bias `clip(creb/creb_ref, 0, 1)` (C1's variable) and **blocked where z ≥ z_protect** — the consolidated assembly is protected. The gate acts on early-phase induction and its noise; capture of already-tagged synapses is not gated |
 | C2 | sources | — | prediction-error boundary conditions for reconsolidation: PMC7820768; **and the failed replication: PMC8831535**. Operator-supplied; **read depth: abstracts, not read by this build** |
+| **C3** `mechanisms.lability_window` | `lability.gain`, `lability.tau_s` | 3×, 5 s | **placeholders, including the duration.** A cell is *reactivated* when it spikes while its **own** recurrent excitatory current exceeds its feedforward one; that opens a plasticity gain on synapses onto it, which decays back to baseline (restabilisation). Alone: a gain on top of ordinary plasticity. With C2: in the mid regime **only** reactivated cells are written. `tau_s` is simulated seconds and is not time-compressed |
 
 ## What is NOT built, stated so nobody has to discover it
 

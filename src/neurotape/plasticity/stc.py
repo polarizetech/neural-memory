@@ -58,9 +58,11 @@ def plastic_model(cfg: Config) -> str:
     m, g = cfg.mechanisms, cfg.mismatch_gate
     factors = []
     if m.mismatch_gate:
-        mid = "1"
+        mid = "lab_gain*lab_post" if m.lability_window else "1"     # mid regime: only the reactivated assembly is labile
         factors.append(f"(int(M_pop_post >= th_low)*(int(M_pop_post <= th_high)*{mid} + int(M_pop_post > th_high)"
                        f"*clip(creb_post/creb_ref, 0, 1)*int(z < z_protect)))")
+    elif m.lability_window:
+        factors.append("(1 + (lab_gain - 1)*lab_post)")             # C3 alone: a gain on top of ordinary plasticity
     if not factors:
         return PLASTIC_MODEL
     text = PLASTIC_MODEL.replace("plastic_on*(gamma_p", "plastic_on*pgate*(gamma_p").replace("plastic_on*noise_on*sqrt(", "plastic_on*pgate*noise_on*sqrt(")
@@ -83,6 +85,7 @@ def namespace(cfg: Config) -> dict:
         plastic_on=1.0 if m.plasticity else 0.0,
         noise_on=1.0 if pl.noise else 0.0,
         g0=cfg.network.g0_nS * nS,
+        lab_gain=cfg.lability.gain,
         th_low=cfg.mismatch_gate.theta_low, th_high=cfg.mismatch_gate.theta_high,
         z_protect=cfg.mismatch_gate.z_protect, creb_ref=cfg.mismatch_gate.creb_ref,
     )

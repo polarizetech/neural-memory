@@ -99,3 +99,25 @@ def test_c2_mismatch_is_high_when_feedforward_dominates_and_low_when_balanced():
     for ff, rec in ((2.0, 0.0), (1.0, 1.0), (0.0, 2.0)):
         g.namespace.update(ge_in=ff * b2.nS, gr_in=rec * b2.nS); net.run(400 * b2.ms); out.append(float(st.mism[0][-1]))
     assert out[0] > 0.9 and out[1] < 0.1 and out[2] > 0.9      # |ff - rec| normalised: input-only and recurrent-only both mismatch
+
+
+def test_c3_lability_window_opens_on_a_recurrent_spike_closes_again_and_gains_the_write():
+    assert "lab" not in m.reset_code() and m.reset_code(lability=True).endswith("int(rec_lp > ff_lp)")
+    off = _write_test(Config())
+    c = Config(); c.mechanisms.lability_window = True
+    assert _write_test(c, lab=0.0) == pytest.approx(off, rel=1e-6)                 # closed window = ordinary plasticity
+    assert _write_test(c, lab=1.0) > 1.5 * off                                     # open window = a gain on the write
+    both = Config(); both.mechanisms.lability_window = True; both.mechanisms.mismatch_gate = True
+    assert _write_test(both, M=0.4, lab=0.0) == pytest.approx(0.0, abs=1e-9)       # with the gate: mid regime writes ONLY the reactivated cells
+    assert _write_test(both, M=0.4, lab=1.0) > 1.5 * off
+    # the window itself: a spike under recurrent drive opens it, under feedforward drive does not, and it decays
+    res = {}
+    for label, ff, rec in (("recurrent", 0.0, 6.0), ("feedforward", 6.0, 0.0)):
+        b2.start_scope(); cfg = quiet_cfg(); cfg.mechanisms.lability_window = True; cfg.lability.tau_s = 0.2
+        g = m.make_group(1, cfg.network.exc, cfg, "exc", m.constant_array(0.12), m.constant_array(1.0), "c", np.random.default_rng(0)); g.V = -70 * b2.mV
+        g.namespace.update(ge_in=ff * b2.nS, gr_in=rec * b2.nS); op = g.run_regularly("g_ext = ge_in; g_e = gr_in", dt=0.1 * b2.ms)
+        sp = b2.SpikeMonitor(g); st = b2.StateMonitor(g, "lab", record=True, dt=5 * b2.ms); net = b2.Network(g, sp, st, op)
+        net.run(400 * b2.ms); peak = float(st.lab[0].max()); g.namespace.update(ge_in=0 * b2.nS, gr_in=0 * b2.nS); net.run(1000 * b2.ms)
+        res[label] = (sp.num_spikes, peak, float(st.lab[0][-1]))
+    assert res["recurrent"][0] > 0 and res["recurrent"][1] > 0.9 and res["recurrent"][2] < 0.05     # opens, then restabilises
+    assert res["feedforward"][0] > 0 and res["feedforward"][1] == 0.0                               # input-driven spikes do not open it

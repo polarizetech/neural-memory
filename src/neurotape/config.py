@@ -288,6 +288,14 @@ class MismatchGate(_Strict):
     creb_ref: float = 0.2
 
 
+class Lability(_Strict):
+    """C3. A time-limited plasticity gain on the REACTIVATED assembly, then restabilisation to baseline. A cell
+    is 'reactivated' when it spikes while its own recurrent excitatory current exceeds its feedforward one -- a
+    test on the cell's own currents, not on any label. Placeholders."""
+    gain: float = Field(3.0, ge=1.0)
+    tau_s: float = 5.0                      # restabilisation (simulated seconds; NOT time-compressed)
+
+
 class Mechanisms(_Strict):
     """One switch per mechanism. All True = the full model."""
     t_current: bool = True
@@ -300,6 +308,7 @@ class Mechanisms(_Strict):
     nm_excitability: bool = False           # recall-phase drive candidate 1 (OFF: the published-results model)
     intrinsic_trace: bool = False           # C1: the CREB-like trace also reduces adaptation / lowers threshold
     mismatch_gate: bool = False             # C2: population feedforward-vs-recurrent mismatch gates the write
+    lability_window: bool = False           # C3: reactivated cells get a decaying plasticity gain
     prior_drift: bool = False               # C4: the trace erodes per spike
     prior_repulsion: bool = False           # C4 option: recent use RAISES threshold. Sign unsettled.
     nm_inhibitory_setpoint: bool = True     # False = NM no longer biases the I cells
@@ -366,6 +375,7 @@ class Config(_Strict):
     intrinsic_trace: IntrinsicTrace = IntrinsicTrace()
     prior_drift: PriorDrift = PriorDrift()
     mismatch_gate: MismatchGate = MismatchGate()
+    lability: Lability = Lability()
     mso: MSO = MSO()
     ephaptic: Ephaptic = Ephaptic()
     attention: Attention = Attention()
