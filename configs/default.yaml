@@ -1,0 +1,11 @@
+# neurotape defaults at the START scale (200 E / 50 I). Every value not listed here is the
+# documented default in src/neurotape/config.py; sources are in ASSUMPTIONS.md.
+seed: 0
+time_compression: 60.0
+frontend: {kind: an, n_bands: 32, f_lo_hz: 80.0, f_hi_hz: 8000.0}
+network: {n_exc: 200, n_inh: 50}
+protocol:
+  encode_s: 20.0
+  recall_delays_s: [5.0, 60.0, 480.0]     # = 5 min, 1 h, 8 h of slow-process time at 60x
+  recall_mode: cue
+  cue_fraction: 0.15

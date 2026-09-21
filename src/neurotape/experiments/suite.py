@@ -1,0 +1,254 @@
+"""The experiments. One CLI command each; every one reports mean +/- 95% CI over seeds and states
+plainly when a mechanism does not beat its ablation or the reservoir baseline.
+
+  delay       1. one stream: reconstruction correlation vs delay after encoding
+  streams     2. two and three simultaneous streams: per-stream r, crosstalk, identity from rank
+  ablations   3. single-mechanism ablations (+ filterbank front end, + frozen-weight reservoir)
+  baselines   4. echo state network, shuffled-input control, raw-input upper bound
+  lehr        5. Lehr et al. 2022 NM sweep reproduction      (experiments/lehr.py)
+  population  LFP proxy + TRF + phase lag vs frequency, theta free (evoked) vs reset (entrained)
+  attention   two streams, attend one via NM gain: theta locking and recall smear
+  codec       stored size and quality vs Opus / AAC at matched bitrate
+  salience    rare-event retention vs uniform compression at the same budget
+"""
+from __future__ import annotations
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+from ..config import Config
+from . import common as C
+
+ABLATIONS = {
+    "no_t_current": ("mechanisms", "t_current"), "no_gap_junctions": ("mechanisms", "gap_junctions"),
+    "flat_nm": ("mechanisms", "nm_dynamic"), "no_tagging": ("mechanisms", "tagging"),
+    "no_creb": ("mechanisms", "creb"), "no_tonic_drift": ("mechanisms", "tonic_drift"),
+    "no_theta": ("mechanisms", "theta"), "frozen_weights_reservoir": ("mechanisms", "plasticity"),
+}
+
+
+def ablated(cfg: Config, name: str) -> Config:
+    c = cfg.model_copy(deep=True)
+    if name == "filterbank_frontend":
+        c.frontend.kind = "filterbank"
+    else:
+        sect, key = ABLATIONS[name]
+        setattr(getattr(c, sect), key, False)
+    return c
+
+
+def _recall_r(run: dict, k: int = -1, stream: int = 0) -> float:
+    """PRIMARY recall score: the GUARDED window (1 s after cue offset onward)."""
+    return run["recall"][k]["guarded_r"][stream]
+
+
+def _table(rows: list[tuple]) -> str:
+    head = "| " + " | ".join(rows[0]) + " |\n|" + "---|" * len(rows[0]) + "\n"
+    return head + "".join("| " + " | ".join(str(x) for x in r) + " |\n" for r in rows[1:])
+
+
+# ------------------------------------------------------------------ 1. delay
+def exp_delay(cfg: Config, seeds, workers, streams=None):
+    out = C.results_dir("exp1_delay")
+    c = cfg.model_copy(deep=True)
+    runs = C.run_jobs(C.jobs_for({"full": c}, seeds, streams or {"n": 1}, esn=True, raw=True), workers)
+    g = C.by_tag(runs).get("full", [])
+    delays = [r["delay_s"] for r in g[0]["recall"]] if g else []
+    rows, summ = [("delay (sim s)", "bio-equivalent", "spiking r, UNGUARDED (includes cue carry-over)", "spiking r, guarded", "ESN r, guarded", "spiking - ESN (guarded)", "best-lag p<0.05 (seeds)")], {}
+    for k, d in enumerate(delays):
+        a = [x["recall"][k]["guarded_r"][0] for x in g]; e = [x["esn"]["recall"][k]["guarded_r"][0] for x in g]
+        un = C.ci95([x["recall"][k]["locked_r"][0] for x in g])
+        sig = sum(x["recall"][k]["bestlag"]["p"] < 0.05 for x in g)
+        ca, ce, df = C.ci95(a), C.ci95(e), C.paired_diff(a, e)
+        summ[str(d)] = dict(spiking=ca, esn=ce, diff=df, n_sig=sig, unguarded=un)
+        rows.append((d, f"{d * c.time_compression / 60:.0f} min", C.fmt(un), C.fmt(ca), C.fmt(ce),
+                     C.fmt(df) + (" BEATS" if df["beats"] else " does not beat"), f"{sig}/{len(g)}"))
+    enc = C.ci95([x["encode_heldout_r"][0] for x in g]); raw = C.ci95([x["raw_input_r"][0] for x in g])
+    fig, ax = plt.subplots(figsize=(6, 3.6))
+    for key, col in (("spiking", "C0"), ("esn", "C1")):
+        m = [summ[str(d)][key]["mean"] for d in delays]
+        ax.errorbar(delays, m, yerr=[[mm - summ[str(d)][key]["lo"] for mm, d in zip(m, delays)],
+                                     [summ[str(d)][key]["hi"] - mm for mm, d in zip(m, delays)]], marker="o", label=key, color=col)
+    ax.axhline(0, color="0.6", lw=0.8); ax.set_xscale("log"); ax.set_xlabel("delay after encoding (simulated s)")
+    ax.set_ylabel("recall reconstruction r (time-locked)"); ax.legend(); C.stamp_figure(fig, c); fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.savefig(out / "delay.png", dpi=130); plt.close(fig)
+    rep = (f"## Experiment 1 -- reconstruction vs delay (one stream, recall mode `{c.protocol.recall_mode}`)\n\n"
+           f"Encode held-out r: {C.fmt(enc)}; raw-input upper bound: {C.fmt(raw)}.\n\n" + _table(rows) +
+           "\nRecall is scored on the GUARDED window (from 1 s after cue offset). The unguarded column is kept because the "
+           "first pass of this experiment scored +0.045 there at EVERY delay -- carry-over of the cue, not storage.\n"
+           "Probes share one timeline, so an earlier probe can alter a later one.\n")
+    C.save(out, c, runs, dict(encode=enc, raw=raw, delays=summ), rep)
+    return out
+
+
+# ------------------------------------------------------------------ 2. streams
+def exp_streams(cfg: Config, seeds, workers):
+    out = C.results_dir("exp2_streams")
+    jobs = []
+    for n in (2, 3):
+        jobs += C.jobs_for({f"{n}_streams": cfg}, seeds, {"n": n}, esn=True)
+    runs = C.run_jobs(jobs, workers); g = C.by_tag(runs)
+    rep, summ = "## Experiment 2 -- simultaneous streams\n\n", {}
+    for tag, rs in g.items():
+        S = rs[0]["n_streams"]
+        encC = np.mean([r["encode_crosstalk"] for r in rs], axis=0); recC = np.mean([r["recall"][-1]["crosstalk"] for r in rs], axis=0)
+        rows = [("stream", "encode held-out r", "recall r (last delay)", "ESN recall r")]
+        for s in range(S):
+            rows.append((s, C.fmt(C.ci95([r["encode_heldout_r"][s] for r in rs])), C.fmt(C.ci95([_recall_r(r, -1, s) for r in rs])),
+                         C.fmt(C.ci95([r["esn"]["recall"][-1]["guarded_r"][s] for r in rs]))))
+        idr = [r["stream_identity"] for r in rs if "stream_identity" in r]
+        rep += f"### {tag}\n\n" + _table(rows) + f"\nEncode crosstalk (rows decoded, cols true):\n\n```\n{np.round(encC, 3)}\n```\nRecall crosstalk:\n\n```\n{np.round(recC, 3)}\n```\n"
+        if idr:
+            for feat in ("rank", "fired"):
+                acc = C.ci95([x[feat]["acc"] for x in idr]); nul = C.ci95([x[feat]["null_p95"] for x in idr])
+                ok = sum(x[feat]["p"] < 0.05 for x in idr)
+                rep += f"- stream identity from **{feat}**: accuracy {C.fmt(acc)}; permutation-null 95th pct {C.fmt(nul)}; p<0.05 in {ok}/{len(idr)} seeds\n"
+        summ[tag] = dict(encode_crosstalk=encC.tolist(), recall_crosstalk=recC.tolist())
+        rep += "\n"
+    C.save(out, cfg, runs, summ, rep)
+    return out
+
+
+# ------------------------------------------------------------------ 3. ablations
+def exp_ablations(cfg: Config, seeds, workers, n_streams=2):
+    out = C.results_dir("exp3_ablations")
+    conds = {"full": cfg, **{name: ablated(cfg, name) for name in list(ABLATIONS) + ["filterbank_frontend"]}}
+    runs = C.run_jobs(C.jobs_for(conds, seeds, {"n": n_streams}, esn=False), workers); g = C.by_tag(runs)
+    rows, summ = [("condition", "encode held-out r", "recall r (last delay)", "full - this (recall)", "verdict")], {}
+    full = [_recall_r(r) for r in g.get("full", [])]
+    for tag, rs in g.items():
+        e = C.ci95([np.mean(r["encode_heldout_r"]) for r in rs]); rc = [_recall_r(r) for r in rs]
+        d = C.paired_diff(full, rc) if tag != "full" else None
+        verdict = "-" if d is None else ("mechanism HELPS recall" if d["beats"] else
+                                         ("ablation is BETTER" if np.isfinite(d["hi"]) and d["hi"] < 0 else "no detectable effect"))
+        rows.append((tag, C.fmt(e), C.fmt(C.ci95(rc)), "-" if d is None else C.fmt(d), verdict))
+        summ[tag] = dict(encode=e, recall=C.ci95(rc), full_minus_this=d,
+                         state_frac=np.mean([r["state_frac_encode"] for r in rs], axis=0).tolist(),
+                         frac_late=C.ci95([r["frac_late"] for r in rs]))
+    rep = ("## Experiment 3 -- single-mechanism ablations\n\nA mechanism is said to help ONLY if the whole 95% CI of "
+           "(full - ablated) is above zero.\n\n" + _table(rows))
+    C.save(out, cfg, runs, summ, rep)
+    return out
+
+
+# ------------------------------------------------------------------ 4. baselines
+def exp_baselines(cfg: Config, seeds, workers, n_streams=2):
+    out = C.results_dir("exp4_baselines")
+    shuf = cfg.model_copy(deep=True); shuf.protocol.shuffle_input = True
+    runs = C.run_jobs(C.jobs_for({"full": cfg, "shuffled_input": shuf}, seeds, {"n": n_streams}, esn=True, raw=True), workers)
+    g = C.by_tag(runs); f = g.get("full", []); s = g.get("shuffled_input", [])
+    m = lambda rs, fn: C.ci95([fn(r) for r in rs])
+    rows = [("system", "encode held-out r", "recall r (last delay)"),
+            ("spiking network (full)", C.fmt(m(f, lambda r: np.mean(r["encode_heldout_r"]))), C.fmt(m(f, _recall_r))),
+            ("echo state network, equal units", C.fmt(m(f, lambda r: np.mean(r["esn"]["encode_heldout_r"]))), C.fmt(m(f, lambda r: r["esn"]["recall"][-1]["guarded_r"][0]))),
+            ("shuffled-input control (floor)", C.fmt(m(s, lambda r: np.mean(r["encode_heldout_r"]))), C.fmt(m(s, _recall_r))),
+            ("decoder on raw input (upper bound)", C.fmt(m(f, lambda r: np.mean(r["raw_input_r"]))), "n/a")]
+    d_enc = C.paired_diff([np.mean(r["encode_heldout_r"]) for r in f], [np.mean(r["esn"]["encode_heldout_r"]) for r in f])
+    d_rec = C.paired_diff([_recall_r(r) for r in f], [r["esn"]["recall"][-1]["guarded_r"][0] for r in f])
+    rep = ("## Experiment 4 -- baselines\n\n" + _table(rows) +
+           f"\n- spiking - ESN, encode: {C.fmt(d_enc)} -> {'beats' if d_enc['beats'] else 'DOES NOT beat'} the reservoir\n"
+           f"- spiking - ESN, recall: {C.fmt(d_rec)} -> {'beats' if d_rec['beats'] else 'DOES NOT beat'} the reservoir\n")
+    C.save(out, cfg, runs, dict(encode_diff=d_enc, recall_diff=d_rec), rep)
+    return out
+
+
+# ------------------------------------------------------------------ population / theta
+def _am_stream(rate_hz: float, seconds: float, fs=16000.0, seed=0):
+    from ..frontend.io import Stream
+    rng = np.random.default_rng(seed); t = np.arange(int(seconds * fs)) / fs
+    # raised-cosine "notes" at rate_hz on a noise carrier: sharp-ish attacks, as in a note sequence
+    ph = (t * rate_hz) % 1.0
+    env = np.where(ph < 0.6, 0.5 * (1 - np.cos(2 * np.pi * np.clip(ph / 0.6, 0, 1))), 0.0)
+    return Stream(f"notes_{rate_hz:g}nps", rng.standard_normal(t.size) * env, fs, f"synthetic:notes_{rate_hz:g}nps")
+
+
+def _population_worker(job):
+    try:
+        from ..network import build_inputs, simulate
+        from ..decode import population as pop
+        from ..recall.evaluate import evaluate
+        cfg = Config.model_validate(job["cfg"])
+        inputs = build_inputs([_am_stream(job["rate"], cfg.protocol.encode_s, seed=cfg.seed)], cfg)
+        res = simulate(cfg, inputs); ev, _ = evaluate(res, inputs, cfg)
+        enc = res.timeline.segment("encode"); sel = (res.lfp_t >= enc.t0) & (res.lfp_t < enc.t1)
+        prox = pop.lfp_proxy(res.lfp_Ie[sel], res.lfp_Ii[sel], Irec_pA=res.lfp_Ir[sel]); e = inputs.env.mean(axis=(0, 1)); m = min(sel.sum(), e.size)
+        lag, plv = pop.phase_lag(e[:m], prox["rws_recurrent"][:m], inputs.env_rate, job["rate"])     # PRIMARY: recurrent-only
+        lag_a, plv_a = pop.phase_lag(e[:m], prox["rws"][:m], inputs.env_rate, job["rate"])          # with the afferent current
+        return dict(ok=True, tag=job["tag"], seed=cfg.seed, rate=job["rate"], lag=lag, plv=plv, lag_afferent=lag_a, plv_afferent=plv_a,
+                    ordering=ev["recall"][-1]["ordering_rho"], recall_r=ev["recall"][-1]["locked_r"][0], trf=ev["trf"])
+    except Exception as ex:
+        import traceback
+        return dict(ok=False, tag=job["tag"], seed=job["cfg"]["seed"], error=f"{type(ex).__name__}: {ex}", trace=traceback.format_exc()[-800:])
+
+
+def exp_population(cfg: Config, seeds, workers):
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import get_context
+    from ..decode.population import DOELLING_2019 as D, pcm, pcm_verdict, effective_latency_ms, pcm_is_informative
+    out = C.results_dir("population_theta")
+    jobs = []
+    for mode in ("free", "reset"):
+        c = cfg.model_copy(deep=True); c.theta.mode = mode
+        c.protocol.recall_delays_s = [min(cfg.protocol.recall_delays_s)]   # phase lag is an ENCODE-phase measure
+        for rate in D["rates_nps"]:
+            for s in seeds:
+                cc = c.model_copy(deep=True); cc.seed = int(s)
+                jobs.append(dict(cfg=cc.model_dump(), tag=mode, rate=rate))
+    with ProcessPoolExecutor(max(workers, 1), mp_context=get_context("spawn")) as ex:
+        runs = list(ex.map(_population_worker, jobs))
+    rep = ("## Population signal -- evoked (theta free) vs entrained (theta phase-reset on onsets)\n\n"
+           f"Benchmark: Doelling et al. 2019 (doi:{D['doi']}), note rates {D['rates_nps']} nps. Published PCM: evoked model "
+           f"{D['pcm_evoked']}, oscillator model {D['pcm_oscillator']}, MEG 95% CI {D['meg_ci_left']} (L) / {D['meg_ci_right']} (R).\n\n")
+    summ = {}
+    fig, ax = plt.subplots(figsize=(6, 3.6))
+    for mode in ("free", "reset"):
+        ok = [r for r in runs if r["ok"] and r["tag"] == mode]
+        per_seed = []
+        for s in seeds:
+            lags = [r["lag"] for r in ok if r["seed"] == s]
+            if len(lags) == len(D["rates_nps"]):
+                per_seed.append(pcm(lags))
+        mean_lag = [float(np.angle(np.mean(np.exp(1j * np.array([r["lag"] for r in ok if r["rate"] == f]))))) for f in D["rates_nps"]]
+        c_pcm = C.ci95(per_seed); lat = effective_latency_ms(D["rates_nps"], mean_lag)
+        summ[mode] = dict(pcm=c_pcm, mean_lag_rad=mean_lag, latency_ms=lat, ordering=C.ci95([r["ordering"] for r in ok]),
+                          recall_r=C.ci95([r["recall_r"] for r in ok]), plv=C.ci95([r["plv"] for r in ok]))
+        lag_aff = [float(np.angle(np.mean(np.exp(1j * np.array([r["lag_afferent"] for r in ok if r["rate"] == f]))))) for f in D["rates_nps"]]
+        summ[mode].update(informative=pcm_is_informative(lat), pcm_with_afferent=pcm(lag_aff), latency_with_afferent_ms=effective_latency_ms(D["rates_nps"], lag_aff))
+        rep += (f"### theta `{mode}`\n- LFP proxy = RECURRENT + inhibitory currents (afferent current excluded). With the afferent current "
+                f"included the proxy is mostly the input itself: PCM {summ[mode]['pcm_with_afferent']:.3f}, latency {summ[mode]['latency_with_afferent_ms']:.0f} ms.\n"
+                f"- PCM test informative at this latency: **{'yes' if summ[mode]['informative'] else 'NO -- the latency is too short for evoked and oscillator accounts to predict different PCM; read nothing into the PCM verdict below'}**\n"
+                f"- PCM over rates: {C.fmt(c_pcm)} -- {pcm_verdict(c_pcm['mean'])}\n"
+                f"- phase lag by rate (rad): {dict(zip(D['rates_nps'], np.round(mean_lag, 2)))}; slope = {lat:.0f} ms effective latency\n"
+                f"- stimulus-LFP coupling (PLV): {C.fmt(summ[mode]['plv'])}\n"
+                f"- recall ORDERING (Spearman rho): {C.fmt(summ[mode]['ordering'])}; recall r: {C.fmt(summ[mode]['recall_r'])}\n\n")
+        ax.plot(D["rates_nps"], np.unwrap(mean_lag), marker="o", label=f"theta {mode}")
+    ax.set_xlabel("note rate (per s)"); ax.set_ylabel("phase lag, response behind stimulus (rad)"); ax.legend()
+    C.stamp_figure(fig, cfg, "LFP proxy = reference weighted sum of synaptic currents"); fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.savefig(out / "phase_lag.png", dpi=130); plt.close(fig)
+    C.save(out, cfg, runs, summ, rep)
+    return out
+
+
+# ------------------------------------------------------------------ attention
+def exp_attention(cfg: Config, seeds, workers):
+    out = C.results_dir("attention_two_stream")
+    att = cfg.model_copy(deep=True); att.attention.stream = 0
+    runs = C.run_jobs(C.jobs_for({"no_attention": cfg, "attend_stream0": att}, seeds, {"n": 2}), workers); g = C.by_tag(runs)
+    rows = [("condition", "theta PLV s0", "theta PLV s1", "recall r s0", "recall r s1", "smear ms (cued s0)")]
+    summ = {}
+    for tag, rs in g.items():
+        v = dict(plv0=C.ci95([r["theta_locking"][0]["plv"] for r in rs]), plv1=C.ci95([r["theta_locking"][1]["plv"] for r in rs]),
+                 r0=C.ci95([_recall_r(r, -1, 0) for r in rs]), r1=C.ci95([_recall_r(r, -1, 1) for r in rs]),
+                 smear=C.ci95([r["recall"][-1]["bestlag"]["smear_ms"] for r in rs]))
+        summ[tag] = v; rows.append((tag, *(C.fmt(v[k]) for k in ("plv0", "plv1", "r0", "r1", "smear"))))
+    a, n = g.get("attend_stream0", []), g.get("no_attention", [])
+    d_plv = C.paired_diff([r["theta_locking"][0]["plv"] - r["theta_locking"][1]["plv"] for r in a],
+                          [r["theta_locking"][0]["plv"] - r["theta_locking"][1]["plv"] for r in n])
+    d_sm = C.paired_diff([r["recall"][-1]["bestlag"]["smear_ms"] for r in n], [r["recall"][-1]["bestlag"]["smear_ms"] for r in a])
+    rep = ("## Attention -- attend stream 0 via NM gain\n\n" + _table(rows) +
+           f"\n- attention shifts theta locking toward the attended stream: {C.fmt(d_plv)} -> {'YES' if (d_plv['beats'] and d_plv['mean'] >= 0.05) else ('detected but NEGLIGIBLE (< 0.05 PLV): a CI clear of zero is not an effect size' if d_plv['beats'] else 'NOT DETECTED')}\n"
+           f"- attended recall is less smeared (smear reduction, ms): {C.fmt(d_sm)} -> {'YES' if d_sm['beats'] else 'NOT DETECTED'}\n")
+    C.save(out, cfg, runs, dict(conditions=summ, plv_shift=d_plv, smear_reduction=d_sm), rep)
+    return out

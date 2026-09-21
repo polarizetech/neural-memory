@@ -1,0 +1,10 @@
+# The configuration the committed results were produced with: shorter streams and delays so the
+# whole suite at 10 seeds fits in about two hours on a 10-core laptop. NOT tuned on any result.
+seed: 0
+time_compression: 60.0
+frontend: {kind: an, n_bands: 32}
+network: {n_exc: 200, n_inh: 50}
+protocol:
+  encode_s: 10.0
+  recall_delays_s: [5.0, 30.0, 120.0]     # = 5 min, 30 min, 2 h of slow-process time at 60x
+decode: {n_surrogates: 100}

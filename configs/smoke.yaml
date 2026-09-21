@@ -1,0 +1,5 @@
+# Plumbing check only. Numbers from this config mean nothing.
+frontend: {kind: an, n_bands: 8}
+network: {n_exc: 100, n_inh: 25}
+protocol: {encode_s: 4.0, recall_delays_s: [1.0]}
+decode: {n_surrogates: 20}

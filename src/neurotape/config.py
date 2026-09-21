@@ -1,0 +1,291 @@
+"""YAML configuration, validated with pydantic.
+
+Every mechanism in the network has a switch in ``Mechanisms``. An ablation is a config with one
+switch flipped and nothing else changed -- see ``experiments/ablations.py``. Parameter sources are
+listed in ASSUMPTIONS.md; the defaults here are the values that file documents.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Literal
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class _Strict(BaseModel):
+    # An unknown key is a typo, and a typo in an ablation config silently runs the full model.
+    model_config = ConfigDict(extra="forbid")
+
+
+class Frontend(_Strict):
+    # "an" = auditory nerve (Zilany et al. 2014 via `cochlea`), the PRIMARY audio front end.
+    # "filterbank" = envelope bands -> random projection -> Poisson: the ABLATION, and the only
+    # route for non-audio CSV sensor streams.
+    kind: Literal["an", "filterbank"] = "an"
+    level_db_spl: float = 60.0              # per stream, before acoustic mixing (an only)
+    anf_per_cf: list[int] = [6, 2, 2]       # HSR, MSR, LSR fibres per CF, kept as separate populations
+    moc_enabled: bool = False               # efferent MOC-like feedback: tonic NM lowers cochlear gain
+    moc_db_per_nm: float = 50.0
+    brainstem: Literal["none", "cnmodel"] = "none"
+    mso: bool = False                       # coincidence stage; needs stereo input
+    filterbank: Literal["gammatone", "logbp"] = "gammatone"
+    n_bands: int = Field(32, ge=1)
+    f_lo_hz: float = Field(80.0, gt=0)      # configurable down to 0.1 Hz for sensor data (use logbp)
+    f_hi_hz: float = Field(8000.0, gt=0)
+    envelope_rate_hz: float = 1000.0
+    compression: float = Field(0.3, gt=0, le=1)  # power-law envelope compression
+    csv_rate_hz: float | None = None        # used when a CSV has no time column
+    max_seconds: float | None = None        # truncate streams (None = use encode_s)
+
+    @model_validator(mode="after")
+    def _check(self):
+        if self.f_hi_hz <= self.f_lo_hz:
+            raise ValueError("f_hi_hz must exceed f_lo_hz")
+        if self.filterbank == "gammatone" and self.f_lo_hz < 20:
+            raise ValueError("gammatone below 20 Hz is not meaningful; use filterbank: logbp")
+        return self
+
+
+class Mixing(_Strict):
+    n_input: int = Field(64, ge=1)
+    bands_per_input: int = Field(6, ge=1)   # sparse projection: bands drawn from ALL streams
+    mode: Literal["mixed", "labelled"] = "mixed"
+    label_purity: float = Field(0.8, ge=0, le=1)  # labelled debug mode only
+    rate_max_hz: float = 80.0               # Poisson rate of an input neuron at drive = 1
+    p_in_exc: float = 0.1
+    p_in_inh: float = 0.1
+    # The input weight is NORMALISED so every front end delivers the same mean input conductance
+    # to an E cell: w_in = g_in_mean / (K_in * measured mean unit rate * tau_e). Without this an
+    # AN front end (320 fibres at ~60 Hz) and the Poisson ablation are not comparable.
+    g_in_mean_nS: float = 8.0
+
+
+class NeuronParams(_Strict):
+    C_pF: float = 200.0
+    gL_nS: float = 10.0
+    EL_mV: float = -70.0
+    VT_mV: float = -50.0
+    DeltaT_mV: float = 2.0
+    V_cut_mV: float = -40.0
+    V_reset_mV: float = -58.0
+    t_ref_ms: float = 2.0
+    a_nS: float = 2.0
+    b_pA: float = 40.0
+    tau_w_ms: float = 150.0
+    gT_nS: float = 100.0                    # T-type Ca conductance; set ONLY by the single-cell tests
+    E_Ca_mV: float = 120.0
+    T_shift_mV: float = 2.0
+    T_celsius: float = 36.0
+    hT_loaded: float = 0.4                  # LOADED: T inactivation gate above this (burst onset in the step test)
+    t_spike_ms: float = 1.0                 # SPIKE state window after threshold crossing
+    t_reset_ms: float = 10.0                # RESET state = refractory + AHP window
+
+
+class Network(_Strict):
+    n_exc: int = Field(200, ge=2)
+    n_inh: int = Field(50, ge=2)
+    p_conn: float = 0.1                     # Luboeinski & Tetzlaff 2021, p_c
+    g0_nS: float = 1.0                      # conductance equivalent of h_0
+    w_ei_nS: float = 2.0
+    w_ie_nS: float = 8.0
+    w_ii_nS: float = 8.0
+    tau_e_ms: float = 5.0                   # tau_syn in the reference
+    tau_i_ms: float = 5.0
+    E_e_mV: float = 0.0
+    E_i_mV: float = -80.0
+    # Slow GABA_B-like K+ conductance on I->E synapses. Without it inhibition reverses at -80 mV,
+    # hT_inf(-78 mV) = 0.32, and the LOADED state (hT > 0.4) is unreachable by synaptic inhibition.
+    E_K_mV: float = -95.0
+    tau_b_ms: float = 150.0
+    w_ie_b_nS: float = 1.0
+    axon_delay_ms: float = 3.0              # t_ax_delay in the reference
+    exc: NeuronParams = NeuronParams()
+    inh: NeuronParams = NeuronParams(a_nS=0.0, b_pA=0.0, gT_nS=0.0, tau_w_ms=50.0,
+                                     V_reset_mV=-60.0, C_pF=100.0)
+
+
+class Noise(_Strict):
+    I0_pA: float = 100.0                    # mean background current
+    sigma_pA: float = 60.0                  # stationary SD of the fast OU background
+    tau_ms: float = 5.0                     # tau_OU in the reference
+    consolidation_scale: float = 1.0
+
+
+class Drift(_Strict):
+    tau_s: float = 10.0                     # slow OU drift of the tonic operating point
+    sigma_pA: float = 20.0
+
+
+class GapJunctions(_Strict):
+    p: float = 0.3
+    neighbourhood: int = 8                  # ring distance within which I cells may couple
+    coupling_coefficient: float = Field(0.1, ge=0.0, lt=0.5)
+    modulation: float = Field(1.0, ge=0.0)  # pH/Mg-like scalar on the conductance
+    ee_enabled: bool = False                # weakly supported biologically; OFF by default
+    ee_p: float = 0.02
+    ee_coupling_coefficient: float = 0.02
+
+
+class Plasticity(_Strict):
+    # Dimensionless: everything is in units of h_0, keeping the published ratios.
+    # Luboeinski & Tetzlaff 2021 (Commun Biol 4:275), Table of parameters; values as in
+    # jlubo/brian_network_plasticity config_defaultnet.json.
+    Ca_pre: float = 0.6
+    Ca_post: float = 0.1655
+    tau_Ca_ms: float = 48.8
+    t_Ca_delay_ms: float = 18.8
+    theta_p: float = 3.0
+    theta_d: float = 1.2
+    gamma_p: float = 1645.6
+    gamma_d: float = 313.1
+    tau_h_s: float = 688.4
+    h_max: float = 2.3805                   # 10 mV / 4.20075 mV
+    sigma_pl: float = 0.6914                # 2.90436 mV / 4.20075 mV
+    theta_tag: float = 0.2                  # 0.840149 / 4.20075
+    theta_pro_default: float = 0.5          # used only when NM dependence is off
+    alpha: float = 1.0
+    tau_p_s: float = 3600.0
+    tau_z_s: float = 3600.0
+    noise: bool = True
+    update_dt_ms: float = 1.0               # plasticity ODE clock (reference: neuron dt)
+    # Placeholder: T-current calcium added to the postsynaptic calcium seen by every synapse.
+    c_T: float = 0.5
+    tau_CaT_ms: float = 50.0
+    k_CaT_per_nA_ms: float = 0.05
+    # theta_pro is a threshold on a SUM over incoming synapses, defined for the reference in-degree
+    # (160). At in-degree K it is scaled by K/160, so it equals the published value at full size.
+    scale_theta_pro_by_indegree: bool = True
+    indegree_ref: float = 160.0             # 1600 * 0.1 in the reference network
+
+
+class Creb(_Strict):
+    tau_s: float = 600.0                    # minutes; compressed with the slow processes
+    tau_Ca_soma_ms: float = 200.0
+    Ca_spike: float = 0.05
+    k_T_per_nA_ms: float = 0.02
+    dVT_mV: float = 3.0                     # threshold lowering at creb = 1
+
+
+class Neuromod(_Strict):
+    tonic: float = 0.12
+    tonic_ramp_to: float | None = None      # linear ramp across encode, if set
+    consolidation_tonic: float = 0.12
+    phasic_amp: float = 0.15
+    phasic_tau_s: float = 0.5
+    salience_tau_s: float = 2.0             # running-average window for the mismatch
+    salience_z: float = 2.0
+    salience_refractory_s: float = 1.0
+    nm_ref: float = 0.12                    # gain / inhibition are neutral at this level
+    k_gain: float = 2.0                     # input gain = 1 + k_gain * (NM - nm_ref)
+    k_inh_pA: float = 200.0                 # inhibitory set point: bias = k * (NM - nm_ref)
+    nm_max: float = 0.5
+    pulse_amp: float = 0.3                  # recall mode "nm_pulse"
+    pulse_s: float = 1.0
+
+
+class Theta(_Strict):
+    """A pacemaker external to the network (septum-like), delivered as a current.
+
+    off    no theta drive
+    free   free-running oscillator: stimulus responses are pure EVOKED responses riding on it
+    reset  the oscillator's phase is reset on envelope onsets (ENTRAINMENT by phase reset)
+    """
+    mode: Literal["off", "free", "reset"] = "free"
+    f_hz: float = 6.0
+    amp_pA: float = 40.0
+    target: Literal["inh", "exc", "both"] = "inh"
+    reset_phase_rad: float = 0.0
+    onset_z: float = 1.5                    # envelope-derivative threshold for an onset
+    onset_refractory_s: float = 0.15
+
+
+class Attention(_Strict):
+    """Attend one stream via NM gain: NM(t) gains a term following the attended stream's envelope,
+    so input gain rises when the attended stream is active. Placeholder -- ASSUMPTIONS.md."""
+    stream: int | None = None
+    amp: float = 0.15
+
+
+class Mechanisms(_Strict):
+    """One switch per mechanism. All True = the full model."""
+    t_current: bool = True
+    gap_junctions: bool = True
+    nm_dynamic: bool = True                 # False = NM(t) flat at the tonic level
+    tagging: bool = True                    # False = no tag, so no late phase
+    creb: bool = True
+    tonic_drift: bool = True
+    theta: bool = True                      # False = theta.mode forced to "off"
+    plasticity: bool = True                 # False = frozen weights (a fixed spiking reservoir)
+
+
+class Protocol(_Strict):
+    settle_s: float = 1.0
+    encode_s: float = 20.0
+    # Delays are in SIMULATED seconds after the end of encoding. The biological equivalent for
+    # the slow processes is delay * time_compression.
+    recall_delays_s: list[float] = [5.0, 60.0]
+    recall_s: float | None = None           # None = encode_s
+    recall_mode: Literal["cue", "no_cue", "nm_pulse"] = "cue"
+    cue_fraction: float = Field(0.15, ge=0.0, le=1.0)
+    cue_stream: int = 0
+    shuffle_input: bool = False             # control: block-shuffled envelopes drive the net
+
+
+class Decode(_Strict):
+    rate_hz: float = 100.0
+    filter_tau_ms: float = 50.0
+    train_fraction: float = 0.8
+    targets: list[Literal["envelope", "an_rate"]] = ["envelope"]
+    alphas: list[float] = [1e-2, 1e-1, 1.0, 10.0, 100.0, 1000.0]
+    engram_metric: Literal["protein", "late_weight"] = "protein"
+    engram_threshold: float = 0.1
+    rank_window_ms: float = 50.0
+    n_surrogates: int = 200
+
+
+class Sim(_Strict):
+    dt_ms: float = 0.1
+    device: Literal["cpp_standalone", "runtime"] = "cpp_standalone"
+    runtime_target: Literal["numpy", "cython"] = "numpy"
+    state_log_dt_ms: float = 1.0
+    log_states_in: list[Literal["settle", "encode", "consolidate", "recall"]] = ["encode", "recall"]
+    slow_log_dt_s: float = 1.0
+    weight_log_dt_s: float = 5.0
+    keep_build: bool = False
+    profile: bool = False
+
+
+class Config(_Strict):
+    seed: int = 0
+    time_compression: float = Field(60.0, ge=1.0)
+    frontend: Frontend = Frontend()
+    mixing: Mixing = Mixing()
+    network: Network = Network()
+    noise: Noise = Noise()
+    drift: Drift = Drift()
+    gap: GapJunctions = GapJunctions()
+    plasticity: Plasticity = Plasticity()
+    creb: Creb = Creb()
+    neuromod: Neuromod = Neuromod()
+    theta: Theta = Theta()
+    attention: Attention = Attention()
+    mechanisms: Mechanisms = Mechanisms()
+    protocol: Protocol = Protocol()
+    decode: Decode = Decode()
+    sim: Sim = Sim()
+
+    def compression_label(self) -> str:
+        return (f"time compression {self.time_compression:g}x "
+                f"(slow processes only: early-phase decay, protein, late phase, CREB)")
+
+
+def load_config(path: str | Path | None) -> Config:
+    if path is None:
+        return Config()
+    data = yaml.safe_load(Path(path).read_text()) or {}
+    return Config.model_validate(data)
+
+
+def dump_config(cfg: Config, path: str | Path) -> None:
+    Path(path).write_text(yaml.safe_dump(cfg.model_dump(), sort_keys=False))

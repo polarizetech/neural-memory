@@ -1,0 +1,2 @@
+# Non-audio sensor streams (CSV): the auditory-nerve front end does not apply.
+frontend: {kind: filterbank, filterbank: logbp, f_lo_hz: 0.1, f_hi_hz: 20.0, n_bands: 16, csv_rate_hz: 100.0}

@@ -1,0 +1,7 @@
+.venv/
+results/
+build/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+brian_build_*/
