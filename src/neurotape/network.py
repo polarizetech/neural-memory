@@ -169,7 +169,8 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         NPH = b2.TimedArray(nph_v * b2.volt, dt=dt_n * second, name="ta_nph")
     NMG = (b2.TimedArray(recall_gate(tl, nm.t), dt=NM_DT_S * second, name="ta_nmgate")
            if (mech.nm_recall_only and mech.nm_excitability) else None)
-    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA, order=0, nph=NPH, nm_gate=NMG)
+    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA, order=0, nph=NPH, nm_gate=NMG,
+                          n_input=inputs.spikes_enc.n)
     I = nmodel.make_group(net_c.n_inh, net_c.inh, cfg, "inh", NM, noise_scale, "inh", rng, THETA, order=1, nph=NPH)
 
     # ---- input layer: spike trains + metadata from whichever front end produced them ----
@@ -209,8 +210,19 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
 
     in_ns = dict(w_in=w_in_nS * nS, k_gain=cfg.neuromod.k_gain, nm_ref=cfg.neuromod.nm_ref, NM=NM)
     in_pre = "g_ext_post += w_in*clip(1 + k_gain*(NM(t) - nm_ref), 0, 5)"      # NM scales input gain
-    S_in_e = b2.Synapses(IN, E, on_pre=in_pre, namespace=in_ns, name="in_e")
+    if mech.input_plastic:
+        # P2: the SAME rule as E->E (plastic_model / ON_POST / namespace), driving g_ext instead of g_e, with the NM
+        # input gain kept. Its early-phase change feeds the cell's protein trigger through sum_h_diff_in.
+        in_model = stc.plastic_model(cfg).replace("sum_h_diff_post = abs(h - 1)", "sum_h_diff_in_post = abs(h - 1)")
+        assert "sum_h_diff_in_post" in in_model
+        S_in_e = b2.Synapses(IN, E, in_model, on_pre={"pre_v": in_pre + "*clip(h + z, 0, 10)", "pre_ca": stc.ON_PRE["pre_ca"]}, on_post=stc.ON_POST,
+                             delay={"pre_ca": cfg.plasticity.t_Ca_delay_ms * ms}, method="heun", namespace=dict(stc.namespace(cfg), **in_ns),
+                             dt=cfg.plasticity.update_dt_ms * ms, name="in_e", order=4)
+    else:
+        S_in_e = b2.Synapses(IN, E, on_pre=in_pre, namespace=in_ns, name="in_e")
     i_, j_ = rand_conn(si.n, net_c.n_exc, mix.p_in_exc); S_in_e.connect(i=i_, j=j_)
+    if mech.input_plastic:
+        S_in_e.h = 1.0; S_in_e.z = 0.0
     S_in_i = b2.Synapses(IN, I, on_pre=in_pre, namespace=in_ns, name="in_i")
     i_, j_ = rand_conn(si.n, net_c.n_inh, mix.p_in_inh); S_in_i.connect(i=i_, j=j_)
 
@@ -317,7 +329,7 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     # StateMonitor whose clock is the greatest common divisor of those instants, so each one falls exactly on a
     # sample; it reads and never writes. (StateMonitor.record_single_timestep() was tried first and is NOT usable
     # under cpp_standalone: it sent the clock to 1e7 s and the run produced no spikes.)
-    snap, snap_instants = None, {}
+    snap, snap_in, snap_instants = None, None, {}
     if cfg.sim.snapshot_weights:
         first_recall = tl.recalls()[0]
         snap_instants = {"pre_encode": enc.t0, "post_encode": enc.t1, "pre_first_recall": first_recall.t0}
@@ -327,6 +339,8 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
             raise ValueError(f"snapshot instants {snap_instants} share only a {step_ms} ms grid: too many samples")
         snap = b2.StateMonitor(S_ee, ["h", "z"], record=True, dt=step_ms * ms, name="snap")
         objs.append(snap)
+        if mech.input_plastic:              # P2: the snapshots cover input->E weights too
+            snap_in = b2.StateMonitor(S_in_e, ["h", "z"], record=True, dt=step_ms * ms, name="snap_in"); objs.append(snap_in)
     cat_m = b2.StateMonitor(E, "CaT", record=True, dt=1 * ms, name="cat_m") if cfg.sim.log_cat else None
     if cat_m is not None:
         objs.append(cat_m)
@@ -369,7 +383,8 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         lfp_Ii=np.array(lfp_m.Ii_sum[0] / pA), lfp_Ir=np.array(lfp_m.Ir_sum[0] / pA),
         theta_t=th_t, theta=th, theta_phase=th_phase, onsets_s=onsets,
         profile=profile,
-        extra=dict(CaT=(np.array(cat_m.t / second), np.array(cat_m.CaT)) if cat_m is not None else None,
+        extra=dict(snapshots_in=_pick_snapshots(snap_in, snap_instants) if snap_in is not None else None,
+                   CaT=(np.array(cat_m.t / second), np.array(cat_m.CaT)) if cat_m is not None else None,
                    snapshots=_pick_snapshots(snap, snap_instants) if snap is not None else None,
                    in_e=(np.asarray(S_in_e.i[:]), np.asarray(S_in_e.j[:])), cue_views=cue_views,
                    fb_learned=(np.array(S_fb.h[:]) - 1.0 + np.array(S_fb.z[:])) if S_fb is not None else None,

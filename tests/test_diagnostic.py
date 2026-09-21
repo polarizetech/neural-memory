@@ -72,3 +72,23 @@ def test_d3_predictor_writes_the_co_active_assembly_and_the_decode_ranks_its_own
     assert d["rank"] == 1 and d["beats_perm95"] and d["r_stored"] > d["r_foreign_max"]
     flat = S.stream_decode(np.zeros(si.size), [A["enc"][0]] + foreign, n_perm=50)
     assert flat["defined"] is False                                   # no dW -> the decode is UNDEFINED, not rank 21
+
+
+def test_p2_input_plastic_off_is_the_published_text_and_on_feeds_the_protein_trigger():
+    assert H(m.equations()) == PINNED["neuron"]
+    on = m.equations(input_plastic=True)
+    assert "int(sum_h_diff + sum_h_diff_in > theta_pro)" in on and "sum_h_diff_in : 1" in on
+    a, b = Config(), Config(); b.mechanisms.input_plastic = True
+    assert m.namespace(a.network.exc, a, "exc", 320)["theta_pro_scale"] == pytest.approx(20 / 160)
+    assert m.namespace(b.network.exc, b, "exc", 320)["theta_pro_scale"] == pytest.approx((20 + 32) / 160)     # both projections count
+
+
+@pytest.mark.slow
+def test_p2_switch_off_reproduces_exactly_and_on_the_input_weights_move_and_are_snapshotted():
+    code = ("c=base(); c.protocol.recall_mode='cue'; out['off']=run(c)[1]\n"
+            "c=base(); c.protocol.recall_mode='cue'; c.mechanisms.input_plastic=True; c.sim.snapshot_weights=True; r,h=run(c); out['on']=h\n"
+            "s=r.extra['snapshots_in']; out['labels']=s['labels']; out['n']=int(s['h'].shape[0]); out['n_in_syn']=int(r.extra['in_e'][0].size)\n"
+            "out['pre_is_baseline']=bool((s['h'][:,0]==1).all()); out['moved']=float(abs(s['h'][:,1]-1).max())")
+    h = _subprocess_hashes(code)
+    assert h["on"] != h["off"] and h["labels"] == ["pre_encode", "post_encode", "pre_first_recall"]
+    assert h["n"] == h["n_in_syn"] and h["pre_is_baseline"] and h["moved"] > 1e-3

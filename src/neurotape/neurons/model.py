@@ -142,7 +142,7 @@ def reset_code(prior_drift: bool = False, prior_repulsion: bool = False, labilit
 
 def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsic_trace: bool = False,
               prior_repulsion: bool = False, mismatch: bool = False, lability: bool = False,
-              provenance: bool = False, nm_recall_only: bool = False) -> str:
+              provenance: bool = False, nm_recall_only: bool = False, input_plastic: bool = False) -> str:
     """Every optional mechanism adds TEXT only when it is on. With all of them off the equation text is
     byte-identical to the model the published results came from (pinned by hash in tests/test_retrieval.py), so
     the generated code -- and every spike -- is too. Multiplying by a 1.0 gain instead would change the
@@ -169,19 +169,26 @@ def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsi
         extra += LABILITY_EQS
     if ephaptic:
         extra += EPH_EQS
-    return (EQUATIONS.replace("__EPH__", " + I_eph" if ephaptic else "").replace("__AHP__", ahp).replace("__VTNM__", vt) + extra)
+    base = EQUATIONS
+    if input_plastic:
+        # P2: early-phase change at plastic INPUT synapses counts toward the same cell's protein-synthesis trigger
+        assert base.count("int(sum_h_diff > theta_pro)") == 1
+        base = base.replace("int(sum_h_diff > theta_pro)", "int(sum_h_diff + sum_h_diff_in > theta_pro)"); extra += "\nsum_h_diff_in : 1\n"
+    return (base.replace("__EPH__", " + I_eph" if ephaptic else "").replace("__AHP__", ahp).replace("__VTNM__", vt) + extra)
 
 
 RESET_CODE = "V = V_reset; w += b_adapt; Ca_s += Ca_spike"
 THRESHOLD = "V > V_cut"
 
 
-def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
+def namespace(p: NeuronParams, cfg: Config, kind: str, n_input: int = 0) -> dict:
     """Constants for one population. ``kind`` is 'exc' or 'inh'."""
     F = cfg.time_compression
     m = cfg.mechanisms
     net, pl, cr, nm = cfg.network, cfg.plasticity, cfg.creb, cfg.neuromod
     k_in = net.p_conn * net.n_exc
+    if m.input_plastic:                      # the threshold is on a sum over ALL plastic inputs of the cell
+        k_in += cfg.mixing.p_in_exc * n_input
     theta_scale = (k_in / pl.indegree_ref) if pl.scale_theta_pro_by_indegree else 1.0
     return dict(
         C=p.C_pF * pF, gL=p.gL_nS * nS, EL=p.EL_mV * mV, VT=p.VT_mV * mV, DeltaT=p.DeltaT_mV * mV,
@@ -215,8 +222,8 @@ def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
 def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArray,
                noise_scale: b2.TimedArray, name: str, rng: np.random.Generator,
                theta: b2.TimedArray | None = None, order: int = 0, nph: b2.TimedArray | None = None,
-               nm_gate: b2.TimedArray | None = None) -> b2.NeuronGroup:
-    ns = namespace(p, cfg, kind)
+               nm_gate: b2.TimedArray | None = None, n_input: int = 0) -> b2.NeuronGroup:
+    ns = namespace(p, cfg, kind, n_input)
     ns.update(NM=NM, noise_scale=noise_scale, theta=theta if theta is not None else constant_array(0.0))
     on = cfg.mechanisms.nm_excitability and kind == "exc"
     if cfg.mechanisms.nm_recall_only and on:
@@ -229,7 +236,8 @@ def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArra
     g = b2.NeuronGroup(n, equations(on, eph, intrinsic_trace=mech.intrinsic_trace and exc, prior_repulsion=mech.prior_repulsion and exc,
                                           mismatch=mech.mismatch_gate and exc, lability=mech.lability_window and exc,
                                           provenance=cfg.sim.log_provenance and exc,
-                                          nm_recall_only=cfg.mechanisms.nm_recall_only and on),
+                                          nm_recall_only=cfg.mechanisms.nm_recall_only and on,
+                                          input_plastic=cfg.mechanisms.input_plastic and exc),
                        threshold=THRESHOLD, reset=reset_code(mech.prior_drift and exc, mech.prior_repulsion and exc, mech.lability_window and exc),
                        refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV
