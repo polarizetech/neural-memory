@@ -169,3 +169,53 @@ def test_c6_weights_do_not_move_during_a_frozen_recall_but_do_during_a_plastic_o
     h = _subprocess_hashes(code)
     assert h["frozen"] < 1e-6 and h["frozen_z"] < 1e-12          # only passive decay moves the weights
     assert h["plastic"] > 100 * max(h["frozen"], 1e-9)           # the ordinary read rewrites them
+
+
+def test_c8_timeline_k1_is_the_base_timeline_and_k4_adds_cycles():
+    from neurotape.recall.protocol import build_timeline
+    base = Config(); base.protocol.encode_s = 4.0; base.protocol.recall_delays_s = [1.0]
+    on1 = base.model_copy(deep=True); on1.mechanisms.iterative_settling = True                 # K = 1
+    a, b = build_timeline(base), build_timeline(on1)
+    assert [(s.name, s.t0, s.t1, s.cue_onsets) for s in a.segments] == [(s.name, s.t0, s.t1, s.cue_onsets) for s in b.segments]
+    assert not on1.settling_active                                                            # K = 1 -> no projection is built
+    k4 = on1.model_copy(deep=True); k4.settling.k_cycles = 4
+    seg = build_timeline(k4).recalls()[0]
+    assert len(seg.cue_onsets) == 4 and np.allclose(np.diff(seg.cue_onsets), seg.period_s) and seg.dur >= 4 * seg.period_s
+    with pytest.raises(Exception):
+        Config.model_validate({"settling": {"k_cycles": 4}})                                   # needs the switch
+
+
+def test_c8_classification_of_a_settling_run():
+    from neurotape.recall.settling import classify
+    row = lambda own, fmax, rate: dict(own=own, foreign_max=fmax, rate_hz=rate)
+    assert classify([row(0.1, 0.2, 1), row(0.2, 0.2, 1), row(0.4, 0.2, 1)]) == "converging"
+    assert classify([row(0.2, 0.2, 1), row(0.1, 0.3, 1), row(0.0, 0.5, 1)]) == "confabulating"   # settling onto a FOREIGN stream
+    assert classify([row(0.1, 0.1, 2), row(0.1, 0.1, 15), row(0.1, 0.1, 60)]) == "runaway"
+    assert classify([row(0.1, 0.1, 1)]) == "flat" and classify([row(0.1, 0.2, 1), row(0.1, 0.2, 1)]) == "flat"
+
+
+@pytest.mark.slow
+def test_c8_k1_reproduces_exactly_and_the_learned_projection_changes_recall_not_a_random_one():
+    code = ("c=base(); c.protocol.recall_mode='cue'; c.protocol.cue_fraction=0.25; out['base']=run(c)[1]\n"
+            "c1=base(); c1.protocol.recall_mode='cue'; c1.protocol.cue_fraction=0.25; c1.mechanisms.iterative_settling=True; out['k1']=run(c1)[1]\n"
+            "c4=c1.model_copy(deep=True); c4.settling.k_cycles=3; c4.protocol.cue_channel_fraction=0.5; c4.sim.log_provenance=True\n"
+            "r,h=run(c4); out['k3']=h; seg=r.timeline.recalls()[0]; out['n_cycles']=len(seg.cue_onsets); out['views']=len(r.extra['cue_views'])\n"
+            "out['fb_learned_max']=float(r.extra['fb_learned'].max()); out['fb_learned_min']=float(r.extra['fb_learned'].min())\n"
+            "mv=c4.model_copy(deep=True); mv.settling.multi_view=True; r2,_=run(mv); v=r2.extra['cue_views']; out['views_differ']=bool(len(set(map(tuple,v)))>1); out['view_sizes']=[len(x) for x in v]")
+    h = _subprocess_hashes(code)
+    assert h["k1"] == h["base"]                                  # K = 1 equals current behaviour EXACTLY
+    assert h["k3"] != h["base"] and h["n_cycles"] == 3
+    assert h["views_differ"] and len(set(h["view_sizes"])) == 1  # C8b: rotating views, same fraction each cycle
+    assert h["fb_learned_min"] >= -1.0                           # the projection's delivered weight is its LEARNED part only
+
+
+def test_c7_experiment_is_blocked_by_the_operators_precondition_and_its_condition_count_is_fixed(monkeypatch):
+    from neurotape.experiments import suite
+    monkeypatch.delenv("NEUROTAPE_ALLOW_COMPLETION", raising=False)
+    with pytest.raises(SystemExit) as e:
+        suite.exp_completion(Config(), [0], 1)
+    assert "0 of 18" in str(e.value)
+    conds = suite.completion_conditions(Config())
+    assert len(conds) == 4 * 4 + 3 * 3 + 3 * 2 == 31                       # fractions x K, multi-view variants, repeats x {plastic, frozen}
+    assert all(not c.settling_active or c.protocol.cued for c in conds.values())
+    assert conds["repeat x3 | FROZEN read (non-biological)"].protocol.recall_delays_s == [5.0] * 3

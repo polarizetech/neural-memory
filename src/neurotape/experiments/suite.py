@@ -528,3 +528,95 @@ def exp_binaural(cfg: Config, seeds, workers):
         summ["tuning"] = ok_t[0]["rows"]; rep += _table(rows)
     C.save(out, cfg, runs + dps + tun, summ, rep)
     return out
+
+
+# ------------------------------------------------------------------ C7: completion / repeated recall / settling
+COMPLETION_PRECONDITION = ("exp completion is BLOCKED by the operator's precondition: it may run only after a recall-phase "
+                           "drive condition beats the 20-foreign-stream null. None has (recall_drive: 0 of 18). "
+                           "Set NEUROTAPE_ALLOW_COMPLETION=1 to override deliberately.")
+CUE_FRACTIONS, K_CYCLES, REPEATS = (0.25, 0.5, 0.75, 1.0), (1, 2, 4, 8), (1, 3, 5)     # declared before any run
+
+
+def _completion_worker(job):
+    try:
+        from ..network import build_inputs, simulate
+        from ..recall.evaluate import evaluate
+        from ..recall import settling as st
+        from ..decode import readout as ro
+        from ..frontend.filterbank import analyse
+        from ..frontend.io import synthetic_streams
+        cfg = Config.model_validate(job["cfg"]); dc = cfg.decode
+        inputs = build_inputs(C.get_streams({"n": 1}, cfg), cfg); res = simulate(cfg, inputs); ev, dec = evaluate(res, inputs, cfg)
+        Y = ro.resample_targets(inputs.env, inputs.env_rate, dc.rate_hz)
+        foreign = [ro.resample_targets(analyse(synthetic_streams(1, cfg.protocol.encode_s, seed=10_000 + cfg.seed * 100 + j)[0], cfg.frontend,
+                                               seconds=cfg.protocol.encode_s, keep_fine=False).env[None], inputs.env_rate, dc.rate_hz) for j in range(N_FOREIGN)]
+        enc = res.timeline.segment("encode"); X = ro.activity_features(*res.spikes_e, res.n_exc, enc.t0, enc.t1, dc.rate_hz, dc.filter_tau_ms)
+        n = min(len(X), len(Y)); ntr = int(dc.train_fraction * n)
+        views = res.extra["cue_views"]; cells = st.non_cue_cells(res, views[0] if views else None)
+        out = dict(ok=True, tag=job["tag"], seed=cfg.seed, encode_r=ev["encode_heldout_r"][0], n_strict_non_cue=int(cells["strict"].size), probes=[])
+        for seg in res.timeline.recalls():
+            probe = dict(delay_s=seg.delay_s, all_cells=st.per_cycle(res, inputs, cfg, dec, Y, foreign, seg))
+            for name in ("strict", "least_driven_quartile"):      # COMPLETION: decode from cells the cue did not drive
+                u = cells[name]
+                if u.size >= 2:
+                    probe[f"completion_{name}"] = st.per_cycle(res, inputs, cfg, ro.fit_ridge(X[:ntr], Y[:ntr], dc.alphas, units=u), Y, foreign, seg)
+                else:
+                    probe[f"completion_{name}"] = "unavailable: fewer than 2 cells the cue did not drive"
+            probe["classification"] = st.classify(probe["all_cells"])
+            probe["z_abs_mean_after"] = float(np.abs(res.z_log[:, min(np.searchsorted(res.w_t, seg.t1), res.z_log.shape[1] - 1)]).mean())
+            out["probes"].append(probe)
+        return out
+    except Exception as ex:
+        import traceback
+        return dict(ok=False, tag=job["tag"], seed=job["cfg"]["seed"], error=f"{type(ex).__name__}: {ex}", trace=traceback.format_exc()[-900:])
+
+
+def completion_conditions(cfg: Config) -> dict[str, Config]:
+    """The declared condition set. Nothing here is tuned; it is enumerated so the count is fixed in advance."""
+    conds = {}
+    def c(frac, K, multi=False, repeats=1, frozen=False):
+        x = cfg.model_copy(deep=True); x.protocol.recall_mode = "cue"; x.protocol.cue_channel_fraction = frac; x.sim.log_provenance = True
+        x.mechanisms.iterative_settling = K > 1; x.settling.k_cycles = K; x.settling.multi_view = multi
+        x.protocol.recall_delays_s = [min(cfg.protocol.recall_delays_s)] * repeats; x.eval.freeze_plasticity_at_recall = frozen
+        return x
+    for f in CUE_FRACTIONS:
+        for K in K_CYCLES:
+            conds[f"cue {int(f * 100)}% | K={K}"] = c(f, K)
+            if K > 1 and f < 1.0:
+                conds[f"cue {int(f * 100)}% | K={K} | multi-view"] = c(f, K, multi=True)
+    for N in REPEATS:
+        for frozen in (False, True):
+            conds[f"repeat x{N} | {'FROZEN read (non-biological)' if frozen else 'plastic read'}"] = c(1.0, 1, repeats=N, frozen=frozen)
+    return conds
+
+
+def exp_completion(cfg: Config, seeds, workers):
+    import os
+    if os.environ.get("NEUROTAPE_ALLOW_COMPLETION") != "1":
+        raise SystemExit(COMPLETION_PRECONDITION)
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import get_context
+    out = C.results_dir("completion"); conds = completion_conditions(cfg)
+    with ProcessPoolExecutor(max(workers, 1), mp_context=get_context("spawn")) as ex:
+        runs = list(ex.map(_completion_worker, C.jobs_for(conds, seeds, {})))
+    g = C.by_tag(runs); rows = [("condition", "cycle", "rate Hz", "active fraction", "overlap r", "own - foreign mean (all cells)", "own - foreign (least-driven quartile)", "reconstructed fraction", "classification counts")]
+    n_pass = n_cells = 0; summ = {}
+    for tag, rs in g.items():
+        ncyc = len(rs[0]["probes"][-1]["all_cells"]); cls = {}
+        for r in rs:
+            cls[r["probes"][-1]["classification"]] = cls.get(r["probes"][-1]["classification"], 0) + 1
+        for cyc in range(ncyc):
+            A = [r["probes"][-1]["all_cells"][cyc] for r in rs]
+            d = C.paired_diff([a["own"] for a in A], [a["foreign_mean"] for a in A]); n_cells += 1; n_pass += int(d["beats"])
+            Q = [r["probes"][-1]["completion_least_driven_quartile"][cyc] for r in rs if isinstance(r["probes"][-1]["completion_least_driven_quartile"], list)]
+            dq = C.paired_diff([a["own"] for a in Q], [a["foreign_mean"] for a in Q]) if Q else None
+            summ[f"{tag} | cycle {cyc}"] = dict(all=d, completion=dq)
+            rows.append((tag, cyc, C.fmt(C.ci95([a["rate_hz"] for a in A])), C.fmt(C.ci95([a["active_fraction"] for a in A])), C.fmt(C.ci95([a["overlap_r"] for a in A])),
+                         C.fmt(d) + (" **PASS**" if d["beats"] else ""), "-" if dq is None else C.fmt(dq) + (" **PASS**" if dq["beats"] else ""),
+                         C.fmt(C.ci95([a.get("reconstructed_fraction") for a in A])), str(cls)))
+    rep = ("## Completion, repeated recall and iterative settling\\n\\nSuccess = own - foreign with its whole 95% CI above zero. 'confabulating' = settling onto a FOREIGN stream, "
+           "reported as such. Strict completion cells (no cue input at all): mean "
+           f"{np.mean([r['n_strict_non_cue'] for r in runs if r.get('ok')]):.1f} per run.\\n\\n" + _table(rows) +
+           f"\\n**{n_pass} of {n_cells} condition x cycle cells pass** (about {0.025 * n_cells:.1f} expected by chance, one-sided 2.5%).\\n")
+    C.save(out, cfg, runs, summ, rep)
+    return out

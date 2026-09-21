@@ -166,10 +166,23 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     # ---- input layer: spike trains + metadata from whichever front end produced them ----
     si = inputs.spikes_enc
     ts, ids = [si.t + enc.t0], [si.i]
+    # C7 partial cue / C8b multi-view: which INPUT CHANNELS each cue presentation drives. At fraction 1 with one
+    # cycle this filter is skipped entirely, so the base path is untouched.
+    frac = cfg.protocol.cue_channel_fraction
+    perm = np.random.default_rng(cfg.seed + 909).permutation(si.n); n_view = max(int(round(frac * si.n)), 1)
+    cue_views = []
     for seg in tl.recalls():
         if seg.cue_s > 0 and inputs.spikes_cue is not None:
             c = inputs.spikes_cue.window(0.0, seg.cue_s)
-            ts.append(c.t + seg.t0); ids.append(c.i)
+            for cyc, onset in enumerate(seg.cue_onsets):
+                ct, ci = c.t, c.i
+                if frac < 1.0:
+                    start = (cyc * n_view) % si.n if cfg.settling.multi_view else 0
+                    view = np.take(perm, np.arange(start, start + n_view), mode="wrap")
+                    keep = np.isin(ci, view); ct, ci = ct[keep], ci[keep]
+                    if seg is tl.recalls()[0]:
+                        cue_views.append(np.sort(view))
+                ts.append(ct + seg.t0 + onset); ids.append(ci)
     ts, ids = np.concatenate(ts), np.concatenate(ids)
     dt_s = cfg.sim.dt_ms * 1e-3
     key = np.unique(np.stack([ids, np.round(ts / dt_s).astype(np.int64)]), axis=1)   # one spike per unit per step
@@ -207,6 +220,20 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     S_ee.h = 1.0
     S_ee.z = 0.0
 
+    S_fb = None
+    if cfg.settling_active:
+        # C8 route (a): a delayed feedback projection whose weights are LEARNED during encoding (same rule, the
+        # ordinary 18.8 ms calcium delay, so learning is auto-associative) and whose output arrives ONE CYCLE
+        # late. It delivers only its learned part (h - 1 + z): untrained, it carries nothing at all.
+        period = tl.recalls()[0].period_s
+        fb_model = stc.plastic_model(cfg).replace("sum_h_diff_post = abs(h - 1) : 1 (summed)\n", "")
+        S_fb = b2.Synapses(E, E, fb_model, on_pre={"pre_v": "g_e_post += g0_fb*clip(h - 1 + z, 0, 10)", "pre_ca": stc.ON_PRE["pre_ca"]},
+                           on_post=stc.ON_POST, delay={"pre_v": period * second, "pre_ca": cfg.plasticity.t_Ca_delay_ms * ms},
+                           method="heun", namespace=dict(ee_ns, g0_fb=cfg.settling.g0_fb_nS * nS), dt=cfg.plasticity.update_dt_ms * ms,
+                           name="fb", order=3)
+        fb_i, fb_j = rand_conn(net_c.n_exc, net_c.n_exc, cfg.settling.p_fb, no_self=True)
+        S_fb.connect(i=fb_i, j=fb_j); S_fb.h = 1.0; S_fb.z = 0.0
+
     ax = net_c.axon_delay_ms * ms
     S_ei = b2.Synapses(E, I, on_pre="g_e_post += w_syn", namespace=dict(w_syn=net_c.w_ei_nS * nS), delay=ax, name="ei")
     i_, j_ = rand_conn(net_c.n_exc, net_c.n_inh, net_c.p_conn); S_ei.connect(i=i_, j=j_)
@@ -217,7 +244,7 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     i_, j_ = rand_conn(net_c.n_inh, net_c.n_inh, net_c.p_conn, no_self=True); S_ii.connect(i=i_, j=j_)
 
     # ---- gap junctions ----
-    objs = [E, I, IN, S_in_e, S_in_i, S_ee, S_ei, S_ie, S_ii]
+    objs = [E, I, IN, S_in_e, S_in_i, S_ee, S_ei, S_ie, S_ii] + ([S_fb] if S_fb is not None else [])
     gate_m = None
     if mech.mismatch_gate:
         # C2: pool the cells' own feedforward-vs-recurrent mismatch into one population value and hand it
@@ -313,7 +340,9 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         lfp_Ii=np.array(lfp_m.Ii_sum[0] / pA), lfp_Ir=np.array(lfp_m.Ir_sum[0] / pA),
         theta_t=th_t, theta=th, theta_phase=th_phase, onsets_s=onsets,
         profile=profile,
-        extra=dict(M_pop=(np.array(gate_m.t / second), np.array(gate_m.M_sum[0])) if gate_m is not None else None,
+        extra=dict(in_e=(np.asarray(S_in_e.i[:]), np.asarray(S_in_e.j[:])), cue_views=cue_views,
+                   fb_learned=(np.array(S_fb.h[:]) - 1.0 + np.array(S_fb.z[:])) if S_fb is not None else None,
+                   M_pop=(np.array(gate_m.t / second), np.array(gate_m.M_sum[0])) if gate_m is not None else None,
                    w_in_nS=float(w_in_nS), front_end=si.front_end, input_log=inputs.log,
                    n_gap_pairs=len(gap_pairs), n_ee=int(n_syn), logged_syn=logged),
     )

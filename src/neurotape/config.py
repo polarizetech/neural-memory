@@ -296,6 +296,19 @@ class Lability(_Strict):
     tau_s: float = 5.0                      # restabilisation (simulated seconds; NOT time-compressed)
 
 
+class Settling(_Strict):
+    """C8. Recall as K cycles: the cue is re-presented each cycle and combined with the network's OWN activity from
+    the previous cycle. ROUTE (a), chosen over theta-gating (b) -- see ASSUMPTIONS.md: a delayed feedback
+    projection E->E whose weights are LEARNED during encoding by the same calcium/STC rule, delivered one cycle
+    late, and delivering only its learned part (h - 1 + z), so an untrained projection carries nothing.
+    Decoder output is never re-injected. K = 1 builds the base network exactly (no projection)."""
+    k_cycles: int = Field(1, ge=1)
+    cycle_gap_s: float = 1.0                # silent gap after the cue inside each cycle; period = cue + gap
+    p_fb: float = 0.1
+    g0_fb_nS: float = 1.0
+    multi_view: bool = False                # C8b: each cycle shows a DIFFERENT subset of cue channels (same fraction)
+
+
 class Mechanisms(_Strict):
     """One switch per mechanism. All True = the full model."""
     t_current: bool = True
@@ -309,6 +322,7 @@ class Mechanisms(_Strict):
     intrinsic_trace: bool = False           # C1: the CREB-like trace also reduces adaptation / lowers threshold
     mismatch_gate: bool = False             # C2: population feedforward-vs-recurrent mismatch gates the write
     lability_window: bool = False           # C3: reactivated cells get a decaying plasticity gain
+    iterative_settling: bool = False        # C8: recall in K cycles through a learned delayed feedback projection
     prior_drift: bool = False               # C4: the trace erodes per spike
     prior_repulsion: bool = False           # C4 option: recent use RAISES threshold. Sign unsettled.
     nm_inhibitory_setpoint: bool = True     # False = NM no longer biases the I cells
@@ -331,6 +345,7 @@ class Protocol(_Strict):
         return self.recall_mode in ("cue", "cue_nm")
     cue_fraction: float = Field(0.15, ge=0.0, le=1.0)
     cue_stream: int = 0
+    cue_channel_fraction: float = Field(1.0, gt=0.0, le=1.0)   # C7: fraction of INPUT CHANNELS the cue drives (1 = all)
     shuffle_input: bool = False             # control: block-shuffled envelopes drive the net
 
 
@@ -385,6 +400,7 @@ class Config(_Strict):
     prior_drift: PriorDrift = PriorDrift()
     mismatch_gate: MismatchGate = MismatchGate()
     lability: Lability = Lability()
+    settling: Settling = Settling()
     mso: MSO = MSO()
     ephaptic: Ephaptic = Ephaptic()
     attention: Attention = Attention()
@@ -396,9 +412,15 @@ class Config(_Strict):
 
     @model_validator(mode="after")
     def _deps(self):
+        if self.settling.k_cycles > 1 and not (self.mechanisms.iterative_settling and self.protocol.cued):
+            raise ValueError("settling.k_cycles > 1 needs mechanisms.iterative_settling and a cued recall mode")
         if self.mechanisms.intrinsic_trace and not self.mechanisms.creb:
             raise ValueError("mechanisms.intrinsic_trace reuses the CREB-like variable: it needs mechanisms.creb")
         return self
+
+    @property
+    def settling_active(self) -> bool:
+        return self.mechanisms.iterative_settling and self.settling.k_cycles > 1
 
     def compression_label(self) -> str:
         return (f"time compression {self.time_compression:g}x "

@@ -25,6 +25,8 @@ class Segment:
     t1: float
     delay_s: float | None = None     # recall only: simulated seconds since encoding ended
     cue_s: float = 0.0
+    cue_onsets: tuple = (0.0,)       # C8: cue onsets relative to t0, one per settling cycle (K = 1 -> just 0)
+    period_s: float = 0.0
 
     @property
     def dur(self) -> float:
@@ -50,6 +52,11 @@ def build_timeline(cfg: Config) -> Timeline:
     p = cfg.protocol
     rec = p.recall_s if p.recall_s is not None else p.encode_s
     cue = p.cue_fraction * p.encode_s if p.cued else 0.0
+    K = cfg.settling.k_cycles if cfg.settling_active else 1
+    period = cue + cfg.settling.cycle_gap_s
+    if K > 1:
+        rec = max(rec, K * period)
+    onsets = tuple(c * period for c in range(K))
     segs = [Segment("settle", "settle", 0.0, p.settle_s)]
     t = p.settle_s
     segs.append(Segment("encode", "encode", t, t + p.encode_s))
@@ -61,6 +68,6 @@ def build_timeline(cfg: Config) -> Timeline:
             segs.append(Segment(f"consolidate{k}", "consolidate", t, t + gap))
             t += gap
             consolidated = d
-        segs.append(Segment(f"recall{k}", "recall", t, t + rec, delay_s=d, cue_s=cue))
+        segs.append(Segment(f"recall{k}", "recall", t, t + rec, delay_s=d, cue_s=cue, cue_onsets=onsets, period_s=period))
         t += rec
     return Timeline(segs)
