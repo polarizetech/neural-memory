@@ -1,0 +1,266 @@
+{
+ "1.29": {
+  "a_tbs": [
+   0.86,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.94,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.258,
+   "depression"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.28": {
+  "a_tbs": [
+   0.86,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.94,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.258,
+   "depression"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.27": {
+  "a_tbs": [
+   0.86,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.94,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.258,
+   "depression"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.26": {
+  "a_tbs": [
+   0.867,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.941,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.258,
+   "depression"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.25": {
+  "a_tbs": [
+   0.867,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.941,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.258,
+   "depression"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.24": {
+  "a_tbs": [
+   0.867,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.941,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.258,
+   "depression"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.23": {
+  "a_tbs": [
+   0.873,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.942,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.083,
+   "no change"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.22": {
+  "a_tbs": [
+   0.873,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.942,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.083,
+   "no change"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.21": {
+  "a_tbs": [
+   0.879,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.943,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   -0.083,
+   "no change"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.2": {
+  "a_tbs": [
+   0.879,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.943,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   0.071,
+   "no change"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.19": {
+  "a_tbs": [
+   0.879,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.943,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   0.071,
+   "no change"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ },
+ "1.18": {
+  "a_tbs": [
+   0.885,
+   "potentiation"
+  ],
+  "b_hfs": [
+   0.944,
+   "potentiation"
+  ],
+  "c_pair_pre_post": [
+   0.206,
+   "potentiation"
+  ],
+  "d_pair_post_pre": [
+   -0.173,
+   "depression"
+  ],
+  "e_lfs": [
+   -0.316,
+   "depression"
+  ]
+ }
+}

@@ -209,6 +209,57 @@ condition beating the foreign-stream null) was not met.
 | C7 | completion metric | — | decode from cells the cue did **not** drive. **Known limit, found while building:** each E cell receives ~10 % of the input channels (~32 of 320), so the strict set (no cue input at all) is empty at every declared fraction — P(no cue input) ≈ 0.9⁸⁰ at 25 %. The experiment reports the strict count and falls back to the **least-driven quartile, labelled as weaker** (those cells *are* cue-driven, just least) |
 | C7 | `exp completion` | **never run** | 31 declared conditions. Blocked in code by the operator's precondition (a drive condition must first beat the foreign-stream null; `recall_drive` gave 0 of 18) |
 
+### P1 — the plasticity rule calibrated in isolation (2026-09-21) — `plasticity/calibrate.py`, `tests/test_plasticity_protocols.py`
+
+**Why.** The storage diagnostic found 0 of 1398 tags were potentiation: calcium crosses θ_d routinely and θ_p almost
+never. The thresholds had never been checked against standard induction protocols. Harness: one pre and one post
+cell driving the model's actual synapse equations, no network, no noise, time compression 1. Expected outcomes were
+written into the test file before the first run.
+
+| parameter set | a TBS → pot | b HFS → pot | b capture | c +10 ms → pot | d −10 ms → dep | e LFS → dep | score |
+|---|---|---|---|---|---|---|---|
+| **current** — Luboeinski & Tetzlaff 2021 (`READ`) | **−0.203 dep** ✗ | +0.888 ✓ | ✓ | **0.000** ✗ | **0.000** ✗ | **0.000** ✗ | 2/6 |
+| Graupner & Brunel 2012, hippocampal slices | +0.854 ✓ | +0.939 ✓ | ✓ | **−0.258 dep** ✗ | −0.173 ✓ | −0.316 ✓ | 5/6 |
+| Graupner & Brunel 2012, cortical slices | +0.457 ✓ | +0.594 ✓ | ✓ | +0.181 ✓ | −0.433 ✓ | **0.000** ✗ | 5/6 |
+| **adopted** — G&B hippocampal with **θ_p 1.30 → 1.18** | +0.885 ✓ | +0.944 ✓ | ✓ | +0.206 ✓ | −0.173 ✓ | −0.316 ✓ | **6/6** |
+
+(values are Δh in units of h₀, read 10 s after the protocol)
+
+- **The current set fails four of five.** A single pre–post pair peaks at Ca ≈ 0.77, below θ_d = 1.2, so 1 Hz pairing
+  and LFS do nothing at all; a theta burst peaks near 1.8–2.3 — above θ_d, below θ_p = 3.0 — and **depresses**.
+  Only sustained 100 Hz reaches θ_p. This is the mechanism behind the diagnostic's depression-only write.
+- **No published set passes all five**, so the brief's last resort was used: one parameter, **θ_p only**, stepped down
+  from its published 1.30 in 0.01 steps on the hippocampal set, stopping at the **first** value where all five pass:
+  **1.18** (the eleven values from 1.29 to 1.19 fail on protocol c). θ_d and every other value are as published.
+  The scan is in `docs/results/p1_theta_p_scan.json`. The outcome moves in *steps* (at 1.23, 1.20, 1.18) because the
+  plasticity ODEs run on a 1 ms clock and the time calcium spends above θ_p in protocol c is ~1–2.5 ms: **the
+  calibration is sensitive to that clock**, and the window that satisfies both c and d is narrow (1.153 < θ_p ≲ 1.19).
+- **Adopted as a preset, not as the default:** `plasticity.preset: gb2012_hippocampal_cal`. The default stays
+  `luboeinski2021` so every committed run still reproduces bit-for-bit; a pinned test records that the default passes
+  only HFS. Values: `Ca_pre 1.0`, `Ca_post 0.275865`, `θ_p 1.18` (published 1.3), `θ_d 1.0`, `τ_Ca 48.8373 ms`,
+  `t_Ca_delay 18.8008 ms`, `γ_p 1645.59`, `γ_d 313.0965`, `τ_h 688.355 s`. `σ_pl`, `h_max`, `θ_tag`, `θ_pro`, `τ_p`, `τ_z`
+  and the h-form of the rule are unchanged (Luboeinski & Tetzlaff).
+- **⚠ Read depth of the Graupner & Brunel values: `MEMORY`.** *PNAS* 109:3991, doi:10.1073/pnas.1109359109 has **no
+  open-access copy the library could retrieve**, so both G&B parameter sets above were entered from memory of its SI
+  table and **have not been read this build**. One check is available and passes: five of the hippocampal values
+  (48.8, 18.8, 1645.6, 313.1, 688.4) equal the Luboeinski config to its printed precision, and Ca_post/Ca_pre = 0.2759
+  matches 0.1655/0.6 — the current set is that set with calcium amplitudes × 0.6 and the thresholds moved
+  (θ_d 1 → 1.2, θ_p 1.3 → 3.0). `Ca_pre = 1`, `θ_d = 1`, `θ_p = 1.3` and the whole cortical set are **uncorroborated**;
+  verify against the paper before relying on them.
+- **A consequence to expect in the network:** with `Ca_pre = 1.0 ≥ θ_d = 1.0`, **every presynaptic spike on its own
+  reaches the depression threshold.** That is how the slice-fitted set produces LFS-LTD, and in a spontaneously active
+  network it means background firing depresses. The Luboeinski scaling (× 0.6, θ_d 1.2) is what removed that in vivo.
+- Decisions the brief left open, fixed before the first run: pot / dep = Δh ≥ +0.1 / ≤ −0.1 h₀; in a and b the post
+  cell fires 5 ms after each pulse (pre-only is reported, not scored); LFS is pre-only; capture = z > 0.05 ~16 min
+  after HFS with the protein pool held at 1, and z = 0 with it empty.
+
+### P2 — plastic input→E synapses — `mechanisms.input_plastic` (default off)
+
+Same rule as E→E (`stc.plastic_model`, `ON_POST`, the same namespace), acting on `g_ext` with the NM input gain kept;
+its early-phase change feeds the postsynaptic cell's protein trigger through `sum_h_diff_in`, and the in-degree scale of
+θ_pro then counts both projections ((20 + 32)/160). Input→I synapses stay fixed. The weight snapshots cover input→E
+when the switch is on. Off = the published text and a bit-identical run (tested).
+
 ## What is NOT built, stated so nobody has to discover it
 
 - **CoNNear inversion (the PRIMARY playback) has never run.** No TensorFlow, no weights; weights are

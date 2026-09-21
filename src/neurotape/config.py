@@ -135,6 +135,10 @@ class Plasticity(_Strict):
     # Dimensionless: everything is in units of h_0, keeping the published ratios.
     # Luboeinski & Tetzlaff 2021 (Commun Biol 4:275), Table of parameters; values as in
     # jlubo/brian_network_plasticity config_defaultnet.json.
+    # "luboeinski2021" = the values below (the published-results model; a committed run reproduces bit-for-bit).
+    # "gb2012_hippocampal_cal" = Graupner & Brunel 2012 hippocampal-slice set with ONE change, theta_p 1.30 -> 1.18,
+    # the minimal change under which all five standard induction protocols pass (plasticity/calibrate.py, P1).
+    preset: Literal["luboeinski2021", "gb2012_hippocampal_cal"] = "luboeinski2021"
     Ca_pre: float = 0.6
     Ca_post: float = 0.1655
     tau_Ca_ms: float = 48.8
@@ -160,6 +164,14 @@ class Plasticity(_Strict):
     # theta_pro is a threshold on a SUM over incoming synapses, defined for the reference in-degree
     # (160). At in-degree K it is scaled by K/160, so it equals the published value at full size.
     scale_theta_pro_by_indegree: bool = True
+
+    @model_validator(mode="after")
+    def _preset(self):
+        if self.preset == "gb2012_hippocampal_cal":
+            for k, v in dict(Ca_pre=1.0, Ca_post=0.275865, theta_p=1.18, theta_d=1.0, tau_Ca_ms=48.8373, t_Ca_delay_ms=18.8008,
+                             gamma_p=1645.59, gamma_d=313.0965, tau_h_s=688.355).items():
+                object.__setattr__(self, k, v)
+        return self
     indegree_ref: float = 160.0             # 1600 * 0.1 in the reference network
 
 
@@ -328,6 +340,7 @@ class Mechanisms(_Strict):
     prior_repulsion: bool = False           # C4 option: recent use RAISES threshold. Sign unsettled.
     nm_inhibitory_setpoint: bool = True     # False = NM no longer biases the I cells
     plasticity: bool = True                 # False = frozen weights (a fixed spiking reservoir)
+    input_plastic: bool = False             # P2: input->E synapses follow the SAME calcium/STC rule as E->E
 
 
 class Protocol(_Strict):

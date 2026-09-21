@@ -1,0 +1,128 @@
+{
+ "current (Luboeinski & Tetzlaff 2021)": {
+  "a_tbs": {
+   "dh": -0.20312313470699883,
+   "z_end": 0.0,
+   "outcome": "depression"
+  },
+  "a_tbs_pre_only": {
+   "dh": -0.13092933392170836,
+   "z_end": 0.0,
+   "outcome": "depression"
+  },
+  "b_hfs": {
+   "dh": 0.8882567562799735,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "b_hfs_pre_only": {
+   "dh": 0.37564560452629236,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "b_hfs_with_protein": {
+   "dh": 0.8882567562799735,
+   "z_end": 0.23594634223080413,
+   "outcome": "potentiation"
+  },
+  "c_pair_pre_post": {
+   "dh": 0.0,
+   "z_end": 0.0,
+   "outcome": "no change"
+  },
+  "d_pair_post_pre": {
+   "dh": 0.0,
+   "z_end": 0.0,
+   "outcome": "no change"
+  },
+  "e_lfs": {
+   "dh": 0.0,
+   "z_end": 0.0,
+   "outcome": "no change"
+  }
+ },
+ "Graupner & Brunel 2012, hippocampal slices": {
+  "a_tbs": {
+   "dh": 0.853630147358519,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "a_tbs_pre_only": {
+   "dh": 0.7634630995796796,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "b_hfs": {
+   "dh": 0.9392348771700079,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "b_hfs_pre_only": {
+   "dh": 0.9367584312651687,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "b_hfs_with_protein": {
+   "dh": 0.9392348771700079,
+   "z_end": 0.23596310878221136,
+   "outcome": "potentiation"
+  },
+  "c_pair_pre_post": {
+   "dh": -0.2579162765458284,
+   "z_end": 0.0,
+   "outcome": "depression"
+  },
+  "d_pair_post_pre": {
+   "dh": -0.1729628666765154,
+   "z_end": 0.0,
+   "outcome": "depression"
+  },
+  "e_lfs": {
+   "dh": -0.31565245537546704,
+   "z_end": 0.0,
+   "outcome": "depression"
+  }
+ },
+ "Graupner & Brunel 2012, cortical slices": {
+  "a_tbs": {
+   "dh": 0.45651142768596453,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "a_tbs_pre_only": {
+   "dh": -0.09112965847373966,
+   "z_end": 0.0,
+   "outcome": "no change"
+  },
+  "b_hfs": {
+   "dh": 0.5937473798007793,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "b_hfs_pre_only": {
+   "dh": 0.0848129245309659,
+   "z_end": 0.0,
+   "outcome": "no change"
+  },
+  "b_hfs_with_protein": {
+   "dh": 0.5937473798007793,
+   "z_end": 0.2359556806086281,
+   "outcome": "potentiation"
+  },
+  "c_pair_pre_post": {
+   "dh": 0.18129001456328475,
+   "z_end": 0.0,
+   "outcome": "potentiation"
+  },
+  "d_pair_post_pre": {
+   "dh": -0.43283237450160517,
+   "z_end": 0.0,
+   "outcome": "depression"
+  },
+  "e_lfs": {
+   "dh": 0.0,
+   "z_end": 0.0,
+   "outcome": "no change"
+  }
+ }
+}
