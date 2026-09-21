@@ -191,6 +191,8 @@ condition beating the foreign-stream null) was not met.
 | **C1** `mechanisms.intrinsic_trace` | — | off | The trace **is the existing CREB-like variable** (no parallel state): raised by encoding activity via somatic calcium, acts bounded to [0, 1], slow decay (`creb.tau_s`). Needs `mechanisms.creb`. **It gates reactivation and allocation and cannot store content** — it is one scalar per cell, so its capacity is bounded by the cell count regardless of what was stored; content stays in the synapses. Operator-supplied sources for that limit, **unread**: *Nat Commun* 2025, s41467-025-66975-3; *J Neurosci* 2024, e0846232024 |
 | C1 | `intrinsic_trace.k_ahp` | 0.5 | placeholder: fraction of the AHP-like current removed at trace = 1 |
 | C1 | `intrinsic_trace.dVT_mV` | 2 mV | placeholder: extra threshold lowering at trace = 1, on top of `creb.dVT_mV` |
+| **C4** `mechanisms.prior_drift` | `prior_drift.erosion_per_spike` | 0.01 | placeholder. The trace loses this fraction **per spike of its own cell** — erosion per *use*, independent of any synaptic rate, so the prior can drift while the synaptic trace does not |
+| **C4 option** `mechanisms.prior_repulsion` | `repulsion_mV`, `tau_use_s`, `use_per_spike` | 2 mV, 5 s, 0.1 | placeholder. A fast recent-use variable **raises** threshold ("seek novel"). **Sign unsettled**: the adaptation literature reports both attractive and repulsive tuning shifts (`MEMORY`, no source read); only the repulsive form is implemented, and it is its own switch |
 
 ## What is NOT built, stated so nobody has to discover it
 

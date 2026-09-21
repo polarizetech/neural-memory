@@ -258,6 +258,17 @@ class IntrinsicTrace(_Strict):
     dVT_mV: float = 2.0                     # extra threshold lowering at trace = 1 (on top of creb.dVT_mV)
 
 
+class PriorDrift(_Strict):
+    """C4. The intrinsic trace erodes PER USE (each spike), independently of the synaptic write rate, so a
+    prior can drift while the synaptic trace does not. `prior_repulsion` is a separate switch: a fast
+    recent-use variable that RAISES threshold ("seek novel"). SIGN UNSETTLED -- the adaptation literature
+    reports both attractive and repulsive tuning shifts; this implements the repulsive one only, off by default."""
+    erosion_per_spike: float = Field(0.01, ge=0, le=1)
+    repulsion_mV: float = 2.0
+    tau_use_s: float = 5.0
+    use_per_spike: float = 0.1
+
+
 class Mechanisms(_Strict):
     """One switch per mechanism. All True = the full model."""
     t_current: bool = True
@@ -269,6 +280,8 @@ class Mechanisms(_Strict):
     theta: bool = True                      # False = theta.mode forced to "off"
     nm_excitability: bool = False           # recall-phase drive candidate 1 (OFF: the published-results model)
     intrinsic_trace: bool = False           # C1: the CREB-like trace also reduces adaptation / lowers threshold
+    prior_drift: bool = False               # C4: the trace erodes per spike
+    prior_repulsion: bool = False           # C4 option: recent use RAISES threshold. Sign unsettled.
     nm_inhibitory_setpoint: bool = True     # False = NM no longer biases the I cells
     plasticity: bool = True                 # False = frozen weights (a fixed spiking reservoir)
 
@@ -331,6 +344,7 @@ class Config(_Strict):
     theta: Theta = Theta()
     nm_excitability: NmExcitability = NmExcitability()
     intrinsic_trace: IntrinsicTrace = IntrinsicTrace()
+    prior_drift: PriorDrift = PriorDrift()
     mso: MSO = MSO()
     ephaptic: Ephaptic = Ephaptic()
     attention: Attention = Attention()
