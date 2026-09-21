@@ -193,8 +193,14 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     i_, j_ = rand_conn(si.n, net_c.n_inh, mix.p_in_inh); S_in_i.connect(i=i_, j=j_)
 
     # ---- plastic E->E: calcium early phase + tagging and capture ----
+    ee_ns = stc.namespace(cfg)
+    if cfg.eval.freeze_plasticity_at_recall:
+        pl = np.ones_like(nm.t)
+        for seg in tl.recalls():
+            pl[(nm.t >= seg.t0) & (nm.t < seg.t1)] = 0.0
+        ee_ns["pl_t"] = b2.TimedArray(pl, dt=NM_DT_S * second, name="ta_plt")
     S_ee = b2.Synapses(E, E, stc.plastic_model(cfg), on_pre=stc.ON_PRE, on_post=stc.ON_POST,
-                       delay=stc.delays(cfg), method="heun", namespace=stc.namespace(cfg),
+                       delay=stc.delays(cfg), method="heun", namespace=ee_ns,
                        dt=cfg.plasticity.update_dt_ms * ms, name="ee", order=2)
     ee_i, ee_j = rand_conn(net_c.n_exc, net_c.n_exc, net_c.p_conn, no_self=True)
     S_ee.connect(i=ee_i, j=ee_j)

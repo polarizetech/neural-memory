@@ -149,3 +149,23 @@ def _subprocess_hashes(code: str) -> dict:
 def test_c5_logging_provenance_does_not_change_a_single_spike():
     h = _subprocess_hashes("c=base(); out['off']=run(c)[1]\nc=base(); c.sim.log_provenance=True; r,hh=run(c); out['on']=hh; out['n']=int(r.spike_Iff.size); out['ns']=int(r.spikes_e[1].size)")
     assert h["on"] == h["off"] and h["n"] == h["ns"] > 0
+
+
+def test_c6_frozen_read_is_labelled_non_biological_and_gates_write_and_capture():
+    assert stc.plastic_model(Config()) == stc.PLASTIC_MODEL
+    c = Config(); c.eval.freeze_plasticity_at_recall = True
+    text = stc.plastic_model(c)
+    assert "pgate = pl_t(t) : 1" in text and "dz/dt = pl_t(t)*(" in text
+    assert "not biology" in type(c.eval).__doc__.lower()
+
+
+@pytest.mark.slow
+def test_c6_weights_do_not_move_during_a_frozen_recall_but_do_during_a_plastic_one():
+    code = ("for k,fz in (('plastic',False),('frozen',True)):\n c=base(); c.protocol.recall_mode='cue'; c.protocol.cue_fraction=0.5; c.plasticity.noise=False\n"
+            " c.eval.freeze_plasticity_at_recall=fz; c.sim.weight_log_dt_s=0.25; r,_=run(c); seg=r.timeline.recalls()[0]\n"
+            " a=int(np.searchsorted(r.w_t, seg.t0)); b=int(np.searchsorted(r.w_t, seg.t1))-1\n"
+            " d=r.h_log[:,b]-r.h_log[:,a]; decay=(1-r.h_log[:,a])*(1-np.exp(-(r.w_t[b]-r.w_t[a])*0.1/(688.4/60)))\n"
+            " out[k]=float(np.abs(d-decay).max()); out[k+'_z']=float(np.abs(r.z_log[:,b]-r.z_log[:,a]).max())")
+    h = _subprocess_hashes(code)
+    assert h["frozen"] < 1e-6 and h["frozen_z"] < 1e-12          # only passive decay moves the weights
+    assert h["plastic"] > 100 * max(h["frozen"], 1e-9)           # the ordinary read rewrites them

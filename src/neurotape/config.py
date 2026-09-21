@@ -346,6 +346,14 @@ class Decode(_Strict):
     n_surrogates: int = 200
 
 
+class Eval(_Strict):
+    """EVALUATION MODES -- not biology. Nothing here is a claim about a nervous system."""
+    # C6 frozen read: induction, its noise and late-phase capture are switched off DURING RECALL SEGMENTS by an
+    # externally imposed schedule, so a recall can be read without the read rewriting the trace. It is the
+    # ground truth that lossy (plastic) reads are compared against. Passive decay continues.
+    freeze_plasticity_at_recall: bool = False
+
+
 class Sim(_Strict):
     dt_ms: float = 0.1
     device: Literal["cpp_standalone", "runtime"] = "cpp_standalone"
@@ -383,6 +391,7 @@ class Config(_Strict):
     mechanisms: Mechanisms = Mechanisms()
     protocol: Protocol = Protocol()
     decode: Decode = Decode()
+    eval: Eval = Eval()
     sim: Sim = Sim()
 
     @model_validator(mode="after")

@@ -63,10 +63,16 @@ def plastic_model(cfg: Config) -> str:
                        f"*clip(creb_post/creb_ref, 0, 1)*int(z < z_protect)))")
     elif m.lability_window:
         factors.append("(1 + (lab_gain - 1)*lab_post)")             # C3 alone: a gain on top of ordinary plasticity
+    freeze = cfg.eval.freeze_plasticity_at_recall
+    if freeze:
+        factors.append("pl_t(t)")                                    # C6: NON-BIOLOGICAL evaluation schedule
     if not factors:
         return PLASTIC_MODEL
     text = PLASTIC_MODEL.replace("plastic_on*(gamma_p", "plastic_on*pgate*(gamma_p").replace("plastic_on*noise_on*sqrt(", "plastic_on*pgate*noise_on*sqrt(")
     assert text.count("pgate") == 2
+    if freeze:
+        text = text.replace("dz/dt = (", "dz/dt = pl_t(t)*(")
+        assert text.count("pl_t(t)") == 1
     return text + "pgate = " + "*".join(factors) + " : 1\n"
 
 
