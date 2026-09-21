@@ -356,6 +356,7 @@ class Sim(_Strict):
     weight_log_dt_s: float = 5.0
     keep_build: bool = False
     profile: bool = False
+    log_provenance: bool = False            # C5, ANALYSIS ONLY: record each spike's own I_ff and I_rec
 
 
 class Config(_Strict):

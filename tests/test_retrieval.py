@@ -121,3 +121,31 @@ def test_c3_lability_window_opens_on_a_recurrent_spike_closes_again_and_gains_th
         res[label] = (sp.num_spikes, peak, float(st.lab[0][-1]))
     assert res["recurrent"][0] > 0 and res["recurrent"][1] > 0.9 and res["recurrent"][2] < 0.05     # opens, then restabilises
     assert res["feedforward"][0] > 0 and res["feedforward"][1] == 0.0                               # input-driven spikes do not open it
+
+
+def test_c5_reconstructed_fraction_labels_spikes_by_their_own_currents():
+    from types import SimpleNamespace
+    from neurotape.recall.provenance import reconstructed_fraction
+    res = SimpleNamespace(spikes_e=(np.zeros(4, int), np.array([0.1, 0.2, 1.1, 1.2])), spike_Iff=np.array([9., 1., 9., 9.]), spike_Irec=np.array([1., 9., 1., 1.]))
+    assert reconstructed_fraction(res, 0.0, 1.0)["reconstructed_fraction"] == 0.5
+    assert reconstructed_fraction(res, 1.0, 2.0)["reconstructed_fraction"] == 0.0
+    assert np.isnan(reconstructed_fraction(res, 5.0, 6.0)["reconstructed_fraction"])
+    assert reconstructed_fraction(SimpleNamespace(spike_Iff=None), 0, 1)["available"] is False
+
+
+def _subprocess_hashes(code: str) -> dict:
+    import json, os, subprocess, sys
+    pre = ("import json,hashlib,numpy as np\nfrom neurotape.config import Config\nfrom neurotape.frontend.io import synthetic_streams\n"
+           "from neurotape.network import build_inputs, simulate\n"
+           "def base():\n c=Config(); c.frontend.kind='filterbank'; c.network.n_exc=80; c.network.n_inh=20\n"
+           " c.protocol.encode_s=2.0; c.protocol.recall_delays_s=[0.5]; c.protocol.recall_s=1.5; return c\n"
+           "def run(c):\n r=simulate(c, build_inputs(synthetic_streams(1,2.0),c)); return r, hashlib.md5(np.round(r.spikes_e[1],6).tobytes()).hexdigest()\nout={}\n")
+    res = subprocess.run([sys.executable, "-c", pre + code + "\nprint(json.dumps(out))"], capture_output=True, text=True, env=dict(os.environ, PYTHONHASHSEED="0"))
+    assert res.returncode == 0, res.stderr[-1500:]
+    return json.loads(res.stdout.strip().splitlines()[-1])
+
+
+@pytest.mark.slow
+def test_c5_logging_provenance_does_not_change_a_single_spike():
+    h = _subprocess_hashes("c=base(); out['off']=run(c)[1]\nc=base(); c.sim.log_provenance=True; r,hh=run(c); out['on']=hh; out['n']=int(r.spike_Iff.size); out['ns']=int(r.spikes_e[1].size)")
+    assert h["on"] == h["off"] and h["n"] == h["ns"] > 0

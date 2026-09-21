@@ -51,6 +51,8 @@ class RunResult:
     syn_j: np.ndarray
     h_final: np.ndarray
     z_final: np.ndarray
+    spike_Iff: np.ndarray = None                 # C5: per E spike, its own feedforward current (pA); None if off
+    spike_Irec: np.ndarray = None                # C5: per E spike, its own recurrent excitatory current (pA)
     lfp_t: np.ndarray = None                     # 1 ms grid, whole timeline
     lfp_Ie: np.ndarray = None                    # pA, summed excitatory synaptic current onto E cells
     lfp_Ii: np.ndarray = None                    # pA, summed inhibitory synaptic current onto E cells
@@ -239,7 +241,10 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
             pw.order = k_order; k_order += 1
 
     # ---- monitors ----
-    sm_e, sm_i = b2.SpikeMonitor(E, name="sp_e"), b2.SpikeMonitor(I, name="sp_i")
+    # C5 provenance: each spike's OWN feedforward and recurrent excitatory current, recorded for analysis.
+    # A monitor only reads; a test asserts the spike train is identical with it on and off.
+    sm_e = b2.SpikeMonitor(E, variables=["g_ext", "g_e", "V"] if cfg.sim.log_provenance else None, name="sp_e")
+    sm_i = b2.SpikeMonitor(I, name="sp_i")
     st_dt = cfg.sim.state_log_dt_ms * ms
     st_e = b2.StateMonitor(E, "nstate", record=True, dt=st_dt, name="st_e")
     st_i = b2.StateMonitor(I, "nstate", record=True, dt=st_dt, name="st_i")
@@ -294,6 +299,10 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         drift=np.array(slow.I_drift / pA),
         w_t=np.array(w_m.t / second), h_log=np.array(w_m.h), z_log=np.array(w_m.z),
         syn_i=ee_i, syn_j=ee_j, h_final=np.array(S_ee.h[:]), z_final=np.array(S_ee.z[:]),
+        # state variables are recorded (a monitor cannot resolve the group's constants inside a subexpression);
+        # the currents are formed here exactly as the model forms them: g * (E_e - V)
+        spike_Iff=np.array(sm_e.g_ext * (net_c.E_e_mV * mV - sm_e.V) / pA) if cfg.sim.log_provenance else None,
+        spike_Irec=np.array(sm_e.g_e * (net_c.E_e_mV * mV - sm_e.V) / pA) if cfg.sim.log_provenance else None,
         lfp_t=np.array(lfp_m.t / second), lfp_Ie=np.array(lfp_m.Ie_sum[0] / pA),
         lfp_Ii=np.array(lfp_m.Ii_sum[0] / pA), lfp_Ir=np.array(lfp_m.Ir_sum[0] / pA),
         theta_t=th_t, theta=th, theta_phase=th_phase, onsets_s=onsets,

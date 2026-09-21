@@ -141,7 +141,8 @@ def reset_code(prior_drift: bool = False, prior_repulsion: bool = False, labilit
 
 
 def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsic_trace: bool = False,
-              prior_repulsion: bool = False, mismatch: bool = False, lability: bool = False) -> str:
+              prior_repulsion: bool = False, mismatch: bool = False, lability: bool = False,
+              provenance: bool = False) -> str:
     """Every optional mechanism adds TEXT only when it is on. With all of them off the equation text is
     byte-identical to the model the published results came from (pinned by hash in tests/test_retrieval.py), so
     the generated code -- and every spike -- is too. Multiplying by a 1.0 gain instead would change the
@@ -155,6 +156,8 @@ def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsi
         vt += " + k_rep*clip(u_use, 0, 1)"; extra += REPULSION_EQS
     if mismatch or lability:
         extra += CURRENT_TRACE_EQS
+    # C5 (provenance) adds NOTHING to the equations: it records g_ext, g_e and V at each spike and the
+    # currents are formed in analysis. `provenance` is accepted so the call site documents the intent.
     if mismatch:
         extra += MISMATCH_EQS
     if lability:
@@ -216,7 +219,8 @@ def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArra
     exc = kind == "exc"
     mech = cfg.mechanisms
     g = b2.NeuronGroup(n, equations(on, eph, intrinsic_trace=mech.intrinsic_trace and exc, prior_repulsion=mech.prior_repulsion and exc,
-                                          mismatch=mech.mismatch_gate and exc, lability=mech.lability_window and exc),
+                                          mismatch=mech.mismatch_gate and exc, lability=mech.lability_window and exc,
+                                          provenance=cfg.sim.log_provenance and exc),
                        threshold=THRESHOLD, reset=reset_code(mech.prior_drift and exc, mech.prior_repulsion and exc, mech.lability_window and exc),
                        refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV
