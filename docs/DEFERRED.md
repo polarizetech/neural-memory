@@ -81,6 +81,71 @@ Candidate 1 (NM raises excitatory excitability) is built — `ASSUMPTIONS.md`. T
   (with − without) is not above zero, or if it is above zero only because the developmental phase lowered
   overall activity.
 
+## B3. Adaptive tuning offsets — **sign unsettled**
+
+- **Biology.** After adaptation, a cell's or population's tuning shifts. The literature reports **both**
+  directions: attractive shifts (tuning moves *toward* the adapter) and repulsive shifts (tuning moves *away*).
+  Which occurs depends on area, stimulus dimension, adapter duration and how tuning is measured.
+  **`MEMORY` — no source read in any session; the operator flagged the sign as unsettled.** Confidence that a
+  shift exists: high. Confidence in its sign for any given circuit: low.
+- **What already exists.** `mechanisms.prior_repulsion` (C4 option) implements *one* sign — a recent-use variable
+  that raises threshold ("seek novel") — behind its own switch, default off, labelled sign-unsettled.
+- **Proposed implementation.** A per-cell *tuning offset* rather than a threshold: shift the cell's effective
+  input weights along the input-channel axis after use, with a signed gain `k_shift` so both signs are one
+  parameter apart and can be run as paired conditions.
+- **Why deferred.** A tuning offset changes *what* a cell represents; with recall at zero there is no
+  representation whose drift could be measured.
+- **Precondition.** Recall above the foreign-stream null, and the repeated-recall drift measurement (C7) showing
+  a baseline drift to compare against.
+- **Falsifier.** Run both signs. The mechanism is uninformative if the two signs are indistinguishable on
+  stored-trace drift and on allocation overlap between successively stored items; it is *wrong for this model*
+  if either sign raises interference above the no-shift model's CI.
+
+## B4. GRN-style multi-node internal state per cell
+
+- **Biology / theory.** Gene-regulatory-network models show **dynamical memory without any change of topology**:
+  training by stimulus history alone moves the network between attractors of fixed wiring. Biswas, Manicka,
+  Hoel & Levin 2021, *iScience* 24:102131 — operator-supplied, **unread (title and summary only)**. Confidence that
+  the phenomenon exists in GRN models: moderate, from the summary. Confidence it transfers to a neuron's
+  excitability state: low. **Capacity is likely small** — a handful of attractors per node set, not a content store.
+- **Proposed implementation.** Replace the single CREB-like scalar with a small per-cell dynamical system (3–5
+  coupled nodes with saturating interactions, fixed wiring, driven by somatic calcium), read out as the same
+  two effects C1 already has (threshold, adaptation). It would let a cell hold more than one excitability
+  *regime* and switch between them by input history.
+- **Why deferred.** C1 established the single-scalar version and nothing has yet shown a scalar to be the
+  limit. A multi-node state multiplies free parameters for a system currently producing nulls.
+- **Precondition.** C1 shown to matter (its ablation's CI clear of zero on allocation or reactivation), **and** a
+  specific failure a scalar cannot express.
+- **Falsifier.** Matched on parameter count against the scalar version: the multi-node state must hold ≥ 2
+  history-dependent regimes that survive a delay with synaptic plasticity **off**, and improve a pre-stated
+  metric over the scalar with its CI above zero. Otherwise it is complexity without capacity.
+
+## B5. Slow extracellular field
+
+- **What it is.** A coarse scalar field over the network, driven by recent local spiking, with slow decay and
+  diffusion, feeding back into per-cell threshold and plasticity rate.
+- **Biology (operator-supplied; read depth: abstracts / titles, none read by this build).**
+  Astrocytic K⁺ buffering modulates neuronal excitability (PubMed 28279812). Astrocyte Kir4.1 level gates LTP and
+  spreading depolarisation (*Cell Reports* 2025, S2211124725000701). Extracellular Ca²⁺ modulates excitability
+  within milliseconds, including via ephaptic coupling (*Cells* 2025, 14:1709). Confidence: moderate that such
+  slow ionic variables modulate excitability; low on magnitudes and time constants for any specific circuit.
+- **Counterpoint, recorded.** K⁺ handling may be **homeostatic only** — clamping the extracellular space rather
+  than signalling — with glial signalling carried by Ca²⁺ waves instead. If so, the right variable is a glial
+  Ca²⁺ wave, not a K⁺ field, and its dynamics (regenerative, propagating) are different in kind.
+- **Design reference.** BETSE (Pietak & Levin 2016; github.com/betsee/betse; in this monorepo at
+  `simulators/betse`) — for the **architecture** of coupling a slow ionic/biochemical layer to electrical
+  dynamics: separate state, separate (slow) clock, explicit flux terms between layers. **Borrow the architecture,
+  not the code.**
+- **Proposed implementation.** Place E cells on a ring or grid; one field variable per coarse patch;
+  `dF/dt = −F/τ_F + D∇²F + k·(local spike rate)` on a slow clock; feedback `VT += k_V·F`, plasticity rate
+  `×(1 + k_P·F)`. Distinct from the existing ephaptic term, which is fast and current-based.
+- **Why deferred.** It needs a spatial layout the network does not have, and it is a third slow modulatory
+  variable on top of NM and the intrinsic trace while recall is null.
+- **Precondition.** Recall above the foreign-stream null; a spatial layout introduced for its own reasons.
+- **Falsifier.** Against a **spatially shuffled** field (same statistics, no locality) and against a global
+  scalar of the same mean: the local field must change allocation or recall with its CI clear of zero relative to
+  both. If the shuffled field does as well, locality — the mechanism's whole content — is doing nothing.
+
 ---
 
 ## Out of scope in the binaural front end (recorded so they are not rediscovered)
