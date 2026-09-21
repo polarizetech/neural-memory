@@ -1,0 +1,287 @@
+seed: 0
+time_compression: 60.0
+frontend:
+  kind: an
+  level_db_spl: 60.0
+  anf_per_cf:
+  - 6
+  - 2
+  - 2
+  moc_enabled: false
+  moc_db_per_nm: 50.0
+  brainstem: none
+  stereo: false
+  azimuths_deg:
+  - -45.0
+  - 45.0
+  - 0.0
+  - -90.0
+  - 90.0
+  spatial_ild_max_db: 20.0
+  spatial_ild_corner_hz: 1500.0
+  mso: false
+  filterbank: gammatone
+  n_bands: 32
+  f_lo_hz: 80.0
+  f_hi_hz: 8000.0
+  envelope_rate_hz: 1000.0
+  compression: 0.3
+  csv_rate_hz: null
+  max_seconds: null
+mixing:
+  n_input: 64
+  bands_per_input: 6
+  mode: mixed
+  label_purity: 0.8
+  rate_max_hz: 80.0
+  p_in_exc: 0.1
+  p_in_inh: 0.1
+  g_in_mean_nS: 8.0
+network:
+  n_exc: 200
+  n_inh: 50
+  p_conn: 0.1
+  g0_nS: 1.0
+  w_ei_nS: 2.0
+  w_ie_nS: 8.0
+  w_ii_nS: 8.0
+  tau_e_ms: 5.0
+  tau_i_ms: 5.0
+  E_e_mV: 0.0
+  E_i_mV: -80.0
+  E_K_mV: -95.0
+  tau_b_ms: 150.0
+  w_ie_b_nS: 1.0
+  axon_delay_ms: 3.0
+  exc:
+    C_pF: 200.0
+    gL_nS: 10.0
+    EL_mV: -70.0
+    VT_mV: -50.0
+    DeltaT_mV: 2.0
+    V_cut_mV: -40.0
+    V_reset_mV: -58.0
+    t_ref_ms: 2.0
+    a_nS: 2.0
+    b_pA: 40.0
+    tau_w_ms: 150.0
+    gT_nS: 100.0
+    E_Ca_mV: 120.0
+    T_shift_mV: 2.0
+    T_celsius: 36.0
+    hT_loaded: 0.4
+    t_spike_ms: 1.0
+    t_reset_ms: 10.0
+  inh:
+    C_pF: 100.0
+    gL_nS: 10.0
+    EL_mV: -70.0
+    VT_mV: -50.0
+    DeltaT_mV: 2.0
+    V_cut_mV: -40.0
+    V_reset_mV: -60.0
+    t_ref_ms: 2.0
+    a_nS: 0.0
+    b_pA: 0.0
+    tau_w_ms: 50.0
+    gT_nS: 0.0
+    E_Ca_mV: 120.0
+    T_shift_mV: 2.0
+    T_celsius: 36.0
+    hT_loaded: 0.4
+    t_spike_ms: 1.0
+    t_reset_ms: 10.0
+noise:
+  I0_pA: 100.0
+  sigma_pA: 60.0
+  tau_ms: 5.0
+  consolidation_scale: 1.0
+drift:
+  tau_s: 10.0
+  sigma_pA: 20.0
+gap:
+  p: 0.3
+  neighbourhood: 8
+  coupling_coefficient: 0.1
+  modulation: 1.0
+  ee_enabled: false
+  ee_p: 0.02
+  ee_coupling_coefficient: 0.02
+plasticity:
+  Ca_pre: 0.6
+  Ca_post: 0.1655
+  tau_Ca_ms: 48.8
+  t_Ca_delay_ms: 18.8
+  theta_p: 3.0
+  theta_d: 1.2
+  gamma_p: 1645.6
+  gamma_d: 313.1
+  tau_h_s: 688.4
+  h_max: 2.3805
+  sigma_pl: 0.6914
+  theta_tag: 0.2
+  theta_pro_default: 0.5
+  alpha: 1.0
+  tau_p_s: 3600.0
+  tau_z_s: 3600.0
+  noise: true
+  update_dt_ms: 1.0
+  c_T: 0.5
+  tau_CaT_ms: 50.0
+  k_CaT_per_nA_ms: 0.05
+  scale_theta_pro_by_indegree: true
+  indegree_ref: 160.0
+creb:
+  tau_s: 600.0
+  tau_Ca_soma_ms: 200.0
+  Ca_spike: 0.05
+  k_T_per_nA_ms: 0.02
+  dVT_mV: 3.0
+neuromod:
+  tonic: 0.12
+  tonic_ramp_to: null
+  consolidation_tonic: 0.12
+  phasic_amp: 0.15
+  phasic_tau_s: 0.5
+  salience_tau_s: 2.0
+  salience_z: 2.0
+  salience_refractory_s: 1.0
+  nm_ref: 0.12
+  k_gain: 2.0
+  k_inh_pA: 200.0
+  nm_max: 0.5
+  pulse_amp: 0.3
+  pulse_s: 1.0
+theta:
+  mode: free
+  f_hz: 6.0
+  amp_pA: 40.0
+  target: inh
+  reset_phase_rad: 0.0
+  onset_z: 1.5
+  onset_refractory_s: 0.15
+nm_excitability:
+  ahp_block_per_nm: 3.3333333333333335
+  dVT_mV_per_nm: 6.666666666666667
+  strength: 1.0
+intrinsic_trace:
+  k_ahp: 0.5
+  dVT_mV: 2.0
+prior_drift:
+  erosion_per_spike: 0.01
+  repulsion_mV: 2.0
+  tau_use_s: 5.0
+  use_per_spike: 0.1
+mismatch_gate:
+  tau_ms: 50.0
+  eps_pA: 1.0
+  theta_low: 0.2
+  theta_high: 0.6
+  z_protect: 0.1
+  creb_ref: 0.2
+lability:
+  gain: 3.0
+  tau_s: 5.0
+settling:
+  k_cycles: 1
+  cycle_gap_s: 1.0
+  p_fb: 0.1
+  g0_fb_nS: 1.0
+  multi_view: false
+mso:
+  cf_max_hz: 1500.0
+  delays_us:
+  - -600
+  - -500
+  - -400
+  - -300
+  - -200
+  - -100
+  - 0
+  - 100
+  - 200
+  - 300
+  - 400
+  - 500
+  - 600
+  tau_e_ms: 0.2
+  tau_i_ms: 0.5
+  inh_lead_ms: 0.3
+  w_inh: 0.5
+  tau_m_ms: 0.3
+  theta_epsp: 3.0
+  t_ref_ms: 1.0
+ephaptic:
+  g_eph_nS: 0.0
+  r_field_Mohm: 1.0
+  use_lfp: true
+  use_neurophonic: true
+attention:
+  stream: null
+  amp: 0.15
+mechanisms:
+  t_current: true
+  gap_junctions: true
+  nm_dynamic: true
+  tagging: true
+  creb: true
+  tonic_drift: true
+  theta: true
+  nm_excitability: false
+  nm_recall_only: false
+  intrinsic_trace: false
+  mismatch_gate: false
+  lability_window: false
+  iterative_settling: false
+  prior_drift: false
+  prior_repulsion: false
+  nm_inhibitory_setpoint: true
+  plasticity: true
+protocol:
+  settle_s: 1.0
+  encode_s: 10.0
+  recall_delays_s:
+  - 5.0
+  - 30.0
+  - 120.0
+  recall_s: null
+  recall_mode: cue
+  cue_fraction: 0.15
+  cue_stream: 0
+  cue_channel_fraction: 1.0
+  shuffle_input: false
+decode:
+  rate_hz: 100.0
+  filter_tau_ms: 50.0
+  train_fraction: 0.8
+  targets:
+  - envelope
+  alphas:
+  - 0.01
+  - 0.1
+  - 1.0
+  - 10.0
+  - 100.0
+  - 1000.0
+  engram_metric: protein
+  engram_threshold: 0.1
+  rank_window_ms: 50.0
+  n_surrogates: 100
+eval:
+  freeze_plasticity_at_recall: false
+sim:
+  dt_ms: 0.1
+  device: cpp_standalone
+  runtime_target: numpy
+  state_log_dt_ms: 1.0
+  log_states_in:
+  - encode
+  - recall
+  slow_log_dt_s: 1.0
+  weight_log_dt_s: 5.0
+  keep_build: false
+  profile: false
+  replicate_offset: 0
+  log_cat: false
+  snapshot_weights: false
+  log_provenance: false
