@@ -146,6 +146,28 @@ Candidate 1 (NM raises excitatory excitability) is built — `ASSUMPTIONS.md`. T
   scalar of the same mean: the local field must change allocation or recall with its CI clear of zero relative to
   both. If the shuffled field does as well, locality — the mechanism's whole content — is doing nothing.
 
+## B6. Sparser input wiring — **a precondition for `exp completion`**
+
+- **The problem, measured while building C7.** Every E cell receives ~10 % of the input channels (`p_in_exc = 0.1`
+  of 320 auditory-nerve fibres ≈ 32 inputs per cell). A completion test asks whether cells the cue did **not** drive
+  come to carry the stored stream. With this wiring no such cells exist: at a 25 % cue, P(a cell receives no cued
+  channel) ≈ 0.9⁸⁰ ≈ 2 × 10⁻⁴, and at every larger fraction it is smaller. The strict completion set is empty at
+  all four declared cue fractions, and the code falls back to the *least-driven quartile*, which is still cue-driven.
+- **Biology.** Not a biological claim — a measurement-validity one. (That cortical and hippocampal principal cells
+  sample a small fraction of their afferents is standard background, `MEMORY`, unverified, and is not what motivates this.)
+- **Proposed implementation.** Lower `mixing.p_in_exc` and/or make the input projection topographic (each E cell
+  samples a contiguous CF band), with `mixing.g_in_mean_nS` renormalising the weight as it already does, so that a
+  partial cue leaves a well-defined, non-trivial set of undriven cells. It changes the network's encoding regime, so
+  it needs its own operating-point check (rates, LOADED fraction, tags) before any recall metric is looked at.
+- **Why deferred.** Input wiring is on the operator's do-not-change list while the storage question is open, and a
+  cleaner completion metric is worthless if nothing stream-specific is stored.
+- **Precondition.** **Storage shown first** — the storage diagnostic's pre-registered criterion passing (the stored
+  stream's predicted ΔW ranks first and beats the permutation null in ≥ 7/10 seeds). Only then is `exp completion`
+  worth unblocking, and only with this change in place.
+- **Falsifier.** After the change, the strict undriven set must contain ≥ 10 % of E cells at a 50 % cue **and**
+  encoding accuracy must stay within the seed-to-seed CI of the current wiring; if either fails, the change has
+  traded one invalid measurement for another.
+
 ---
 
 ## Out of scope in the binaural front end (recorded so they are not rediscovered)
