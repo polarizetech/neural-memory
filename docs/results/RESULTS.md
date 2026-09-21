@@ -138,6 +138,100 @@ chosen after looking. The nearest miss is `cue_nm · ×1` at 5 min, lower CI bou
 **Next, per the operator's sequencing:** the excitability drive is null → **800 E / 200 I before any further
 mechanism.** The disinhibitory (ACh-like) and theta-to-threshold drives stay held — `docs/DEFERRED.md`.
 
+## Storage diagnostic, second pass (2026-09-21) — residual decode, rule calibration, plastic inputs
+
+Reports: `residual_decode/`, `storage_A/`, `storage_B/`; protocol data in `p1_protocols_published_sets.json`, `p1_theta_p_scan.json`.
+**Every condition fails the pre-registered criterion, and outcome (ii) holds in all of them: ΔW is non-zero and not
+stream-specific.** Calibrating the rule changed *what* is written — from depression only to potentiation only — and
+did not make it depend on the stream.
+
+### P0 — residual decode of the D4 data: **FAIL, stored stream 1st in 1/10 seeds**
+
+D4 had discarded its 20 foreign predictions, so the bit-reproducible frozen runs were regenerated once into an
+activity bank; D4's observed ΔW is untouched. The raw decode reproduces D4 exactly. Residual = the mean of the 21
+predictions removed from the observed ΔW and from every prediction.
+
+| seed | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 1st | mean rank |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| raw, total (= D4) | 4 | 12 | 16 | 3 | 18 | 15 | 19 | 8 | 3 | 4 | 0/10 | 10.2 |
+| **residual, total** | 2 | 9 | 15 | 3 | 20 | 18 | 3 | 6 | **1** | 7 | **1/10** | 8.4 |
+| residual, early | 2 | 13 | 9 | 4 | 14 | 18 | 5 | 7 | **1** | 6 | 1/10 | 7.9 |
+| residual, late | 2 | 7 | 14 | **1** | 20 | 19 | 2 | 7 | **1** | 7 | 2/10 | 8.0 |
+
+Residual r for the stored stream ranges −0.40 … +0.68, with a foreign stream higher in 9 of 10 seeds; the residual beats
+the permutation 95th percentile in 7/10. Removing the common write leaves no stored-stream signal: a mean rank of 8.4
+against 11 under chance is not the ≥ 7/10 firsts the criterion asks for.
+
+### P1 — the rule in isolation (full table and sources in `ASSUMPTIONS.md`)
+
+| parameter set | TBS | HFS | capture | +10 ms pairing | −10 ms pairing | LFS | score |
+|---|---|---|---|---|---|---|---|
+| current (Luboeinski & Tetzlaff 2021) | **dep −0.20** ✗ | pot +0.89 ✓ | ✓ | **none** ✗ | **none** ✗ | **none** ✗ | 2/6 |
+| Graupner & Brunel 2012, hippocampal | pot ✓ | pot ✓ | ✓ | **dep −0.26** ✗ | dep ✓ | dep ✓ | 5/6 |
+| Graupner & Brunel 2012, cortical | pot ✓ | pot ✓ | ✓ | pot ✓ | dep ✓ | **none** ✗ | 5/6 |
+| **adopted: G&B hippocampal, θ_p 1.30 → 1.18** | pot +0.89 ✓ | pot +0.94 ✓ | ✓ | pot +0.21 ✓ | dep −0.17 ✓ | dep −0.32 ✓ | **6/6** |
+
+No published set passes all five, so θ_p alone was stepped down from its published value and the scan stopped at the
+first passing value. **The G&B values are from memory — the paper has no retrievable open-access copy** — and the
+calibration is sensitive to the 1 ms plasticity clock. Adopted as a preset; the default is unchanged.
+
+### P3 — the diagnostic rerun under the calibrated rule. 10 seeds each, 0 failed runs, plasticity-off null = exactly 0.
+
+**Tags: potentiation / depression** (E→E unless stated)
+
+| seed | A end of encoding | A after consolidation | A late-phase | B E→E end enc. | B E→E after cons. | B input→E end enc. | B input→E after cons. |
+|---|---|---|---|---|---|---|---|
+| 0 | 409 / 0 | 286 / 0 | 389 / 0 | 853 / 0 | 704 / 0 | 5896 / 0 | 5647 / 0 |
+| 1 | 464 / 0 | 320 / 0 | 426 / 0 | 1125 / 0 | 921 / 0 | 5924 / 0 | 5574 / 0 |
+| 2 | 358 / 0 | 272 / 0 | 323 / 0 | 1109 / 0 | 907 / 0 | 5999 / 0 | 5664 / 0 |
+| 3 | 529 / 0 | 458 / 0 | 527 / 0 | 1060 / 0 | 1023 / 0 | 6068 / 0 | 5780 / 0 |
+| 4 | 572 / 0 | 468 / 0 | 547 / 0 | 1297 / 0 | 1107 / 0 | 5862 / 0 | 5583 / 0 |
+| 5 | 347 / 0 | 315 / 0 | 330 / 0 | 787 / 0 | 703 / 0 | 5912 / 0 | 5625 / 0 |
+| 6 | 193 / 0 | 142 / 0 | 148 / 0 | 737 / 0 | 523 / 0 | 5843 / 0 | 5559 / 0 |
+| 7 | 236 / 0 | 225 / 0 | 226 / 0 | 781 / 0 | 689 / 0 | 5780 / 0 | 5504 / 0 |
+| 8 | 361 / 0 | 292 / 0 | 314 / 0 | 810 / 0 | 686 / 0 | 5846 / 0 | 5586 / 0 |
+| 9 | 448 / 0 | 307 / 0 | 407 / 0 | 1042 / 0 | 904 / 0 | 5852 / 0 | 5610 / 0 |
+
+**Magnitudes after consolidation** (units of h₀): A — 61–83 % of E→E synapses changed, mean \|ΔW\| 0.03–0.13, max 1.06–1.08.
+B — E→E 64–88 % changed, mean 0.17–0.32; **input→E 98–99 % changed, mean \|ΔW\| 0.94–0.96 (max 1.09), 91–92 % carrying a late-phase change** —
+essentially every input synapse potentiated by nearly the same amount. B's late-phase counts: E→E 717–1330 / 0,
+input→E 5742–6035 / 0 (potentiated / depressed). B's encoding-phase E rate rises to 3.7–11.5 Hz (A: 0.8–4.1 Hz) as the inputs potentiate.
+
+**Rank of the stored stream among 21, total ΔW, pre-first-recall**
+
+| seed | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 1st | mean rank | > perm p95 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **A raw** (the test) | 17 | 2 | 13 | 16 | 13 | **1** | 18 | 19 | 7 | 7 | **1/10** | 11.3 | 10/10 |
+| A residual | 19 | 4 | 9 | 14 | 17 | 3 | 17 | 15 | 4 | 12 | 0/10 | 11.4 | 4/10 |
+| **B raw, all plastic weights** (the test) | 9 | 9 | **1** | 3 | 20 | 13 | 3 | 17 | 21 | 6 | **1/10** | 10.2 | 10/10 |
+| B residual, all | 11 | 10 | **1** | 3 | 20 | 17 | 3 | 11 | 21 | 6 | 1/10 | 10.3 | 4/10 |
+| B raw, E→E only | 9 | 8 | **1** | 3 | 20 | 15 | 3 | 16 | 21 | 6 | 1/10 | 10.2 | 10/10 |
+| B raw, input→E only | 10 | 14 | 2 | 11 | 18 | 4 | 4 | 19 | 16 | 14 | 0/10 | 11.2 | 10/10 |
+| B residual, input→E only | 11 | 20 | 2 | 11 | 15 | 3 | 4 | 18 | 17 | 16 | 0/10 | 11.7 | 4/10 |
+
+Early- and late-phase ranks, reported beside the test: A early 0/10 (mean 9.5), late 0/10 (11.6); B early 0/10 (10.0),
+late 1/10 (11.1). Stored-stream raw r is 0.85–0.99 in every seed, and a foreign stream scores higher in 9 of 10 seeds in both conditions.
+
+### Verdicts
+
+| condition | stored 1st (needed ≥ 7) | above permutation p95 (needed ≥ 7) | result | outcome |
+|---|---|---|---|---|
+| P0 residual, current rule | 1/10 | 7/10 | **FAIL** | (ii) |
+| **A** calibrated rule, input→E fixed — raw / residual | 1/10 / 0/10 | 10/10 / 4/10 | **FAIL** | **(ii)** |
+| **B** calibrated rule + `input_plastic` — raw / residual | 1/10 / 1/10 | 10/10 / 4/10 | **FAIL** | **(ii)** |
+
+- **Calibration flipped the sign and nothing else.** The current rule wrote depression only (0 of 1398 tags
+  potentiated); the calibrated rule writes **potentiation only (0 depression tags in any seed, either condition)**. With
+  θ_p = 1.18 sitting just above θ_d = 1.0 and `Ca_pre` = 1.0, almost any activity that reaches the depression threshold
+  also reaches the potentiation threshold, and potentiation's rate constant is ~5× larger. A rule that passes all five
+  isolated protocols is, in this network's activity regime, a one-directional write.
+- **Making the inputs plastic potentiates all of them alike.** 98–99 % of input→E synapses end ~0.94 h₀ up whatever was
+  played, which is why input→E ΔW is no more stream-specific than E→E (ranks 2–19, mean 11.2).
+- **In every condition the write is set by who fires, not by what was heard** — the prediction from a never-played
+  stream matches the observed ΔW as well as the stored stream's does. The residual decode, which removes that common
+  component, finds nothing underneath it.
+- **Not acted on.** No threshold, time constant, wiring or gating was changed in response.
+
 ## Storage diagnostic (2026-09-21) — `storage_diagnostic/REPORT.md`
 
 **Question.** `recall_drive` returned 0 of 18 and its frozen-weights control showed reactivation is the same with

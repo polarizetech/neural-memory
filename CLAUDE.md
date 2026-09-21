@@ -52,6 +52,13 @@ reproduces the real ΔW at r = 0.999 from the run's own activity, so the instrum
 in response.** `mechanisms.nm_recall_only` (D1) now keeps the NM drive out of the encoding phase; any future drive
 run uses it on.
 
+**Second pass (P0–P3): every condition fails, outcome (ii) throughout.** Residual decode of D4: stored stream 1st in
+1/10. The rule in isolation: the current parameters pass 1 of 5 standard induction protocols (HFS only); no published
+Graupner–Brunel set passes all five; hippocampal set with **θ_p 1.30 → 1.18** (the minimal change) passes all five and is
+the preset `gb2012_hippocampal_cal` — **default unchanged; G&B values are from memory, paper not retrievable**. Under it
+the write flips from depression-only to **potentiation-only (0 depression tags)** and is still not stream-specific
+(A: 1st in 1/10; B with `input_plastic`: 1/10, and 98–99 % of input synapses potentiate by the same ~0.94 h₀). Nothing was changed in response.
+
 **Built and NOT run (2026-09-21).** (1) The **binaural front end** — stereo loader, ITD+ILD spatialiser (not an
 HRTF), two independent cochleae, a wired MSO coincidence population, a neurophonic computed from postsynaptic
 currents, and a linear ephaptic term absent at `g_eph = 0`; its experiment was started and **stopped at the
@@ -79,7 +86,7 @@ uv pip install --python .venv/bin/python --no-build-isolation "cochlea @ git+htt
 .venv/bin/neurotape encode --demo 2 --config configs/quick.yaml   # labelled synthetic streams
 .venv/bin/neurotape exp <name> --config configs/quick.yaml --seeds 10 --workers 6
 #   delay streams ablations baselines lehr population attention codec salience recall_modes | all
-#   (not in `all`: recall_drive  storage_diagnostic  binaural [held]  completion [blocked])
+#   (not in `all`: recall_drive  storage_diagnostic  residual_decode  storage_A  storage_B  binaural [held]  completion [blocked])
 ```
 
 Outputs: `results/<timestamp>_<name>/` — `config.yaml`, `runs.json` (every seed, including failed
