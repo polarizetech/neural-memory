@@ -36,6 +36,7 @@ T_LEARN = (10.0, 10.5, 11.0)
 T_SNAP_LEARNED = 12.0            # "end of learning": 0.9 s after the last pulse, before any decay that matters
 T_CUE_10S = 20.0
 CONSOLIDATE_REAL_S = 28790.0     # 20.0 s -> 28 810.0 s in the paper
+H0_MV = 4.20075                  # the paper's h_0 as a voltage (h_0 x R)
 RATE_WINDOW_S = 0.5              # centred on the read-out time (reference: instFiringRates)
 N_STIM, F_STIM = 25, 100.0
 
@@ -91,6 +92,14 @@ def mutual_information(v_ref, v_recall):
     return _entropy(v_ref[:, None]) + _entropy(v_recall[:, None]) - _entropy(np.stack([v_ref, v_recall], axis=1))
 
 
+def reference_readout(v):
+    """The reference's `instFiringRates` counts the first in-window spike of a cell TWICE (after pruning that cell's
+    older spikes it resets its index and re-reads the same spike), so every cell with >= 1 spike in the window reads one
+    spike high. Measured on R1: its `_net_<t>.txt` rates equal raster counts + 1 for exactly the cells that fired. It is
+    a relabelling, so MI is unchanged; Q moves by about -3 %. The paper's numbers carry it, so a like-for-like Q applies it."""
+    return v + (v > 0) / RATE_WINDOW_S
+
+
 def q_star(v, cued, ans, ctrl):
     nu_as, nu_ans, nu_ctrl = v[cued].mean(), v[ans].mean(), v[ctrl].mean()
     return dict(nu_as=float(nu_as), nu_ans=float(nu_ans), nu_ctrl=float(nu_ctrl),
@@ -110,6 +119,34 @@ def tag_counts(h, z, n_ca, theta_tag, syn_i, syn_j):
 
 
 # ------------------------------------------------------------------------------------------------------------
+# the paper's cell, for the `lif` rung only: current-based leaky integrate-and-fire with its OU background (Table 1,
+# Eqs. 8-9). Everything plastic still comes from neurotape's plasticity/stc.py.
+# ------------------------------------------------------------------------------------------------------------
+LIF_EQS = """
+dV/dt = (-(V - V_rev) + V_psp + R_mem*I_bg + V_stim)/tau_mem : volt (unless refractory)
+dI_bg/dt = (-I_bg + quiet(t)*I_0 + quiet(t)*sigma_wn*xi_bg)/tau_OU : amp
+dV_psp/dt = -V_psp/tau_syn : volt
+V_stim : volt
+dp/dt = (-p + alpha_p*int(sum_h_diff > theta_pro))/tau_p : 1
+sum_h_diff : 1
+CaT : 1
+"""
+
+
+def _lif_groups(b2, cfg, n_exc, n_inh, quiet, theta_pro):
+    from brian2 import ms, mV, nA, Mohm, second
+    ns = dict(tau_mem=10 * ms, V_rev=-65 * mV, V_reset=-70 * mV, V_th=-55 * mV, R_mem=10 * Mohm, tau_syn=5 * ms, tau_OU=5 * ms,
+              I_0=0.15 * nA, sigma_wn=0.05 * nA * second ** 0.5, alpha_p=cfg.plasticity.alpha,
+              tau_p=cfg.plasticity.tau_p_s / cfg.time_compression * second, theta_pro=theta_pro, quiet=quiet)
+    out = []
+    for k, (name, n) in enumerate((("exc", n_exc), ("inh", n_inh))):
+        g = b2.NeuronGroup(n, LIF_EQS, threshold="V > V_th", reset="V = V_reset", refractory=2 * ms, method="heun", namespace=dict(ns), name=name, order=k)
+        g.V = -65 * mV; g.I_bg = 0.15 * nA
+        out.append(g)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------------------
 # one run
 # ------------------------------------------------------------------------------------------------------------
 def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembly", plasticity: bool = True,
@@ -125,10 +162,15 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
     from ..neuromod.theta import THETA_DT_S, build_theta
 
     t_wall = _time.time()
-    v = VARIANTS[variant]
-    if v.get("lif"):
-        raise NotImplementedError("the LIF variant is built only if the ladder needs it")
+    v = {}
+    for part in variant.split("+"):              # "lif+theta_pro" removes several differences at once
+        v.update(VARIANTS[part])
+    lif = bool(v.get("lif"))
     cfg = base_config(seed, v, plasticity)
+    if lif:                                      # the paper's cell has no T-current, gap junctions, drift, theta or CREB
+        cfg.mechanisms.t_current = False; cfg.mechanisms.gap_junctions = False; cfg.sim.dt_ms = 0.2
+        if v.get("pl_clock_neuron"):
+            cfg.plasticity.update_dt_ms = 0.2
     cfg.network.n_exc, cfg.network.n_inh = n_exc, n_inh
     F = cfg.time_compression
     n_ca = max(int(round(N_CA * n_exc / N_EXC)), 4); n_cue = n_ca // 2
@@ -155,21 +197,25 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
     th_t, th, _ = build_theta(cfg, total, np.array([]), seed)
     THETA = b2.TimedArray(th, dt=THETA_DT_S * second, name="ta_theta")
 
-    E = nmodel.make_group(n_exc, net_c.exc, cfg, "exc", NM, NS, "exc", rng, THETA, order=0)
-    I = nmodel.make_group(n_inh, net_c.inh, cfg, "inh", NM, NS, "inh", rng, THETA, order=1)
-    if v.get("theta_pro_paper"):
-        E.namespace["nm_dep"] = 0.0                       # theta_pro = theta_pro_default (0.5 h_0) x in-degree scale (1 here)
+    if lif:
+        E, I = _lif_groups(b2, cfg, n_exc, n_inh, NS, theta_pro=(cfg.plasticity.theta_pro_default if v.get("theta_pro_paper")
+                                                                  else 1.0 / (cfg.neuromod.tonic + 0.001)) * (net_c.p_conn * n_exc / 160.0))
+    else:
+        E = nmodel.make_group(n_exc, net_c.exc, cfg, "exc", NM, NS, "exc", rng, THETA, order=0)
+        I = nmodel.make_group(n_inh, net_c.inh, cfg, "inh", NM, NS, "inh", rng, THETA, order=1)
+        if v.get("theta_pro_paper"):
+            E.namespace["nm_dep"] = 0.0                   # theta_pro = theta_pro_default (0.5 h_0) x in-degree scale (1 here)
 
     # ---- direct stimulation, Eq. 16: OU current, mean N f w, SD w sqrt(N f / (2 tau)), tau = tau_syn. The weight w is
     # neurotape's h_0-equivalent: one unit synapse, g0 x (E_e - E_L), as a current. Like the paper's, it is large enough
     # that stimulated cells fire at their refractory limit. ----
-    w_unit = net_c.g0_nS * nS * (net_c.E_e_mV - net_c.exc.EL_mV) * mV
+    w_unit = H0_MV * mV if lif else net_c.g0_nS * nS * (net_c.E_e_mV - net_c.exc.EL_mV) * mV      # LIF: the paper's own h_0 (as R x I)
     tau = net_c.tau_e_ms * ms
     mu = N_STIM * F_STIM * w_unit
     sd = w_unit * np.sqrt(N_STIM * F_STIM) / np.sqrt(2 * float(tau / second))
     k_ou = float(np.exp(-cfg.sim.dt_ms * ms / tau)); s_ou = sd * np.sqrt(1 - k_ou ** 2)
     stim_ns = dict(mu_s=mu, k_ou=k_ou, s_ou=s_ou, GL=GL, GC=GC, dt_s=cfg.sim.dt_ms * ms)
-    code = "I_inj = G*(mu_s + Gp*(I_inj - mu_s)*k_ou + s_ou*randn())"
+    code = "I_inj = G*(mu_s + Gp*(I_inj - mu_s)*k_ou + s_ou*randn())".replace("I_inj", "V_stim" if lif else "I_inj")
     groups = {"cued": (slice(0, n_cue), "(GL(t) + GC(t))", "(GL(t - dt_s) + GC(t - dt_s))"),
               "ans": (slice(n_cue, n_ca), "GL(t)", "GL(t - dt_s)")}
     if cue == "shuffled":
@@ -181,7 +227,7 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
         stim_ops.append(sub.run_regularly(code.replace("Gp", g_prev).replace("G*", g_now + "*"), when="start", order=10 + k_, name=f"stim_{name}"))
         sub.namespace.update(stim_ns) if hasattr(sub, "namespace") else None
     E.namespace.update(stim_ns)
-    if ff:
+    if ff and not lif:
         # background MEAN off as well while fast-forwarding (noise SD is already gated by ta_noise)
         E.run_regularly("I_bg = I_bg*NSq(t)", when="start", order=20, name="ff_e"); I.run_regularly("I_bg = I_bg*NSq(t)", when="start", order=21, name="ff_i")
         E.namespace["NSq"] = NS; I.namespace["NSq"] = NS
@@ -192,15 +238,22 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
             np.fill_diagonal(m_, False)
         return np.nonzero(m_)
 
-    S_ee = b2.Synapses(E, E, stc.plastic_model(cfg), on_pre=stc.ON_PRE, on_post=stc.ON_POST, delay=stc.delays(cfg), method="heun",
-                       namespace=stc.namespace(cfg), dt=cfg.plasticity.update_dt_ms * ms, name="ee", order=2)
+    ee_pre = dict(stc.ON_PRE, pre_v="V_psp_post += h_0v*clip(h + z, 0, 10)") if lif else stc.ON_PRE
+    S_ee = b2.Synapses(E, E, stc.plastic_model(cfg), on_pre=ee_pre, on_post=stc.ON_POST, delay=stc.delays(cfg), method="heun",
+                       namespace=dict(stc.namespace(cfg), h_0v=H0_MV * mV), dt=cfg.plasticity.update_dt_ms * ms, name="ee", order=2)
     ee_i, ee_j = rand_conn(n_exc, n_exc, net_c.p_conn, True); S_ee.connect(i=ee_i, j=ee_j); S_ee.h = 1.0; S_ee.z = 0.0
     ax = net_c.axon_delay_ms * ms
-    S_ei = b2.Synapses(E, I, on_pre="g_e_post += w_syn", namespace=dict(w_syn=net_c.w_ei_nS * nS), delay=ax, name="ei")
+    if lif:        # current-based, the paper's 2 / 4 / 4 h_0
+        pre_e = pre_ie = pre_ii = "V_psp_post += w_syn"
+        w_ei, w_ie, w_ii, w_b = 2.0 * H0_MV * mV, -4.0 * H0_MV * mV, -4.0 * H0_MV * mV, 0 * mV
+    else:
+        pre_e, pre_ie, pre_ii = "g_e_post += w_syn", "g_i_post += w_syn; g_b_post += w_b", "g_i_post += w_syn"
+        w_ei, w_ie, w_ii, w_b = net_c.w_ei_nS * nS, net_c.w_ie_nS * nS, net_c.w_ii_nS * nS, net_c.w_ie_b_nS * nS
+    S_ei = b2.Synapses(E, I, on_pre=pre_e, namespace=dict(w_syn=w_ei), delay=ax, name="ei")
     a_, b_ = rand_conn(n_exc, n_inh, net_c.p_conn); S_ei.connect(i=a_, j=b_)
-    S_ie = b2.Synapses(I, E, on_pre="g_i_post += w_syn; g_b_post += w_b", namespace=dict(w_syn=net_c.w_ie_nS * nS, w_b=net_c.w_ie_b_nS * nS), delay=ax, name="ie")
+    S_ie = b2.Synapses(I, E, on_pre=pre_ie, namespace=dict(w_syn=w_ie, w_b=w_b), delay=ax, name="ie")
     a_, b_ = rand_conn(n_inh, n_exc, net_c.p_conn); S_ie.connect(i=a_, j=b_)
-    S_ii = b2.Synapses(I, I, on_pre="g_i_post += w_syn", namespace=dict(w_syn=net_c.w_ii_nS * nS), delay=ax, name="ii")
+    S_ii = b2.Synapses(I, I, on_pre=pre_ii, namespace=dict(w_syn=w_ii), delay=ax, name="ii")
     a_, b_ = rand_conn(n_inh, n_inh, net_c.p_conn, True); S_ii.connect(i=a_, j=b_)
     objs = [E, I, S_ee, S_ei, S_ie, S_ii] + stim_ops
     if mech.gap_junctions:
@@ -238,6 +291,8 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
     v_standby = np.bincount(i[(t >= 5.0) & (t < 10.0)], minlength=n_exc) / 5.0
     out = dict(seed=seed, recall=recall, variant=variant, cue=cue, plasticity=plasticity, t_cue=t_cue, F=F, wall_s=_time.time() - t_wall,
                **q_star(v_rec, cued, ans, never), MI=mutual_information(v_learn, v_rec),
+               Q_ref_readout=q_star(reference_readout(v_rec), cued, ans, never)["Q"],
+               counts_recall=(v_rec * RATE_WINDOW_S).astype(int).tolist(), counts_learn=(v_learn * RATE_WINDOW_S).astype(int).tolist(),
                nu_control_assembly=float(v_rec[ctrl_assembly].mean()),
                rate_learning_pulse_hz=float(((t >= 10.0) & (t < 10.1) & (i < n_ca)).sum() / n_ca / 0.1),
                rate_cue_pulse_hz=float(((t >= t_cue) & (t < t_cue + 0.1) & np.isin(i, cued)).sum() / cued.size / 0.1),
@@ -260,12 +315,13 @@ def _worker(job):
 PAPER = dict(Q={"10s": (0.0303, 0.0029), "8h": (0.0349, 0.0037)}, MI={"10s": (0.8742, 0.0346), "8h": (0.9759, 0.0231)})
 
 
-def score(runs_10s, runs_8h, n_expected=10):
-    """The three pre-registered criteria of docs/repro/TARGET.md, applied to one condition."""
+def score(runs_10s, runs_8h, n_expected=10, q_key="Q"):
+    """The three pre-registered criteria of docs/repro/TARGET.md, applied to one condition. `q_key` = "Q_ref_readout"
+    scores Q like-for-like with the paper's numbers (see reference_readout); "Q" uses true spike counts."""
     out, vals = {}, {}
     for key, rs in (("10s", runs_10s), ("8h", runs_8h)):
         ok = [r for r in rs if r.get("ok")]
-        vals[key] = dict(Q=[r["Q"] for r in ok], MI=[r["MI"] for r in ok])
+        vals[key] = dict(Q=[r[q_key] for r in ok], MI=[r["MI"] for r in ok])
         for mname in ("Q", "MI"):
             x = np.array(vals[key][mname], float); m, s = PAPER[mname][key]
             out[f"{mname}_{key}"] = dict(mean=float(np.nanmean(x)) if x.size else float("nan"), sd=float(np.nanstd(x, ddof=1)) if x.size > 1 else float("nan"),
@@ -316,7 +372,7 @@ def run_stage(stage: str, seeds, workers: int, extra: list | None = None):
     jobs = []
     for name, kw, recalls in conds:
         for rc in recalls:                       # long (8 h) jobs are queued first
-            f = RUNS_DIR / f"{name.replace(':', '_')}__{rc}.json"
+            f = RUNS_DIR / f"{name.replace(':', '_').replace('+', '-')}__{rc}.json"
             if f.exists():
                 continue
             jobs += [dict(tag=f"{name}|{rc}", seed=int(s), recall=rc, **kw) for s in seeds]
@@ -328,7 +384,7 @@ def run_stage(stage: str, seeds, workers: int, extra: list | None = None):
         by.setdefault(r["tag"], []).append(r)
     for tag, rs in by.items():
         name, rc = tag.split("|")
-        (RUNS_DIR / f"{name.replace(':', '_')}__{rc}.json").write_text(json.dumps(rs, indent=1, default=float))
+        (RUNS_DIR / f"{name.replace(':', '_').replace('+', '-')}__{rc}.json").write_text(json.dumps(rs, indent=1, default=float))
     return by
 
 
@@ -337,3 +393,33 @@ def exp_repro_lt2021(cfg: Config, seeds, workers):
     stage = os.environ.get("NEUROTAPE_REPRO_STAGE", "as_is")
     run_stage(stage, seeds, workers)
     return RUNS_DIR
+
+
+# ------------------------------------------------------------------------------------------------------------
+# report: docs/repro/REPORT.md from whatever has been run. Nothing is summarised that was not run.
+# ------------------------------------------------------------------------------------------------------------
+def _load(name, rc):
+    import json
+    f = RUNS_DIR / f"{name.replace(':', '_').replace('+', '-')}__{rc}.json"
+    return json.loads(f.read_text()) if f.exists() else None
+
+
+def _ms(x, fmt="{:.4f}"):
+    x = np.array([v for v in x if v is not None and np.isfinite(v)], float)
+    return "—" if x.size == 0 else (fmt + " ± " + fmt).format(x.mean(), x.std(ddof=1) if x.size > 1 else float("nan"))
+
+
+def condition_rows(name):
+    """One table row per delay for a stored condition, plus its score if both delays exist."""
+    rows, runs = [], {}
+    for rc in ("10s", "8h"):
+        rs = _load(name, rc)
+        if rs is None:
+            continue
+        ok = [r for r in rs if r.get("ok")]; runs[rc] = rs
+        rows.append(dict(name=name, delay=rc, n_ok=len(ok), n=len(rs), nu_as=_ms([r["nu_as"] for r in ok], "{:.1f}"), nu_ans=_ms([r["nu_ans"] for r in ok], "{:.2f}"),
+                         nu_ctrl=_ms([r["nu_ctrl"] for r in ok], "{:.2f}"), Q=_ms([r["Q"] for r in ok]), Q_ref=_ms([r["Q_ref_readout"] for r in ok]),
+                         MI=_ms([r["MI"] for r in ok]), b=sum(1 for r in ok if r["nu_ans"] > r["nu_control_assembly"]),
+                         standby=_ms([r["standby_e_hz"] for r in ok], "{:.3f}"), errors=[r.get("error") for r in rs if not r.get("ok")]))
+    sc = score(runs["10s"], runs["8h"], q_key="Q_ref_readout") if len(runs) == 2 else None
+    return rows, sc, runs

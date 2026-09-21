@@ -86,3 +86,15 @@ delay separately.
 magnitude of each gain is reported beside the paper's +15 % / +12 % and does not enter the criterion.
 
 A run that errors is reported as a failed seed and counts against (b); it is never dropped.
+
+## Corrections after writing (criteria untouched)
+
+- **2026-09-21, while R1 was running.** The recall cue in the paper-1 build goes to the **first 75** assembly cells
+  (`setBlockStimulus`), not a random 75 as stated above — the random draw belongs to other build configurations.
+  Found by reading which cells fire at ~94 Hz in a reference output file.
+- **2026-09-21, from the first five R1 trials.** The reference's rate read-out (`instFiringRates`) counts the first
+  in-window spike of every active cell twice, so the rates in its `_net_<t>.txt` files — and therefore **every ν and Q
+  in the paper's source data** — read one spike (2 Hz) high for each cell that fired in the window. It is a relabelling
+  of counts, so MI is exactly unchanged; Q from true counts is about 3 % lower than Q from the files. Criterion (a)
+  compares like with like: R1 is scored from the authors' files with the authors' analysis code; R2 is scored with the
+  same read-out applied (`Q_ref_readout`), and its true-count Q is reported beside it.
