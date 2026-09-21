@@ -1,0 +1,2692 @@
+[
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "plastic",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.4855,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 4051,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.11355220933102937,
+     "mean_abs": 0.023316445508159367,
+     "max_abs": 1.010054729530365,
+     "mean_signed": -0.023305775233885866
+    },
+    "late": {
+     "frac_changed": 0.022710441866205876,
+     "mean_abs": 5.304433239304447e-05,
+     "max_abs": 0.0047477660010536,
+     "mean_signed": -5.304433239304447e-05
+    },
+    "total": {
+     "frac_changed": 0.11355220933102937,
+     "mean_abs": 0.023369489840552416,
+     "max_abs": 1.013790628349774,
+     "mean_signed": -0.02335881956627891
+    },
+    "n_tagged": 99,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 71
+   },
+   "pre_first_recall": {
+    "n_synapses": 4051,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.11330535670204887,
+     "mean_abs": 0.008199391905205081,
+     "max_abs": 0.3551771392534335,
+     "mean_signed": -0.008195642663274693
+    },
+    "late": {
+     "frac_changed": 0.022710441866205876,
+     "mean_abs": 0.003307771688575349,
+     "max_abs": 0.3580155551149414,
+     "mean_signed": -0.003307771688575349
+    },
+    "total": {
+     "frac_changed": 0.11330535670204887,
+     "mean_abs": 0.01150716359378043,
+     "max_abs": 0.6883967186695198,
+     "mean_signed": -0.011503414351850042
+    },
+    "n_tagged": 87,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 54,
+    "n_cells_protein": 71
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "plastic_off",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.5070000000000001,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 4051,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 4051,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_0",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.845
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_1",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.909
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_2",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.934
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_3",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 2.0645
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_4",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.847
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_5",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.98
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_6",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.902
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_7",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.9760000000000002
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_8",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.8575
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_9",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.8809999999999998
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_10",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 2.0565
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_11",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.9579999999999997
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_12",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.8800000000000001
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_13",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.8595
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_14",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.9865
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_15",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.9445000000000001
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_16",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.9515
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_17",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 2.0085
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_18",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.8875
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_19",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.9845
+ },
+ {
+  "ok": true,
+  "seed": 0,
+  "kind": "frozen_20",
+  "syn_sig": 3233925,
+  "rate_e_encode_hz": 1.924
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "plastic",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.9949999999999999,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3917,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.14500893540975235,
+     "mean_abs": 0.03501921596512476,
+     "max_abs": 0.987905280933255,
+     "mean_signed": -0.03500337440890085
+    },
+    "late": {
+     "frac_changed": 0.03803931580291039,
+     "mean_abs": 9.27543716030748e-05,
+     "max_abs": 0.0058233219085200285,
+     "mean_signed": -9.274694638851409e-05
+    },
+    "total": {
+     "frac_changed": 0.14500893540975235,
+     "mean_abs": 0.03511197033672783,
+     "max_abs": 0.9932750136090063,
+     "mean_signed": -0.035096121355289354
+    },
+    "n_tagged": 165,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 91
+   },
+   "pre_first_recall": {
+    "n_synapses": 3917,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.14500893540975235,
+     "mean_abs": 0.012329558520111366,
+     "max_abs": 0.3456481736604272,
+     "mean_signed": -0.012327713148505903
+    },
+    "late": {
+     "frac_changed": 0.03803931580291039,
+     "mean_abs": 0.006834073540166036,
+     "max_abs": 0.35997265900817943,
+     "mean_signed": -0.006834066114951475
+    },
+    "total": {
+     "frac_changed": 0.14500893540975235,
+     "mean_abs": 0.019163624635062847,
+     "max_abs": 0.6916644400877623,
+     "mean_signed": -0.019161779263457378
+    },
+    "n_tagged": 125,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 94,
+    "n_cells_protein": 91
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "plastic_off",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.0469999999999997,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3917,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 3917,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_0",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.8989999999999998
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_1",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.0575
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_2",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.988
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_3",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.044
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_4",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.8699999999999999
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_5",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.0075
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_6",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.033
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_7",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.9225
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_8",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.9969999999999999
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_9",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.013
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_10",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.0645
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_11",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.057
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_12",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.8905
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_13",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.009
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_14",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.9594999999999998
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_15",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.0260000000000002
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_16",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.9780000000000002
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_17",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.0465
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_18",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.987
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_19",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 2.0095
+ },
+ {
+  "ok": true,
+  "seed": 1,
+  "kind": "frozen_20",
+  "syn_sig": 3100096,
+  "rate_e_encode_hz": 1.8965
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "plastic",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.4695,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3944,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0922920892494929,
+     "mean_abs": 0.04492411783378121,
+     "max_abs": 0.9767572895692201,
+     "mean_signed": -0.0449205120750589
+    },
+    "late": {
+     "frac_changed": 0.057809330628803245,
+     "mean_abs": 0.00021055163822470812,
+     "max_abs": 0.00546581929241272,
+     "mean_signed": -0.00021055163822470812
+    },
+    "total": {
+     "frac_changed": 0.0922920892494929,
+     "mean_abs": 0.04513466947200592,
+     "max_abs": 0.9822231088616329,
+     "mean_signed": -0.045131063713283605
+    },
+    "n_tagged": 228,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 134
+   },
+   "pre_first_recall": {
+    "n_synapses": 3944,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.09254563894523327,
+     "mean_abs": 0.015788142939311432,
+     "max_abs": 0.3432057407290724,
+     "mean_signed": -0.015786873454286778
+    },
+    "late": {
+     "frac_changed": 0.057809330628803245,
+     "mean_abs": 0.012236938180855554,
+     "max_abs": 0.3593426477115535,
+     "mean_signed": -0.012236938180855554
+    },
+    "total": {
+     "frac_changed": 0.09254563894523327,
+     "mean_abs": 0.028025081120166984,
+     "max_abs": 0.7025483884406258,
+     "mean_signed": -0.028023811635142334
+    },
+    "n_tagged": 206,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 167,
+    "n_cells_protein": 134
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "plastic_off",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.496,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3944,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 3944,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_0",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.659
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_1",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.3945
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_2",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.3585000000000003
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_3",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.3965
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_4",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.445
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_5",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.379
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_6",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.5364999999999998
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_7",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.738
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_8",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.641
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_9",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.3685
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_10",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.3125
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_11",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.4485
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_12",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.6285
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_13",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.4735
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_14",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.3175
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_15",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.565
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_16",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.3295000000000003
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_17",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.602
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_18",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.5945
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_19",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.48
+ },
+ {
+  "ok": true,
+  "seed": 2,
+  "kind": "frozen_20",
+  "syn_sig": 3158258,
+  "rate_e_encode_hz": 2.692
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "plastic",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.2875,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3860,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.15155440414507773,
+     "mean_abs": 0.058829593543536285,
+     "max_abs": 1.0013565372349438,
+     "mean_signed": -0.05864050547880393
+    },
+    "late": {
+     "frac_changed": 0.08316062176165803,
+     "mean_abs": 0.00023838673125240177,
+     "max_abs": 0.005240198401650996,
+     "mean_signed": -0.00023747703536854708
+    },
+    "total": {
+     "frac_changed": 0.15155440414507773,
+     "mean_abs": 0.05906798027478869,
+     "max_abs": 1.0061774975397944,
+     "mean_signed": -0.058877982514172485
+    },
+    "n_tagged": 334,
+    "n_tagged_potentiated": 1,
+    "n_late_phase": 0,
+    "n_cells_protein": 152
+   },
+   "pre_first_recall": {
+    "n_synapses": 3860,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.15155440414507773,
+     "mean_abs": 0.020719482143973407,
+     "max_abs": 0.35337969502028344,
+     "mean_signed": -0.02065740338391409
+    },
+    "late": {
+     "frac_changed": 0.08393782383419689,
+     "mean_abs": 0.017019303549884308,
+     "max_abs": 0.36113362852857034,
+     "mean_signed": -0.016832187680180383
+    },
+    "total": {
+     "frac_changed": 0.15155440414507773,
+     "mean_abs": 0.03773878569385771,
+     "max_abs": 0.7077360163013917,
+     "mean_signed": -0.03748959106409447
+    },
+    "n_tagged": 203,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 254,
+    "n_cells_protein": 152
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "plastic_off",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.3884999999999996,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3860,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 3860,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_0",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.2255000000000003
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_1",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.183
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_2",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.1675
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_3",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.221
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_4",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.3155
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_5",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.193
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_6",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.3314999999999997
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_7",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.2465
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_8",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.1254999999999997
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_9",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.0885000000000002
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_10",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.3979999999999997
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_11",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.1885000000000003
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_12",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.1149999999999998
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_13",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.138
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_14",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.1545
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_15",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.2340000000000004
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_16",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.143
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_17",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.1915
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_18",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.162
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_19",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.1795
+ },
+ {
+  "ok": true,
+  "seed": 3,
+  "kind": "frozen_20",
+  "syn_sig": 3051977,
+  "rate_e_encode_hz": 3.0875
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "plastic",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.806,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 4136,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.19825918762088976,
+     "mean_abs": 0.06843632708197175,
+     "max_abs": 1.0250404636112334,
+     "mean_signed": -0.06843188087138237
+    },
+    "late": {
+     "frac_changed": 0.08220502901353965,
+     "mean_abs": 0.000367343707535617,
+     "max_abs": 0.005592148867080799,
+     "mean_signed": -0.000367343707535617
+    },
+    "total": {
+     "frac_changed": 0.19825918762088976,
+     "mean_abs": 0.06880367078950736,
+     "max_abs": 1.0302853358768806,
+     "mean_signed": -0.06879922457891799
+    },
+    "n_tagged": 347,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 165
+   },
+   "pre_first_recall": {
+    "n_synapses": 4136,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.19825918762088976,
+     "mean_abs": 0.02410284070623334,
+     "max_abs": 0.3591723094162612,
+     "mean_signed": -0.024101278429693358
+    },
+    "late": {
+     "frac_changed": 0.08220502901353965,
+     "mean_abs": 0.0214382996664009,
+     "max_abs": 0.35956645586302544,
+     "mean_signed": -0.0214382996664009
+    },
+    "total": {
+     "frac_changed": 0.19825918762088976,
+     "mean_abs": 0.04554114037263424,
+     "max_abs": 0.7181169030560983,
+     "mean_signed": -0.04553957809609426
+    },
+    "n_tagged": 285,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 317,
+    "n_cells_protein": 165
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "plastic_off",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.8909999999999996,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 4136,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 4136,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_0",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.8594999999999997
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_1",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.4829999999999997
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_2",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.6515
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_3",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.4955
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_4",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.2600000000000002
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_5",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.3520000000000003
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_6",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.4450000000000003
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_7",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.4715000000000003
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_8",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.4625
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_9",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.7655000000000003
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_10",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.4810000000000003
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_11",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.732
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_12",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.316
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_13",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.785
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_14",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.3564999999999996
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_15",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.3890000000000002
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_16",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.5145000000000004
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_17",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.7060000000000004
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_18",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.6615
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_19",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.8914999999999997
+ },
+ {
+  "ok": true,
+  "seed": 4,
+  "kind": "frozen_20",
+  "syn_sig": 3313236,
+  "rate_e_encode_hz": 3.4025
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "plastic",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.3649999999999998,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3900,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.08333333333333333,
+     "mean_abs": 0.04577455937452634,
+     "max_abs": 0.9747788698422026,
+     "mean_signed": -0.04577455937452634
+    },
+    "late": {
+     "frac_changed": 0.054615384615384614,
+     "mean_abs": 0.00020394195472438933,
+     "max_abs": 0.004850584916682029,
+     "mean_signed": -0.00020394195472438933
+    },
+    "total": {
+     "frac_changed": 0.08333333333333333,
+     "mean_abs": 0.04597850132925072,
+     "max_abs": 0.9782714086462982,
+     "mean_signed": -0.04597850132925072
+    },
+    "n_tagged": 222,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 125
+   },
+   "pre_first_recall": {
+    "n_synapses": 3900,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.08333333333333333,
+     "mean_abs": 0.01609164907150714,
+     "max_abs": 0.3419322512673655,
+     "mean_signed": -0.01609164907150714
+    },
+    "late": {
+     "frac_changed": 0.054615384615384614,
+     "mean_abs": 0.011441077287956545,
+     "max_abs": 0.3581118022299138,
+     "mean_signed": -0.011441077287956545
+    },
+    "total": {
+     "frac_changed": 0.08333333333333333,
+     "mean_abs": 0.02753272635946368,
+     "max_abs": 0.686442873900516,
+     "mean_signed": -0.02753272635946368
+    },
+    "n_tagged": 198,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 149,
+    "n_cells_protein": 125
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "plastic_off",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.4125,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3900,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 3900,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_0",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.3305
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_1",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.2325
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_2",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.3295000000000003
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_3",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.2605
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_4",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.354
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_5",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.403
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_6",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.127
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_7",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.3135000000000003
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_8",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.3235
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_9",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.168
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_10",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.339
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_11",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.301
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_12",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.311
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_13",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.2715
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_14",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.4055
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_15",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.371
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_16",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.359
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_17",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.226
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_18",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.449
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_19",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.3145
+ },
+ {
+  "ok": true,
+  "seed": 5,
+  "kind": "frozen_20",
+  "syn_sig": 3126133,
+  "rate_e_encode_hz": 2.467
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "plastic",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8210000000000001,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3982,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.07910597689603215,
+     "mean_abs": 0.011211037134651757,
+     "max_abs": 0.9724218469383933,
+     "mean_signed": -0.011205661281308503
+    },
+    "late": {
+     "frac_changed": 0.01054746358613762,
+     "mean_abs": 3.7516005146014906e-06,
+     "max_abs": 0.00457096320795713,
+     "mean_signed": -3.7516005146014906e-06
+    },
+    "total": {
+     "frac_changed": 0.07910597689603215,
+     "mean_abs": 0.01121478873516636,
+     "max_abs": 0.9724384478802877,
+     "mean_signed": -0.011209412881823103
+    },
+    "n_tagged": 58,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 38
+   },
+   "pre_first_recall": {
+    "n_synapses": 3982,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.07910597689603215,
+     "mean_abs": 0.0039461474353369805,
+     "max_abs": 0.3421321782670539,
+     "mean_signed": -0.00394425850781281
+    },
+    "late": {
+     "frac_changed": 0.01054746358613762,
+     "mean_abs": 0.0004639460612087546,
+     "max_abs": 0.3006399487391771,
+     "mean_signed": -0.0004639460612087546
+    },
+    "total": {
+     "frac_changed": 0.07910597689603215,
+     "mean_abs": 0.004410093496545735,
+     "max_abs": 0.6200025269312587,
+     "mean_signed": -0.004408204569021564
+    },
+    "n_tagged": 38,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 8,
+    "n_cells_protein": 38
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "plastic_off",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8255000000000001,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3982,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 3982,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_0",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.834
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_1",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8474999999999999
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_2",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.9015000000000001
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_3",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.898
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_4",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8119999999999999
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_5",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8400000000000001
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_6",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8394999999999999
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_7",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8539999999999999
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_8",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8234999999999999
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_9",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.9155
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_10",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.857
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_11",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8895
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_12",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8805
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_13",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.9029999999999999
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_14",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8550000000000001
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_15",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8675
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_16",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8574999999999999
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_17",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.882
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_18",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.877
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_19",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.853
+ },
+ {
+  "ok": true,
+  "seed": 6,
+  "kind": "frozen_20",
+  "syn_sig": 3163020,
+  "rate_e_encode_hz": 0.8800000000000001
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "plastic",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2395,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3908,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.11284544524053224,
+     "mean_abs": 0.021704282329402306,
+     "max_abs": 0.9892413638342606,
+     "mean_signed": -0.021692923432325074
+    },
+    "late": {
+     "frac_changed": 0.022517911975435005,
+     "mean_abs": 7.073551947252312e-05,
+     "max_abs": 0.005942345996914852,
+     "mean_signed": -7.073551947252312e-05
+    },
+    "total": {
+     "frac_changed": 0.11284544524053224,
+     "mean_abs": 0.02177501784887483,
+     "max_abs": 0.9925588979874977,
+     "mean_signed": -0.021763658951797597
+    },
+    "n_tagged": 86,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 75
+   },
+   "pre_first_recall": {
+    "n_synapses": 3908,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.11284544524053224,
+     "mean_abs": 0.007626158383146289,
+     "max_abs": 0.34716323277259054,
+     "mean_signed": -0.007622167178036294
+    },
+    "late": {
+     "frac_changed": 0.022517911975435005,
+     "mean_abs": 0.002420083585139504,
+     "max_abs": 0.355868892032651,
+     "mean_signed": -0.002420083585139504
+    },
+    "total": {
+     "frac_changed": 0.11284544524053224,
+     "mean_abs": 0.010046241968285793,
+     "max_abs": 0.6937751237446135,
+     "mean_signed": -0.010042250763175801
+    },
+    "n_tagged": 81,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 70,
+    "n_cells_protein": 75
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "plastic_off",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2595,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3908,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 3908,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_0",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2730000000000001
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_1",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.197
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_2",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.1515
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_3",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2215
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_4",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.1505
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_5",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2265000000000001
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_6",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2405
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_7",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2355
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_8",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2015
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_9",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2654999999999998
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_10",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2305
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_11",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.251
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_12",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2035
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_13",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.248
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_14",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2730000000000001
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_15",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_16",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.226
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_17",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.192
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_18",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.2175
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_19",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.3045
+ },
+ {
+  "ok": true,
+  "seed": 7,
+  "kind": "frozen_20",
+  "syn_sig": 3091453,
+  "rate_e_encode_hz": 1.3265
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "plastic",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.3785,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3882,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.08578052550231839,
+     "mean_abs": 0.020935942936263406,
+     "max_abs": 1.004842988627882,
+     "mean_signed": -0.02093503873590996
+    },
+    "late": {
+     "frac_changed": 0.016743946419371457,
+     "mean_abs": 3.5148333777133085e-05,
+     "max_abs": 0.0043605592397767705,
+     "mean_signed": -3.5148333777133085e-05
+    },
+    "total": {
+     "frac_changed": 0.08578052550231839,
+     "mean_abs": 0.020971091270040536,
+     "max_abs": 1.00810615025936,
+     "mean_signed": -0.020970187069687098
+    },
+    "n_tagged": 125,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 31
+   },
+   "pre_first_recall": {
+    "n_synapses": 3882,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.08578052550231839,
+     "mean_abs": 0.007356316538442064,
+     "max_abs": 0.3530742856094322,
+     "mean_signed": -0.007355998827220064
+    },
+    "late": {
+     "frac_changed": 0.017001545595054096,
+     "mean_abs": 0.0020170591093919615,
+     "max_abs": 0.34443948834044913,
+     "mean_signed": -0.0020170591093919615
+    },
+    "total": {
+     "frac_changed": 0.08578052550231839,
+     "mean_abs": 0.009373375647834026,
+     "max_abs": 0.6786175869961385,
+     "mean_signed": -0.009373057936612025
+    },
+    "n_tagged": 80,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 36,
+    "n_cells_protein": 31
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "plastic_off",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.4140000000000001,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 3882,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 3882,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_0",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.5735
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_1",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.621
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_2",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6375
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_3",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.8370000000000002
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_4",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6260000000000001
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_5",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.686
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_6",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.5275
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_7",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6524999999999999
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_8",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.677
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_9",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.7704999999999997
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_10",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.7434999999999998
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_11",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6535
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_12",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6664999999999999
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_13",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6920000000000002
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_14",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6644999999999999
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_15",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6765
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_16",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.7605
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_17",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6489999999999998
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_18",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.592
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_19",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.6105
+ },
+ {
+  "ok": true,
+  "seed": 8,
+  "kind": "frozen_20",
+  "syn_sig": 3048532,
+  "rate_e_encode_hz": 1.682
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "plastic",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.7535,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 4074,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.12886597938144329,
+     "mean_abs": 0.027838873615452092,
+     "max_abs": 0.9988551430441331,
+     "mean_signed": -0.027830463003500026
+    },
+    "late": {
+     "frac_changed": 0.030682376043200784,
+     "mean_abs": 5.842711396685479e-05,
+     "max_abs": 0.005382536482410746,
+     "mean_signed": -5.842711396685479e-05
+    },
+    "total": {
+     "frac_changed": 0.12886597938144329,
+     "mean_abs": 0.027897300729418945,
+     "max_abs": 1.0005659507145348,
+     "mean_signed": -0.027888890117466886
+    },
+    "n_tagged": 140,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 92
+   },
+   "pre_first_recall": {
+    "n_synapses": 4074,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.12886597938144329,
+     "mean_abs": 0.009796050298569678,
+     "max_abs": 0.3500921692222779,
+     "mean_signed": -0.009793095040046633
+    },
+    "late": {
+     "frac_changed": 0.030682376043200784,
+     "mean_abs": 0.0033165634030809447,
+     "max_abs": 0.3591936191439649,
+     "mean_signed": -0.0033165634030809447
+    },
+    "total": {
+     "frac_changed": 0.12886597938144329,
+     "mean_abs": 0.013112613701650623,
+     "max_abs": 0.696235488531991,
+     "mean_signed": -0.01310965844312758
+    },
+    "n_tagged": 95,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 56,
+    "n_cells_protein": 92
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "plastic_off",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.7550000000000001,
+  "mag": {
+   "post_encode": {
+    "n_synapses": 4074,
+    "snapshot": "post_encode",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   },
+   "pre_first_recall": {
+    "n_synapses": 4074,
+    "snapshot": "pre_first_recall",
+    "early": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "late": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "total": {
+     "frac_changed": 0.0,
+     "mean_abs": 0.0,
+     "max_abs": 0.0,
+     "mean_signed": 0.0
+    },
+    "n_tagged": 0,
+    "n_tagged_potentiated": 0,
+    "n_late_phase": 0,
+    "n_cells_protein": 0
+   }
+  }
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_0",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5135
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_1",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.7205
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_2",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.6195
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_3",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.459
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_4",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5275
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_5",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.4725
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_6",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5045
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_7",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.504
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_8",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.522
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_9",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.59
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_10",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.598
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_11",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5725
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_12",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.7305
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_13",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.6260000000000001
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_14",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5085000000000002
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_15",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5545
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_16",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5925
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_17",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.559
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_18",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.5885
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_19",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.538
+ },
+ {
+  "ok": true,
+  "seed": 9,
+  "kind": "frozen_20",
+  "syn_sig": 3221792,
+  "rate_e_encode_hz": 1.6019999999999999
+ }
+]

@@ -42,6 +42,16 @@ is **identical with frozen weights**, so it is wiring, not memory. The diagnosis
 *what fires carries no temporal content*. Operator's sequencing: **800 E / 200 I next, before more mechanisms**;
 the ACh-like disinhibitory and theta-to-threshold drives are held in `docs/DEFERRED.md`.
 
+**Storage diagnostic (230 runs, 0 failed): FAIL against its pre-registered criterion, and case (ii) holds — ΔW is
+non-zero but NOT stream-specific.** Encoding changes 8–20 % of E→E synapses and consolidates some of them, but the
+ΔW predicted from *any* of 20 never-played streams matches what was written as well as the stored stream's does
+(r ≈ 0.98 for all 21; stored rank 3–19, mean 10.2 = chance; 1st in **0/10** seeds). What gets written is set by which
+cells fire hard — wiring and excitability — not by the stimulus. And it is **almost pure depression: 0 of 1398 tags are
+potentiation**; calcium reaches θ_d routinely and θ_p almost never at these firing rates. The offline predictor
+reproduces the real ΔW at r = 0.999 from the run's own activity, so the instrument is sound. **Nothing was changed
+in response.** `mechanisms.nm_recall_only` (D1) now keeps the NM drive out of the encoding phase; any future drive
+run uses it on.
+
 **Built and NOT run (2026-09-21).** (1) The **binaural front end** — stereo loader, ITD+ILD spatialiser (not an
 HRTF), two independent cochleae, a wired MSO coincidence population, a neurophonic computed from postsynaptic
 currents, and a linear ephaptic term absent at `g_eph = 0`; its experiment was started and **stopped at the
@@ -69,6 +79,7 @@ uv pip install --python .venv/bin/python --no-build-isolation "cochlea @ git+htt
 .venv/bin/neurotape encode --demo 2 --config configs/quick.yaml   # labelled synthetic streams
 .venv/bin/neurotape exp <name> --config configs/quick.yaml --seeds 10 --workers 6
 #   delay streams ablations baselines lehr population attention codec salience recall_modes | all
+#   (not in `all`: recall_drive  storage_diagnostic  binaural [held]  completion [blocked])
 ```
 
 Outputs: `results/<timestamp>_<name>/` — `config.yaml`, `runs.json` (every seed, including failed

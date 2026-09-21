@@ -138,6 +138,86 @@ chosen after looking. The nearest miss is `cue_nm · ×1` at 5 min, lower CI bou
 **Next, per the operator's sequencing:** the excitability drive is null → **800 E / 200 I before any further
 mechanism.** The disinhibitory (ACh-like) and theta-to-threshold drives stay held — `docs/DEFERRED.md`.
 
+## Storage diagnostic (2026-09-21) — `storage_diagnostic/REPORT.md`
+
+**Question.** `recall_drive` returned 0 of 18 and its frozen-weights control showed reactivation is the same with
+plasticity on or off. Before any scale-up: does encoding write anything **stream-specific** into the weights?
+
+**Design.** 200 E / 50 I, `quick.yaml`, drive off, the `recall_drive` baseline seeds (0–9) and stimuli; one recall
+probe after the 120 s consolidation interval, so the post-consolidation snapshot precedes every recall cue
+(encoding is identical to the baseline). Per seed: the plastic run; a plasticity-off run (null b); and 21
+plasticity-frozen **replicate** runs — the stored stream plus the same 20 foreign streams used as the recall null —
+with identical wiring but a **different membrane-noise stream and different auditory-nerve spikes** than the plastic
+run, so the stored stream cannot win by sharing a noise realisation. From each frozen run the ΔW it *would* have
+written is predicted with the network's own calcium / early-phase / protein / capture equations and correlated
+with the observed ΔW over the synapses that exist. **230 runs, 0 failed, bit-reproducible.**
+
+**Pre-registered pass** (fixed before any run, in `experiments/diagnostic.py`): on total ΔW at the pre-first-recall
+snapshot, the stored stream ranks 1st of 21 in ≥ 7/10 seeds **and** beats the 95th percentile of a 1000-shuffle
+permutation null in ≥ 7/10 seeds.
+
+### Verdict: **FAIL** — stored stream ranks 1st in **0 of 10** seeds (needed ≥ 7); beats the permutation null in 10 of 10 (needed ≥ 7).
+
+### Which case holds: **(ii) ΔW is non-zero but not stream-specific → the plasticity rule or the AHP timescale is the lead.**
+
+Not (i): the stored stream does not rank first. Not (iii): weights change, tags are set and synapses consolidate.
+
+### D2 — ΔW magnitudes, pre-encoding → immediately before the first recall cue (units of baseline weight h₀)
+
+| seed | synapses | fraction changed (early / late) | mean \|ΔW\| (early / late / total) | max \|ΔW\| total | tagged (of which potentiated) | late-phase synapses | cells with protein | null (b): max \|ΔW\|, plasticity off |
+|---|---|---|---|---|---|---|---|---|
+| 0 | 4051 | 0.113 / 0.023 | 0.0082 / 0.0033 / 0.0115 | 0.688 | 87 (0) | 54 | 71 | 0 |
+| 1 | 3917 | 0.145 / 0.038 | 0.0123 / 0.0068 / 0.0192 | 0.692 | 125 (0) | 94 | 91 | 0 |
+| 2 | 3944 | 0.093 / 0.058 | 0.0158 / 0.0122 / 0.0280 | 0.703 | 206 (0) | 167 | 134 | 0 |
+| 3 | 3860 | 0.152 / 0.084 | 0.0207 / 0.0170 / 0.0377 | 0.708 | 203 (0) | 254 | 152 | 0 |
+| 4 | 4136 | 0.198 / 0.082 | 0.0241 / 0.0214 / 0.0455 | 0.718 | 285 (0) | 317 | 165 | 0 |
+| 5 | 3900 | 0.083 / 0.055 | 0.0161 / 0.0114 / 0.0275 | 0.686 | 198 (0) | 149 | 125 | 0 |
+| 6 | 3982 | 0.079 / 0.011 | 0.0039 / 0.0005 / 0.0044 | 0.620 | 38 (0) | 8 | 38 | 0 |
+| 7 | 3908 | 0.113 / 0.023 | 0.0076 / 0.0024 / 0.0100 | 0.694 | 81 (0) | 70 | 75 | 0 |
+| 8 | 3882 | 0.086 / 0.017 | 0.0074 / 0.0020 / 0.0094 | 0.679 | 80 (0) | 36 | 31 | 0 |
+| 9 | 4074 | 0.129 / 0.031 | 0.0098 / 0.0033 / 0.0131 | 0.696 | 95 (0) | 56 | 92 | 0 |
+
+- **Encoding writes.** 8–20 % of E→E synapses change; 38–285 are tagged; 8–317 reach the late phase; 31–165 cells
+  synthesise protein. At the end of encoding the largest early-phase change is ≈ 1.0 h₀ — a synapse driven to zero.
+- **It writes depression, almost only.** Of **1398 tags across the ten seeds at the post-consolidation snapshot, 0 are
+  potentiation** (at the end of encoding: 1 of 1804). Mean signed ΔW is negative in both phases (early −0.013, late −0.008).
+  Calcium crosses the LTD threshold (θ_d = 1.2) routinely and the LTP threshold (θ_p = 3.0) almost never at this
+  network's firing rates. **This is a lead, not a fix — nothing was changed.**
+- **Null (b):** with plasticity off, ΔW is **exactly 0** in every seed, both snapshots, all three components.
+
+### D3 — rank of the stored stream among 21 (chance = 1/21; mean rank under chance = 11)
+
+| seed | **total ΔW** (the pre-registered test): rank, r stored / best foreign | early-phase: rank, r | late-phase: rank, r | beats permutation p95 (total) |
+|---|---|---|---|---|
+| 0 | **4**, +0.893 / +0.909 | 3, +0.925 | 4, +0.785 | yes (p95 +0.030) |
+| 1 | **12**, +0.984 / +0.989 | 10, +0.982 | 12, +0.975 | yes |
+| 2 | **16**, +0.987 / +0.994 | 15, +0.986 | 16, +0.982 | yes |
+| 3 | **3**, +0.986 / +0.986 | 6, +0.987 | **1**, +0.979 | yes |
+| 4 | **18**, +0.986 / +0.994 | 15, +0.989 | 19, +0.979 | yes |
+| 5 | **15**, +0.980 / +0.991 | 13, +0.984 | 15, +0.970 | yes |
+| 6 | **19**, +0.988 / +0.997 | 20, +0.991 | 21, +0.931 | yes |
+| 7 | **8**, +0.991 / +0.994 | 7, +0.990 | 7, +0.977 | yes |
+| 8 | **3**, +0.960 / +0.964 | 2, +0.977 | **1**, +0.896 | yes |
+| 9 | **4**, +0.973 / +0.984 | 4, +0.986 | 5, +0.906 | yes |
+| | mean rank **10.2**, 1st in **0/10** | mean 9.5, 1st in 0/10 | mean 10.1, 1st in 2/10 | **10/10** |
+
+- **Every stream predicts the written ΔW almost perfectly — including the twenty that were never played.** Foreign
+  predictions correlate with the observed ΔW at r ≈ 0.96–0.99, the same as the stored stream's; stored minus mean
+  foreign r is +0.006 (range −0.006 … +0.032). The stored stream's rank is scattered across 3–19, mean 10.2, which is chance.
+- **So what is written is set by the network, not by the stimulus:** which synapses depress is determined by which
+  cells fire hard, and that is fixed by wiring and excitability — the same conclusion the frozen-weights control
+  reached for recall-phase reactivation, now reached for the weights themselves.
+- **The permutation null passes 10/10 and means little here.** It shows ΔW is structured with respect to activity,
+  which a stream-independent write also satisfies. The rank test is the one that answers the question, and it fails.
+- Late-phase rank 1 in 2/10 seeds against ~0.5 expected is not read as a signal: those seeds' margins over the best
+  foreign stream are < 0.001 in r, and the early-phase and total ranks of the same seeds are 2–6.
+- **The instrument works.** Fed the plastic run's *own* activity, the offline predictor reproduces the observed ΔW
+  at r = 0.999 (early), 0.983–0.999 (late), 0.998–1.000 (total). The null result is not a broken predictor.
+- The end-of-encoding snapshot gives the same picture (early-phase ranks 3, 10, 15, 6, 15, 13, 20, 7, 1, 4).
+
+**Not acted on, per instruction.** No parameter, threshold, rule or wiring was changed. `dw_arrays.npz` (observed and
+stored-stream-predicted ΔW per seed) stays in the gitignored `results/` folder; everything else is in `storage_diagnostic/`.
+
 ## Built, NOT run (2026-09-21) — binaural front end; retrieval-as-writing; iterative settling
 
 Recorded here so an absence of results is not mistaken for a null.
