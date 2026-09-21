@@ -48,7 +48,7 @@ def evaluate(res, inputs, cfg: Config, targets: np.ndarray | None = None) -> dic
     n = min(len(X), len(Y)); X, Y = X[:n], Y[:n]
     ntr = int(dc.train_fraction * n)
     dec = ro.fit_ridge(X[:ntr], Y[:ntr], dc.alphas)
-    out: dict = {"alpha": dec.alpha, "n_streams": S}
+    out: dict = {"alpha": dec.alpha, "n_streams": S, "n_input_units": int(inputs.spikes_enc.n)}
 
     pred_te = dec.predict(X[ntr:])
     C = ro.crosstalk(pred_te, Y[ntr:], S)

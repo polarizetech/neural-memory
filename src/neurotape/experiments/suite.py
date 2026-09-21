@@ -269,8 +269,10 @@ def _recall_modes_worker(job):
         from ..frontend.filterbank import analyse
         from ..frontend.io import synthetic_streams
         cfg = Config.model_validate(job["cfg"]); dc = cfg.decode
-        inputs = build_inputs(C.get_streams({"n": 1}, cfg), cfg); res = simulate(cfg, inputs)
+        inputs = build_inputs(C.get_streams(job.get("streams") or {"n": 1}, cfg), cfg); res = simulate(cfg, inputs)
         out, dec = evaluate(res, inputs, cfg)
+        S_ = inputs.env.shape[0]; B_ = inputs.env.shape[1]; k_ = cfg.protocol.cue_stream
+        col = slice(k_ * B_, (k_ + 1) * B_)                       # the foreign-stream test is on the CUED stream's bands
         Y = ro.resample_targets(inputs.env, inputs.env_rate, dc.rate_hz)
         out["esn"] = baselines.esn_evaluate(inputs, res.timeline, cfg, Y, cfg.seed)
         foreign = [ro.resample_targets(analyse(synthetic_streams(1, cfg.protocol.encode_s, seed=10_000 + cfg.seed * 100 + j)[0],
@@ -279,8 +281,8 @@ def _recall_modes_worker(job):
         max_lag = int((1.0 if cfg.protocol.cued else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)) * dc.rate_hz)
         for rec, seg in zip(out["recall"], res.timeline.recalls()):
             X = ro.activity_features(*res.spikes_e, res.n_exc, seg.t0, seg.t1, dc.rate_hz, dc.filter_tau_ms)
-            kg = int(round((seg.cue_s + 1.0) * dc.rate_hz)); m = min(len(X), len(Y)); pr = dec.predict(X[:m])[kg:]
-            own = float(np.nanmax(ro._lagged(pr, Y[kg:m], max_lag)))
+            kg = int(round((seg.cue_s + 1.0) * dc.rate_hz)); m = min(len(X), len(Y)); pr = dec.predict(X[:m])[kg:, col]
+            own = float(np.nanmax(ro._lagged(pr, Y[kg:m, col], max_lag)))
             oth = np.array([np.nanmax(ro._lagged(pr, F[kg:m], max_lag)) for F in foreign])
             rec["foreign"] = dict(own=own, foreign_mean=float(oth.mean()), foreign_p95=float(np.percentile(oth, 95)),
                                   p=float((1 + (oth >= own).sum()) / (1 + N_FOREIGN)))
@@ -403,4 +405,126 @@ def exp_recall_drive(cfg: Config, seeds, workers):
            ("".join(f"- {w}\n" for w in wins) if wins else "- none\n") +
            "\nThe drive strength was not tuned: x1 was fixed from one stated anchor before any run, and x2 / x4 are the declared sweep, reported whole.\n")
     C.save(out, cfg, runs, summ, rep)
+    return out
+
+
+# ------------------------------------------------------------------ binaural front end / MSO / ephaptic
+G_EPH_LOW_NS, G_EPH_MID_NS = 1.0, 3.0        # declared before any run: dVm/V_field = g_eph/gL = 0.1 and 0.3
+
+
+def _binaural_conditions(cfg: Config) -> dict[str, Config]:
+    def c(stereo, mso, g):
+        x = cfg.model_copy(deep=True); x.frontend.stereo = stereo; x.frontend.mso = mso; x.ephaptic.g_eph_nS = g
+        return x
+    return {"mono (baseline)": c(False, False, 0.0), "stereo, MSO off": c(True, False, 0.0), "stereo, MSO on": c(True, True, 0.0),
+            f"stereo, MSO on, g_eph {G_EPH_LOW_NS:g} nS": c(True, True, G_EPH_LOW_NS),
+            f"stereo, MSO on, g_eph {G_EPH_MID_NS:g} nS": c(True, True, G_EPH_MID_NS)}
+
+
+def _dp_worker(job):
+    """Two-tone run: distortion-product lines in the auditory nerve AND in the network's population signal."""
+    try:
+        from ..network import build_inputs, simulate
+        from ..decode import population as pop
+        from ..frontend.io import Stream
+        cfg = Config.model_validate(job["cfg"]); f1, f2, T = 400.0, 480.0, cfg.protocol.encode_s
+        fs = 48_000.0; t = np.arange(int(T * fs)) / fs
+        x = (np.sin(2 * np.pi * f1 * t) + np.sin(2 * np.pi * f2 * t)) * np.minimum(1.0, np.minimum(t, T - t) / 0.02)
+        cfg.frontend.azimuths_deg = [0.0]
+        inputs = build_inputs([Stream("two_tone", x, fs, "synthetic:two_tone")], cfg); res = simulate(cfg, inputs)
+        enc = res.timeline.segment("encode"); sel = (res.lfp_t >= enc.t0 + 0.2) & (res.lfp_t < enc.t1)
+        prox = pop.lfp_proxy(res.lfp_Ie[sel], res.lfp_Ii[sel], Irec_pA=res.lfp_Ir[sel])
+        si = inputs.spikes_enc; an_only = np.array([str(p).startswith(("hsr", "msr", "lsr")) for p in si.meta["population"]])
+        t_an = si.t[np.isin(si.i, np.flatnonzero(an_only))]
+        psth = np.bincount(np.minimum((t_an * 10_000).astype(int), int(T * 10_000) - 1), minlength=int(T * 10_000)).astype(float)
+        out = dict(ok=True, tag=job["tag"], seed=cfg.seed)
+        for name, f in (("cubic_2f1_f2", 2 * f1 - f2), ("quadratic_f2_f1", f2 - f1), ("primary_f1", f1)):
+            out[name] = dict(an=pop.line_db(psth, 10_000.0, f), net_afferent=pop.line_db(prox["rws"], 1000.0, f),
+                             net_recurrent=pop.line_db(prox["rws_recurrent"], 1000.0, f))
+        return out
+    except Exception as ex:
+        import traceback
+        return dict(ok=False, tag=job["tag"], seed=job["cfg"]["seed"], error=f"{type(ex).__name__}: {ex}", trace=traceback.format_exc()[-900:])
+
+
+def _tuning_worker(job):
+    try:
+        from ..decode.population import neurophonic_itd_tuning
+        cfg = Config.model_validate(job["cfg"]); cfg.frontend.stereo = True
+        return dict(ok=True, tag="tuning", seed=cfg.seed, **neurophonic_itd_tuning(cfg, seed=cfg.seed))
+    except Exception as ex:
+        import traceback
+        return dict(ok=False, tag="tuning", seed=job["cfg"]["seed"], error=f"{type(ex).__name__}: {ex}", trace=traceback.format_exc()[-900:])
+
+
+def exp_binaural(cfg: Config, seeds, workers):
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import get_context
+    out = C.results_dir("binaural_mso_ephaptic"); conds = _binaural_conditions(cfg)
+    jobs = []
+    for mode in ("cue", "no_cue", "nm_pulse"):
+        for tag, c in conds.items():
+            cc = c.model_copy(deep=True); cc.protocol.recall_mode = mode
+            jobs += C.jobs_for({f"{tag} || {mode}": cc}, seeds, {"n": 2})
+    dp_jobs = []
+    for tag, c in conds.items():
+        cc = c.model_copy(deep=True); cc.protocol.encode_s = 4.0; cc.protocol.recall_delays_s = [0.5]; cc.protocol.recall_s = 0.5; cc.protocol.recall_mode = "no_cue"
+        dp_jobs += C.jobs_for({tag: cc}, seeds, {})
+    with ProcessPoolExecutor(max(workers, 1), mp_context=get_context("spawn")) as ex:
+        tun = list(ex.map(_tuning_worker, C.jobs_for({"tuning": cfg}, seeds[:min(len(seeds), 5)], {})))
+        dps = list(ex.map(_dp_worker, dp_jobs))
+        runs = list(ex.map(_recall_modes_worker, jobs))
+    g = C.by_tag(runs); summ = {"conditions": {}}
+    rep = ("## Binaural front end, MSO, neurophonic, ephaptic term\n\nTwo streams rendered at -45 / +45 degrees (ITD + ILD; not an HRTF). "
+           "200 E / 50 I. Every condition is compared with the mono baseline on PAIRED seeds.\n\n### Encoding (identical across recall modes; taken from the cued runs)\n\n")
+    rows = [("condition", "input units", "encode r, stream 0", "encode r, stream 1", "this - mono (mean encode r)", "dominant-stream accuracy from RANK", "rank-null 95th pct", "rank p<0.05 seeds")]
+    base = g.get("mono (baseline) || cue", [])
+    for tag in conds:
+        rs = g.get(f"{tag} || cue", [])
+        if not rs:
+            continue
+        d = C.paired_diff([np.mean(r["encode_heldout_r"]) for r in rs], [np.mean(r["encode_heldout_r"]) for r in base]) if tag != "mono (baseline)" else None
+        idr = [r["stream_identity"]["rank"] for r in rs if "stream_identity" in r]
+        v = dict(enc0=C.ci95([r["encode_heldout_r"][0] for r in rs]), enc1=C.ci95([r["encode_heldout_r"][1] for r in rs]), diff=d,
+                 rank_acc=C.ci95([x["acc"] for x in idr]), rank_null=C.ci95([x["null_p95"] for x in idr]), rank_sig=int(sum(x["p"] < 0.05 for x in idr)))
+        summ["conditions"][tag] = v
+        rows.append((tag, rs[0].get("n_input_units", "-"), C.fmt(v["enc0"]), C.fmt(v["enc1"]), "-" if d is None else C.fmt(d) + (" BETTER" if d["beats"] else (" WORSE" if d["hi"] < 0 else "")),
+                     C.fmt(v["rank_acc"]), C.fmt(v["rank_null"]), f"{v['rank_sig']}/{len(idr)}"))
+    rep += _table(rows) + "\n### Recall (last delay), every mode\n\n"
+    rows = [("condition", "mode", "recall E rate, Hz", "own - foreign best-lag r", "foreign p<0.05 seeds", "time-locked r (guarded)", "reactivation r")]
+    max_rate = 0.0
+    for tag in conds:
+        for mode in ("cue", "no_cue", "nm_pulse"):
+            rs = g.get(f"{tag} || {mode}", [])
+            if not rs:
+                continue
+            R = [r["recall"][-1] for r in rs]
+            v = dict(rate=C.ci95([x["rate_e_hz"] for x in R]), omf=C.paired_diff([x["foreign"]["own"] for x in R], [x["foreign"]["foreign_mean"] for x in R]),
+                     n_sig=int(sum(x["foreign"]["p"] < 0.05 for x in R)), locked=C.ci95([x["guarded_r"][0] for x in R]), pattern=C.ci95([x["pattern_r"] for x in R]))
+            summ["conditions"].setdefault(tag, {})[f"recall_{mode}"] = v; max_rate = max(max_rate, v["rate"]["mean"])
+            rows.append((tag, mode, C.fmt(v["rate"]), C.fmt(v["omf"]) + (" **SUCCESS**" if v["omf"]["beats"] else ""), f"{v['n_sig']}/{len(R)}", C.fmt(v["locked"]), C.fmt(v["pattern"])))
+    rep += _table(rows) + (f"\n**Recall-phase firing never exceeds {max_rate:.3f} Hz in any condition. At that rate the decoder is reading silence, and every recall "
+                           "number in this table is UNINFORMATIVE about storage** -- neither a success nor a failure of the binaural front end.\n" if max_rate < 0.1 else
+                           f"\nRecall-phase firing reaches {max_rate:.3f} Hz in at least one condition.\n")
+    rep += "\n### Distortion products (two-tone run, f1 = 400 Hz, f2 = 480 Hz; dB above the line's own spectral neighbourhood)\n\n"
+    rows = [("condition", "2f1-f2 = 320 Hz: AN / network (afferent) / network (recurrent)", "f2-f1 = 80 Hz: AN / afferent / recurrent", "primary f1: AN / afferent / recurrent")]
+    dg = {}
+    for r in dps:
+        if r.get("ok"):
+            dg.setdefault(r["tag"], []).append(r)
+    for tag, rs in dg.items():
+        cell = lambda key: " / ".join(f"{np.mean([r[key][w] for r in rs]):+.1f}" for w in ("an", "net_afferent", "net_recurrent"))
+        rows.append((tag, cell("cubic_2f1_f2"), cell("quadratic_f2_f1"), cell("primary_f1")))
+        summ.setdefault("dp", {})[tag] = {key: {w: C.ci95([r[key][w] for r in rs]) for w in ("an", "net_afferent", "net_recurrent")} for key in ("cubic_2f1_f2", "quadratic_f2_f1", "primary_f1")}
+    rep += _table(rows) + "\nA line under ~10 dB is not distinguishable from its neighbourhood. Distortion products are measured, never added.\n"
+    ok_t = [r for r in tun if r.get("ok")]
+    if ok_t:
+        rep += "\n### Neurophonic ITD tuning (binaural 500 Hz tone; neurophonic = summed MSO postsynaptic current)\n\n"
+        rows = [("ITD, us", "neurophonic line at 500 Hz, dB", "amplitude re ITD 0", "MSO best internal delay, us", "MSO rate, Hz")]
+        ref = np.mean([[x["amp"] for x in r["rows"] if x["itd_us"] == 0][0] for r in ok_t])
+        for k, row in enumerate(ok_t[0]["rows"]):
+            col = lambda key: [r["rows"][k][key] for r in ok_t]
+            rows.append((row["itd_us"], f"{np.mean(col('line_db')):.1f}", f"{np.mean(col('amp')) / ref:.2f}", f"{np.mean(col('best_internal_delay_us')):+.0f}", f"{np.mean(col('mso_rate_hz')):.1f}"))
+        summ["tuning"] = ok_t[0]["rows"]; rep += _table(rows)
+    C.save(out, cfg, runs + dps + tun, summ, rep)
     return out

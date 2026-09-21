@@ -28,7 +28,11 @@ class Frontend(_Strict):
     moc_enabled: bool = False               # efferent MOC-like feedback: tonic NM lowers cochlear gain
     moc_db_per_nm: float = 50.0
     brainstem: Literal["none", "cnmodel"] = "none"
-    mso: bool = False                       # coincidence stage; needs stereo input
+    stereo: bool = False                    # two cochleae; mono input = identical L/R (ITD 0, ILD 0)
+    azimuths_deg: list[float] = [-45.0, 45.0, 0.0, -90.0, 90.0]   # per stream index; ignored for stereo FILES
+    spatial_ild_max_db: float = 20.0
+    spatial_ild_corner_hz: float = 1500.0
+    mso: bool = False                       # MSO coincidence population + neurophonic; needs stereo: true
     filterbank: Literal["gammatone", "logbp"] = "gammatone"
     n_bands: int = Field(32, ge=1)
     f_lo_hz: float = Field(80.0, gt=0)      # configurable down to 0.1 Hz for sensor data (use logbp)
@@ -184,6 +188,27 @@ class Neuromod(_Strict):
     pulse_s: float = 1.0
 
 
+class MSO(_Strict):
+    """Coincidence population on the two nerves (one MSO; ipsi = LEFT). Every number is a placeholder."""
+    cf_max_hz: float = 1500.0               # phase-locking limit for fine-structure ITD (Verschooten et al. 2019)
+    delays_us: list[float] = [-600, -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500, 600]
+    tau_e_ms: float = 0.2                   # EPSC
+    tau_i_ms: float = 0.5                   # fast glycinergic IPSC
+    inh_lead_ms: float = 0.3                # contralateral inhibition ARRIVES BEFORE contralateral excitation
+    w_inh: float = 0.5                      # IPSC amplitude relative to one EPSC
+    tau_m_ms: float = 0.3
+    theta_epsp: float = 3.0                 # threshold in units of one EPSP
+    t_ref_ms: float = 1.0
+
+
+class Ephaptic(_Strict):
+    """I_eph = g_eph * V_field. Fields sum LINEARLY; the nonlinearity stays in the membrane."""
+    g_eph_nS: float = 0.0                   # 0 = the term is ABSENT from the equations (exact regression)
+    r_field_Mohm: float = 1.0               # mean net synaptic current per cell -> field; sets a mV-scale field
+    use_lfp: bool = True
+    use_neurophonic: bool = True
+
+
 class Theta(_Strict):
     """A pacemaker external to the network (septum-like), delivered as a current.
 
@@ -295,6 +320,8 @@ class Config(_Strict):
     neuromod: Neuromod = Neuromod()
     theta: Theta = Theta()
     nm_excitability: NmExcitability = NmExcitability()
+    mso: MSO = MSO()
+    ephaptic: Ephaptic = Ephaptic()
     attention: Attention = Attention()
     mechanisms: Mechanisms = Mechanisms()
     protocol: Protocol = Protocol()

@@ -143,8 +143,23 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     # Explicit, distinct `order` for every object that draws random numbers. They all share one RNG stream,
     # and Brian2 breaks scheduling ties in a process-dependent order -- measured: the same seed gave one of
     # TWO spike trains depending on the process. Both are valid realisations; only one is reproducible.
-    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA, order=0)
-    I = nmodel.make_group(net_c.n_inh, net_c.inh, cfg, "inh", NM, noise_scale, "inh", rng, THETA, order=1)
+    # MSO neurophonic as a field (volts) on the timeline clock, for the ephaptic term. r_field maps one
+    # EPSC-unit of mean postsynaptic current to r_field_Mohm * 1 nA -- a mV-scale field, by construction.
+    eph = cfg.ephaptic; NPH = None
+    if eph.g_eph_nS > 0:
+        dt_n = 2e-4; nph_v = np.zeros(int(np.ceil(tl.total_s / dt_n)) + 2)
+        if eph.use_neurophonic and inputs.neurophonic is not None:
+            def lay(n, t0):
+                x = np.interp(np.arange(0, n.total.size / n.fs, dt_n), np.arange(n.total.size) / n.fs, n.total)
+                k0 = int(round(t0 / dt_n)); m = min(x.size, nph_v.size - k0)
+                nph_v[k0:k0 + m] += x[:m] * eph.r_field_Mohm * 1e6 * 1e-9          # EPSC units -> nA -> volts
+            lay(inputs.neurophonic, enc.t0)
+            for seg in tl.recalls():
+                if seg.cue_s > 0 and inputs.neurophonic_cue is not None:
+                    lay(inputs.neurophonic_cue, seg.t0)
+        NPH = b2.TimedArray(nph_v * b2.volt, dt=dt_n * second, name="ta_nph")
+    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA, order=0, nph=NPH)
+    I = nmodel.make_group(net_c.n_inh, net_c.inh, cfg, "inh", NM, noise_scale, "inh", rng, THETA, order=1, nph=NPH)
 
     # ---- input layer: spike trains + metadata from whichever front end produced them ----
     si = inputs.spikes_enc
@@ -230,6 +245,13 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     S_lfp = b2.Synapses(E, LFP, "Ie_sum_post = I_exc_pre : amp (summed)\nIi_sum_post = I_inh_pre : amp (summed)\nIr_sum_post = I_rec_pre : amp (summed)",
                         namespace=dict(E_e=net_c.E_e_mV * mV, E_i=net_c.E_i_mV * mV, E_K=net_c.E_K_mV * mV), name="lfp_syn")
     S_lfp.connect()
+    if eph.g_eph_nS > 0 and eph.use_lfp:
+        # network field = r_field x MEAN NET synaptic current per E cell (excitatory inward +, inhibitory -),
+        # fed back to every cell. One dt of lag; linear.
+        fld_ns = dict(r_field=eph.r_field_Mohm * b2.Mohm, n_e=float(net_c.n_exc))
+        for grp, nm_ in ((E, "fld_e"), (I, "fld_i")):
+            Sf = b2.Synapses(LFP, grp, "V_field_post = r_field*(Ie_sum_pre + Ii_sum_pre)/n_e : volt (summed)", namespace=fld_ns, name=nm_)
+            Sf.connect(); objs.append(Sf)
     lfp_m = b2.StateMonitor(LFP, ["Ie_sum", "Ii_sum", "Ir_sum"], record=True, dt=1 * ms, name="lfp_m")
     objs += [sm_e, sm_i, st_e, st_i, rank_m, rank_reset, slow, w_m, LFP, S_lfp, lfp_m]
 

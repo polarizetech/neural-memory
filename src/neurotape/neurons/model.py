@@ -35,7 +35,7 @@ STATE_NAMES = {REST: "REST", LOADED: "LOADED", SPIKE: "SPIKE/BURST", RESET: "RES
 
 EQUATIONS = """
 dV/dt = (gL*(EL - V) + gL*DeltaT*exp(clip((V - VT_eff)/DeltaT, -50, 8)) - __AHP__w - I_T
-         + I_syn + I_bg + I_drift + I_nm + I_theta + I_gap + I_inj)/C : volt (unless refractory)
+         + I_syn + I_bg + I_drift + I_nm + I_theta + I_gap + I_inj__EPH__)/C : volt (unless refractory)
 dw/dt = (a*(V - EL) - w)/tau_w : amp
 VT_eff = VT - dVT_creb*clip(creb, 0, 1)__VTNM__ : volt
 
@@ -93,13 +93,22 @@ ahp_scale = clip(1 - k_ahp*nm_x, 0, 1) : 1
 """
 
 
-def equations(nm_excitability: bool) -> str:
+EPH_EQS = """
+# --- ephaptic term: a small current from the local field. Fields SUM LINEARLY (network LFP + MSO
+# neurophonic); there is no field-field product anywhere. The nonlinearity is the membrane's own.
+V_field : volt
+I_eph = g_eph*(V_field + nph(t)) : amp
+"""
+
+
+def equations(nm_excitability: bool, ephaptic: bool = False) -> str:
     """With the mechanism OFF the equation text is byte-identical to the model the published results came
     from -- so the generated code, and therefore every spike, is too. Multiplying by a 1.0 gain instead would
     change the expression tree, and under -ffast-math that is enough to diverge a chaotic network."""
+    eqs = EQUATIONS.replace("__EPH__", " + I_eph" if ephaptic else "") + (EPH_EQS if ephaptic else "")
     if nm_excitability:
-        return EQUATIONS.replace("__AHP__", "ahp_scale*").replace("__VTNM__", " - k_vt*nm_x") + NM_EXC_EQS
-    return EQUATIONS.replace("__AHP__", "").replace("__VTNM__", "")
+        return eqs.replace("__AHP__", "ahp_scale*").replace("__VTNM__", " - k_vt*nm_x") + NM_EXC_EQS
+    return eqs.replace("__AHP__", "").replace("__VTNM__", "")
 
 
 RESET_CODE = "V = V_reset; w += b_adapt; Ca_s += Ca_spike"
@@ -139,11 +148,14 @@ def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
 
 def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArray,
                noise_scale: b2.TimedArray, name: str, rng: np.random.Generator,
-               theta: b2.TimedArray | None = None, order: int = 0) -> b2.NeuronGroup:
+               theta: b2.TimedArray | None = None, order: int = 0, nph: b2.TimedArray | None = None) -> b2.NeuronGroup:
     ns = namespace(p, cfg, kind)
     ns.update(NM=NM, noise_scale=noise_scale, theta=theta if theta is not None else constant_array(0.0))
     on = cfg.mechanisms.nm_excitability and kind == "exc"
-    g = b2.NeuronGroup(n, equations(on), threshold=THRESHOLD, reset=RESET_CODE,
+    eph = cfg.ephaptic.g_eph_nS > 0          # g_eph = 0 -> the term is ABSENT, so the generated code is unchanged
+    if eph:
+        ns.update(g_eph=cfg.ephaptic.g_eph_nS * nS, nph=nph if nph is not None else constant_array(0.0))
+    g = b2.NeuronGroup(n, equations(on, eph), threshold=THRESHOLD, reset=RESET_CODE,
                        refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV
     g.hT = 0.01

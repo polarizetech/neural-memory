@@ -26,6 +26,8 @@ class Inputs:
     env_rate: float
     spikes_enc: SpikeInput          # what the core is driven with during encoding
     spikes_cue: SpikeInput | None   # cued stream ALONE, first cue_fraction (recall mode "cue")
+    neurophonic: object | None = None       # brainstem.Neurophonic for the ENCODE window (MSO on)
+    neurophonic_cue: object | None = None
     an_rate: np.ndarray | None = None      # (S, n_cf, T_dec) per-stream AN rate targets
     an_cf: np.ndarray | None = None
     log: dict = field(default_factory=dict)
@@ -52,7 +54,29 @@ def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) ->
     shown_streams = ([_shuffle_waveform(s, 0.25, rng) for s in streams] if pr.shuffle_input else streams)
     log: dict = {}
 
-    if fe.kind == "an":
+    nph = nph_cue = None
+    if fe.kind == "an" and fe.stereo:
+        # TWO cochleae. The monaural AN-derived input stays (both nerves); the MSO population is ADDED to it.
+        from .brainstem import concat, mso_population
+        tonic = cfg.neuromod.tonic
+
+        def binaural(seconds, seed, only=None):
+            L, R = anmod.run_an_binaural(anmod.ear_mixtures(shown_streams, seconds, cfg, only=only), cfg, seed, tonic)
+            both, n = concat(L, R), None
+            if fe.mso:
+                m, n = mso_population(L, R, cfg, seed)
+                both = concat(both, m)
+            both.front_end = "an_stereo+mso" if fe.mso else "an_stereo"
+            return both, n
+        enc, nph = binaural(pr.encode_s, cfg.seed)
+        cue = None
+        if cue_s > 0:
+            cue, nph_cue = binaural(cue_s, cfg.seed + 1, only=pr.cue_stream)
+        log["fibre_axis"] = anmod.fibre_axis(enc)
+        log["azimuths_deg"] = [fe.azimuths_deg[k % len(fe.azimuths_deg)] if s.lr is None else "as recorded" for k, s in enumerate(streams)]
+    elif fe.mso or fe.stereo:
+        raise StageUnavailable("frontend.stereo / frontend.mso need frontend.kind: an")
+    elif fe.kind == "an":
         tonic = cfg.neuromod.tonic
         mix = anmod.acoustic_mixture(shown_streams, pr.encode_s, fe.level_db_spl)
         enc = anmod.run_an(mix, cfg, cfg.seed, tonic)
@@ -62,9 +86,6 @@ def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) ->
             cue = anmod.run_an(solo, cfg, cfg.seed + 1, tonic)
         if fe.brainstem == "cnmodel":
             enc = cn_stage(enc)
-        if fe.mso:
-            raise StageUnavailable("mso stage needs stereo streams; the loader currently averages "
-                                   "channels -- see frontend/brainstem.py:mso_stage")
         log["fibre_axis"] = anmod.fibre_axis(enc)
     else:
         P = projection(S, B, cfg.mixing, rng)
@@ -101,4 +122,4 @@ def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) ->
         an_rate = np.stack(rows)
     log["input_rates_hz"] = enc.population_rates()
     log["front_end_notes"] = enc.notes
-    return Inputs(ans, env, fe.envelope_rate_hz, enc, cue, an_rate, an_cf, log)
+    return Inputs(ans, env, fe.envelope_rate_hz, enc, cue, nph, nph_cue, an_rate, an_cf, log)

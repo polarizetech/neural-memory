@@ -15,12 +15,15 @@ class Stream:
     x: np.ndarray          # 1-D float64
     fs: float              # Hz
     source: str            # path, or "synthetic:<kind>"
+    lr: np.ndarray | None = None   # (2, N) when the FILE was stereo; None = mono (rendered as identical L/R)
 
 
 def load_wav(path: Path) -> list[Stream]:
     x, fs = sf.read(str(path), always_2d=True, dtype="float64")
-    x = x.mean(axis=1)     # one stream per file: channels are averaged
-    return [Stream(path.stem, x, float(fs), str(path))]
+    # The mono view (x) is the channel mean and is what the mono front ends use. A stereo file also keeps
+    # its two channels, which the stereo front end uses AS RECORDED (no spatialiser is applied on top).
+    lr = x[:, :2].T.copy() if x.shape[1] >= 2 else None
+    return [Stream(path.stem, x.mean(axis=1), float(fs), str(path), lr)]
 
 
 def load_csv(path: Path, csv_rate_hz: float | None) -> list[Stream]:

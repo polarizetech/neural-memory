@@ -61,6 +61,42 @@ def acoustic_mixture(streams: list[Stream], seconds: float, level_db: float,
     return np.sum([p[:n] for p in parts], axis=0)
 
 
+def ear_mixtures(streams: list[Stream], seconds: float, cfg: Config, only: int | None = None) -> np.ndarray:
+    """(2, N) pressure waveforms at AN_FS, one per ear. A stereo FILE is used as recorded; a mono stream is
+    rendered at its configured azimuth by the spatialiser (azimuth 0 = identical L/R: ITD 0, ILD 0)."""
+    import cochlea
+    from .spatial import spatialise
+    fe, ears = cfg.frontend, []
+    for k, s in enumerate(streams):
+        if only is not None and k != only:
+            continue
+        if s.lr is not None:
+            n = int(round(seconds * s.fs))
+            lr = np.stack([_resample(np.resize(ch, n) if ch.size < n else ch[:n], s.fs, AN_FS) for ch in s.lr])
+        else:
+            az = fe.azimuths_deg[k % len(fe.azimuths_deg)]
+            lr = spatialise(_waveform(s, seconds), AN_FS, az, fe.spatial_ild_max_db, fe.spatial_ild_corner_hz)
+        # level is set on the pair's MEAN power so the spatialiser's ILD survives calibration
+        ref = cochlea.set_dbspl(lr.mean(axis=0) if np.any(lr.mean(axis=0)) else lr[0], fe.level_db_spl)
+        scale = np.sqrt(np.mean(ref ** 2)) / (np.sqrt(np.mean(lr ** 2)) + 1e-30)
+        ears.append(lr * scale)
+    n = min(e.shape[1] for e in ears)
+    return np.sum([e[:, :n] for e in ears], axis=0)
+
+
+def run_an_binaural(lr: np.ndarray, cfg: Config, seed: int, nm_tonic: float = 0.0) -> tuple[SpikeInput, SpikeInput]:
+    """Two INDEPENDENT cochleae (independent spike-generator seeds). Fibre populations are per ear:
+    hsr_L, msr_L, lsr_L, hsr_R, ..."""
+    out = []
+    for ch, (ear, off) in enumerate((("L", 0), ("R", 5000))):
+        si = run_an(lr[ch], cfg, seed + off, nm_tonic)
+        si.meta = dict(si.meta, fibre_type=si.meta["population"].copy(), ear=np.array([ear] * si.n),
+                       population=np.array([f"{p}_{ear}" for p in si.meta["population"]], dtype=str))
+        si.front_end = "an_stereo"
+        out.append(si)
+    return out[0], out[1]
+
+
 def run_an(sound: np.ndarray, cfg: Config, seed: int, nm_tonic: float = 0.0) -> SpikeInput:
     import cochlea
     fe = cfg.frontend

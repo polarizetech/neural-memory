@@ -147,12 +147,41 @@ of the sAHP's kinetics (AdEx `w` has τ = 150 ms; a real sAHP lasts seconds), or
 **Held for later, deliberately not built:** a disinhibitory drive (**ACh-like, not LC** — PMC8513881) and
 theta-to-threshold, which goes last because it can make cells fire regardless of content.
 
+### Binaural front end, MSO, neurophonic, ephaptic term (2026-09-21) — **every number below is a placeholder unless marked**
+
+Sources and how far each was read: **Goldwyn, Mc Laughlin, Verschooten, Joris & Rinzel 2014**, *J Neurosci*
+34(35):11705, doi:10.1523/JNEUROSCI.0175-14.2014 — held in the library, **not read this build**; the claim used
+(postsynaptic current flow is the dominant generator of the MSO field, spikes contribute negligibly) is the
+operator's summary and matches this monorepo's own port of that model (`simulators/mso-neurophonic`).
+**Goldwyn & Rinzel 2016**, *J Neurophysiol* 115:2033, doi:10.1152/jn.00780.2015 — **not obtainable open-access,
+unread**; "mV-scale field → mV-scale membrane perturbation" is the operator's summary. **Verschooten et al. 2019**,
+*Hear Res* 377:109 (PMC6524635) — held, title only. Woodworth's formula and the MNTB inhibition-leads
+arrangement (Grothe 2003) — `MEMORY`.
+
+| parameter | value | source / status |
+|---|---|---|
+| spatialiser ITD | Woodworth, head radius 8.75 cm, c = 343 m/s → 381 µs at 45°, 656 µs at 90° | textbook formula, `MEMORY`; asserted ≤ the monorepo's 660 µs ceiling; applied as a fine-structure delay of the whole waveform |
+| spatialiser ILD | `20 dB · sin(az) · f²/(f² + (1.5 kHz)²)` | **placeholder** for the *shape* of a head shadow. **Not an HRTF** — no pinna, elevation or distance cues. HRTF rendering is not built |
+| stream azimuths | −45°, +45°, 0°, −90°, +90° by stream index | arbitrary; a stereo *file* is used as recorded, with no spatialiser on top |
+| two cochleae | Zilany 2014, independent per ear (spike-generator seeds `seed`, `seed + 5000`); fibre populations `hsr_L … lsr_R` | as the mono front end. Level is set on the L/R *mean* power so the rendered ILD survives calibration |
+| `mso.cf_max_hz` | 1500 Hz | Verschooten et al. 2019 (fine-structure phase-locking limit). **Envelope ITD at higher carriers is out of scope** |
+| `mso.delays_us` | −600 … +600 in 100 µs steps | a Jeffress-style delay map; whether the mammalian MSO has one is contested, and this does not take a side — it is a readout convenience |
+| `mso.tau_e_ms`, `tau_i_ms`, `tau_m_ms` | 0.2, 0.5, 0.3 ms | order-of-magnitude for mature MSO; not fitted |
+| `mso.inh_lead_ms`, `w_inh` | 0.3 ms, 0.5 × EPSC | contralateral glycinergic inhibition arriving *before* contralateral excitation; placeholder |
+| `mso.theta_epsp`, `t_ref_ms` | 3 EPSPs, 1 ms | **first guess, never adjusted**: with these the best internal delay tracks the imposed ITD to within one 100 µs step (unit-tested) |
+| MSO scope | **one** MSO (ipsilateral = left); leaky coincidence units in numpy, not a biophysical cell | `simulators/mso-neurophonic` is the biophysical model and cannot spike (no sodium channel), which is why it is not the stage |
+| neurophonic | sum over MSO units of (ipsi EPSC + contra EPSC − IPSC), kept at 5 kHz | computed from **postsynaptic currents, never from spikes** (Goldwyn et al. 2014). Units are EPSC units — a shape, not microvolts |
+| `ephaptic.r_field_Mohm` | 1 MΩ | maps mean net synaptic current per cell (≈ 1 nA while encoding) to a **mV-scale** field, by construction. There is no geometry here, so this is a scale choice, not a measurement |
+| `ephaptic.g_eph_nS` | 0 (off); sweep 1 and 3 nS, declared before any run | dV_m/V_field = g_eph/g_L = 0.1 and 0.3. **At 0 the term is absent from the equation text**, and a run reproduces exactly (tested) |
+| ephaptic form | `I_eph = g_eph · (V_field,network + V_field,neurophonic)` | **fields sum linearly; there is no field × field term** (asserted against the equation text). All nonlinearity is the membrane's. Sign: net inward synaptic current → depolarising |
+| distortion products | measured in the AN PSTH and in the network's population signal; **never added** | see `RESULTS.md` for what the Zilany model does and does not produce |
+
 ## What is NOT built, stated so nobody has to discover it
 
 - **CoNNear inversion (the PRIMARY playback) has never run.** No TensorFlow, no weights; weights are
   academic/non-commercial. The module raises. **Every playback so far is the vocoder fallback.**
-- **cnmodel** brainstem stage: raises (needs NEURON). **MSO stage**: built and unit-tested on synthetic
-  spike trains, not wired — the loader averages stereo to mono.
+- **cnmodel** brainstem stage: raises (needs NEURON). The **MSO stage is wired** (2026-09-21): one side only,
+  fine-structure ITD only; no LSO, no ILD computation, no envelope ITD, no HRTF — `docs/DEFERRED.md`.
 - **Video / retina**: interface only. **Event-camera comparison**: reports `unavailable`.
 - Nothing here has been **listened to**. Audio is written, never auditioned (monorepo rule).
 - Scale: every result so far is at 200 E / 50 I. The 800 / 200 default in the brief has not been run.

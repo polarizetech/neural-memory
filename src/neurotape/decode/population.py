@@ -109,3 +109,63 @@ def theta_locking(lfp: np.ndarray, envs: np.ndarray, fs: float, f_theta: float) 
         lag, plv = phase_lag(e, lfp, fs, f_theta, bw_hz=2.0)
         out.append(dict(plv=plv, lag_rad=lag))
     return out
+
+
+# ----------------------------------------------------------------------------------------------------------
+# Binaural front end: distortion products, and neurophonic phase locking / ITD tuning
+# ----------------------------------------------------------------------------------------------------------
+def line_db(x: np.ndarray, fs: float, f_hz: float, guard_hz: float = 6.0, span_hz: float = 40.0) -> float:
+    """Power of the spectral line at f, in dB above the median of its own neighbourhood (guard band excluded).
+    A local-floor measure, so a broadband change in level cannot pose as a line."""
+    x = np.asarray(x, float) - np.mean(x)
+    P = np.abs(np.fft.rfft(x * np.hanning(x.size))) ** 2; f = np.fft.rfftfreq(x.size, 1.0 / fs)
+    near = (np.abs(f - f_hz) <= span_hz) & (np.abs(f - f_hz) > guard_hz)
+    k = int(np.argmin(np.abs(f - f_hz)))
+    return float(10 * np.log10(P[max(k - 1, 0):k + 2].max() / (np.median(P[near]) + 1e-30)))
+
+
+def an_psth(si, fs: float = 10_000.0, cf_range=None) -> np.ndarray:
+    sel = np.ones(si.n, bool) if cf_range is None else ((si.meta["cf_hz"] >= cf_range[0]) & (si.meta["cf_hz"] <= cf_range[1]))
+    t = si.t[np.isin(si.i, np.flatnonzero(sel))]
+    return np.bincount(np.minimum((t * fs).astype(int), int(si.duration * fs) - 1), minlength=int(si.duration * fs)).astype(float)
+
+
+def distortion_products(cfg, f1: float = 400.0, f2: float = 480.0, seconds: float = 2.0, seed: int = 0) -> dict:
+    """Two-tone test on the auditory nerve (f2/f1 = 1.2). Reports the 2f1-f2 (cubic) and f2-f1 (quadratic)
+    lines in the pooled AN PSTH, each against TWO references: its own spectral neighbourhood, and the same
+    line when each tone is presented ALONE (so a filter-skirt response to a primary cannot pose as a DP).
+    Nothing is ever added synthetically: if a line is absent, that is the finding."""
+    from ..frontend import an
+    from ..frontend.io import Stream
+    fs = 48_000.0; t = np.arange(int(seconds * fs)) / fs; ramp = np.minimum(1.0, np.minimum(t, seconds - t) / 0.02)
+    tone = lambda f: np.sin(2 * np.pi * f * t) * ramp
+    out = {"f1": f1, "f2": f2, "cubic_hz": 2 * f1 - f2, "quadratic_hz": f2 - f1}
+    psth = {}
+    for name, x in (("two_tone", tone(f1) + tone(f2)), ("f1_alone", tone(f1)), ("f2_alone", tone(f2))):
+        si = an.run_an(an.acoustic_mixture([Stream(name, x, fs, "synthetic:" + name)], seconds, cfg.frontend.level_db_spl), cfg, seed)
+        psth[name] = an_psth(si)
+    for key, f in (("cubic", out["cubic_hz"]), ("quadratic", out["quadratic_hz"]), ("primary_f1", f1), ("primary_f2", f2)):
+        out[key] = {k: line_db(v, 10_000.0, f) for k, v in psth.items()}
+    for key in ("cubic", "quadratic"):
+        d = out[key]; out[key]["excess_over_single_tones_db"] = d["two_tone"] - max(d["f1_alone"], d["f2_alone"])
+        out[key]["present"] = bool(d["two_tone"] > 10.0 and out[key]["excess_over_single_tones_db"] > 6.0)
+    return out
+
+
+def neurophonic_itd_tuning(cfg, f_hz: float = 500.0, itds_us=(-600, -300, 0, 300, 600), seconds: float = 1.0, seed: int = 0) -> dict:
+    """Binaural tone at each ITD -> neurophonic line at f (dB over local floor), its amplitude, and the MSO
+    population's best internal delay."""
+    from ..frontend import an
+    from ..frontend.brainstem import mso_population
+    from ..frontend.spatial import spatialise
+    import cochlea
+    t = np.arange(int(seconds * an.AN_FS)) / an.AN_FS; x = cochlea.set_dbspl(np.sin(2 * np.pi * f_hz * t), cfg.frontend.level_db_spl)
+    rows = []
+    for itd in itds_us:
+        lr = spatialise(x, an.AN_FS, 0.0, itd_s=itd * 1e-6, apply_ild=False)
+        L, R = an.run_an_binaural(lr, cfg, seed); si, n = mso_population(L, R, cfg)
+        X = np.fft.rfft((n.total - n.total.mean()) * np.hanning(n.total.size)); f = np.fft.rfftfreq(n.total.size, 1 / n.fs)
+        counts = np.array([np.sum(si.meta["best_delay_us"][si.i] == d) for d in n.delays_us])
+        rows.append(dict(itd_us=float(itd), line_db=line_db(n.total, n.fs, f_hz), amp=float(np.abs(X[np.argmin(np.abs(f - f_hz))])),
+                         best_internal_delay_us=float(n.delays_us[counts.argmax()]), mso_rate_hz=float(si.t.size / si.n / seconds)))
+    return dict(f_hz=f_hz, rows=rows)
