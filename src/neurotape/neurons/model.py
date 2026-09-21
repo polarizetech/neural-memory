@@ -142,14 +142,19 @@ def reset_code(prior_drift: bool = False, prior_repulsion: bool = False, labilit
 
 def equations(nm_excitability: bool = False, ephaptic: bool = False, *, intrinsic_trace: bool = False,
               prior_repulsion: bool = False, mismatch: bool = False, lability: bool = False,
-              provenance: bool = False) -> str:
+              provenance: bool = False, nm_recall_only: bool = False) -> str:
     """Every optional mechanism adds TEXT only when it is on. With all of them off the equation text is
     byte-identical to the model the published results came from (pinned by hash in tests/test_retrieval.py), so
     the generated code -- and every spike -- is too. Multiplying by a 1.0 gain instead would change the
     expression tree, and under -ffast-math that is enough to diverge a chaotic network."""
     ahp, vt, extra = "", "", ""
     if nm_excitability:
-        ahp += "ahp_scale*"; vt += " - k_vt*nm_x"; extra += NM_EXC_EQS
+        # D1: with nm_recall_only the term is multiplied by a phase gate that is exactly 0 outside recall segments.
+        # The recall_drive run lost encoding accuracy (0.83 -> 0.66-0.50) because salience-triggered NM bursts
+        # engaged this term DURING ENCODING.
+        nm_eqs = NM_EXC_EQS.replace("nm_x = clip(NM(t) - nm_ref, 0, 1) : 1", "nm_x = clip(NM(t) - nm_ref, 0, 1)*nm_gate(t) : 1") if nm_recall_only else NM_EXC_EQS
+        assert (not nm_recall_only) or "nm_gate(t)" in nm_eqs
+        ahp += "ahp_scale*"; vt += " - k_vt*nm_x"; extra += nm_eqs
     if intrinsic_trace:
         ahp += "tr_ahp*"; vt += " - k_tr_vt*clip(creb, 0, 1)"; extra += TRACE_EQS
     if prior_repulsion:
@@ -209,10 +214,13 @@ def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
 
 def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArray,
                noise_scale: b2.TimedArray, name: str, rng: np.random.Generator,
-               theta: b2.TimedArray | None = None, order: int = 0, nph: b2.TimedArray | None = None) -> b2.NeuronGroup:
+               theta: b2.TimedArray | None = None, order: int = 0, nph: b2.TimedArray | None = None,
+               nm_gate: b2.TimedArray | None = None) -> b2.NeuronGroup:
     ns = namespace(p, cfg, kind)
     ns.update(NM=NM, noise_scale=noise_scale, theta=theta if theta is not None else constant_array(0.0))
     on = cfg.mechanisms.nm_excitability and kind == "exc"
+    if cfg.mechanisms.nm_recall_only and on:
+        ns["nm_gate"] = nm_gate if nm_gate is not None else constant_array(0.0)
     eph = cfg.ephaptic.g_eph_nS > 0          # g_eph = 0 -> the term is ABSENT, so the generated code is unchanged
     if eph:
         ns.update(g_eph=cfg.ephaptic.g_eph_nS * nS, nph=nph if nph is not None else constant_array(0.0))
@@ -220,7 +228,8 @@ def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArra
     mech = cfg.mechanisms
     g = b2.NeuronGroup(n, equations(on, eph, intrinsic_trace=mech.intrinsic_trace and exc, prior_repulsion=mech.prior_repulsion and exc,
                                           mismatch=mech.mismatch_gate and exc, lability=mech.lability_window and exc,
-                                          provenance=cfg.sim.log_provenance and exc),
+                                          provenance=cfg.sim.log_provenance and exc,
+                                          nm_recall_only=cfg.mechanisms.nm_recall_only and on),
                        threshold=THRESHOLD, reset=reset_code(mech.prior_drift and exc, mech.prior_repulsion and exc, mech.lability_window and exc),
                        refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV

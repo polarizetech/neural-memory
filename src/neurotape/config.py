@@ -319,6 +319,7 @@ class Mechanisms(_Strict):
     tonic_drift: bool = True
     theta: bool = True                      # False = theta.mode forced to "off"
     nm_excitability: bool = False           # recall-phase drive candidate 1 (OFF: the published-results model)
+    nm_recall_only: bool = False            # D1: the NM excitability term is forced to ZERO outside recall segments
     intrinsic_trace: bool = False           # C1: the CREB-like trace also reduces adaptation / lowers threshold
     mismatch_gate: bool = False             # C2: population feedforward-vs-recurrent mismatch gates the write
     lability_window: bool = False           # C3: reactivated cells get a decaying plasticity gain

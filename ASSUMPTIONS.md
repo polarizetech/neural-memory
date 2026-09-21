@@ -140,6 +140,7 @@ block of the slow AHP as NA's most robust excitability effect (Madison & Nicoll 
 | `nm_excitability.strength` | 1 (sweep: 1, 2, 4) | multiplies both; **the sweep was declared before any run and is reported whole** |
 | `mechanisms.nm_excitability` | **off** | with it off the equation *text* is byte-identical to the published-results model, verified by reproducing a committed run exactly |
 | `mechanisms.nm_inhibitory_setpoint` | on | the base model lets NM bias the I cells; the drive as specified must **not** raise inhibition, so its conditions are run with this off as well as on |
+| `mechanisms.nm_recall_only` | **off** | D1. Multiplies the NM excitability term by a phase gate that is exactly 0 outside recall segments, so salience-triggered NM bursts cannot engage the drive during encoding. The gate is an externally imposed *phase schedule* (like `NM(t)` itself), not a network-internal signal. **Any future drive run uses it on** |
 | recall modes `nm_sustained`, `cue_nm` | — | NM elevated by `pulse_amp` for the whole probe. Needed because the 1 s `nm_pulse` sits entirely inside the guarded window the score excludes, so an NM-tied drive would act only where nothing is scored |
 
 E cells only; neutral at the reference NM level (unit-tested). **What it is not:** a model of β-AR signalling,

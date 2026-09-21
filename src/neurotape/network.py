@@ -19,7 +19,7 @@ from brian2 import ms, mV, nS, pA, amp, second, Hz
 from .config import Config
 from .coupling import gap as gapmod
 from .frontend.encode import Inputs, build_inputs  # noqa: F401  (re-exported)
-from .neuromod.nm import NM_DT_S, NMTrace, build_nm
+from .neuromod.nm import NM_DT_S, NMTrace, build_nm, recall_gate
 from .neuromod.theta import THETA_DT_S, build_theta, envelope_onsets
 from .neurons import model as nmodel
 from .plasticity import stc
@@ -160,7 +160,9 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
                 if seg.cue_s > 0 and inputs.neurophonic_cue is not None:
                     lay(inputs.neurophonic_cue, seg.t0)
         NPH = b2.TimedArray(nph_v * b2.volt, dt=dt_n * second, name="ta_nph")
-    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA, order=0, nph=NPH)
+    NMG = (b2.TimedArray(recall_gate(tl, nm.t), dt=NM_DT_S * second, name="ta_nmgate")
+           if (mech.nm_recall_only and mech.nm_excitability) else None)
+    E = nmodel.make_group(net_c.n_exc, net_c.exc, cfg, "exc", NM, noise_scale, "exc", rng, THETA, order=0, nph=NPH, nm_gate=NMG)
     I = nmodel.make_group(net_c.n_inh, net_c.inh, cfg, "inh", NM, noise_scale, "inh", rng, THETA, order=1, nph=NPH)
 
     # ---- input layer: spike trains + metadata from whichever front end produced them ----

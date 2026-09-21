@@ -93,3 +93,12 @@ def build_nm(cfg: Config, timeline, env: np.ndarray, env_rate: float) -> NMTrace
         tonic = nm.copy()
     nm = np.clip(nm, 0.0, nmc.nm_max)
     return NMTrace(t, nm, tonic, np.array(events), sal)
+
+
+def recall_gate(timeline, t: np.ndarray) -> np.ndarray:
+    """D1: 1 inside recall segments, exactly 0 everywhere else (settle, encode, consolidate)."""
+    g = np.zeros_like(t)
+    for seg in timeline.segments:
+        if seg.kind == "recall":
+            g[(t >= seg.t0) & (t < seg.t1)] = 1.0
+    return g

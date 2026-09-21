@@ -126,6 +126,11 @@ chosen after looking. The nearest miss is `cue_nm · ×1` at 5 min, lower CI bou
   this is noted, not claimed.
 - **The drive costs encoding accuracy:** encode r 0.833 → 0.66 (×1) → 0.50 (×4), because salience-triggered
   phasic NM engages it *during encoding* too. A drive confined to the recall phase would need its own gate.
+  **Attribution and fix (2026-09-21, D1):** the encoding drop is attributed to NM bursts during encoding, and
+  `mechanisms.nm_recall_only` now forces the NM excitability term to exactly zero outside recall segments
+  (tested: identically zero through settle and encoding; off = text unchanged). **Any future drive run uses
+  `nm_recall_only = on`.** The attribution is an inference from the mechanism, not yet a measurement — no drive
+  run has been repeated with the gate on.
 - **Read with the first run:** the network now fires at recall and still returns nothing stream-specific, with
   weights frozen or plastic alike. That moves the diagnosis from *"nothing fires"* to *"what fires carries no
   temporal content"* — the expected property of a rate-assembly store.
