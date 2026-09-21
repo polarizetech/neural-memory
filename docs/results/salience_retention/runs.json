@@ -1,0 +1,942 @@
+[
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 0,
+  "recall_r": 0.007953302529538462,
+  "encode_r": 0.5399585619644611,
+  "kbps_state": 3.2408,
+  "kbps_full": 13.480799999999999,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.2408,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.332,
+    "floor_hit": true,
+    "r": 0.7691761263683068,
+    "event_r": 0.7526675744366786
+   },
+   "libopus@full": {
+    "requested_kbps": 13.480799999999999,
+    "used_kbps": 13.480799999999999,
+    "actual_kbps": 12.2712,
+    "floor_hit": false,
+    "r": 0.9183014817627093,
+    "event_r": 0.9187599245471091
+   },
+   "aac@state": {
+    "requested_kbps": 3.2408,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3656,
+    "floor_hit": true,
+    "r": 0.8519224527103055,
+    "event_r": 0.7555394407599159
+   },
+   "aac@full": {
+    "requested_kbps": 13.480799999999999,
+    "used_kbps": 13.480799999999999,
+    "actual_kbps": 14.9136,
+    "floor_hit": false,
+    "r": 0.9007197822752142,
+    "event_r": 0.8143722704725214
+   }
+  },
+  "event_recall_r": 0.2535331967334239,
+  "late_weight_share_event_cells": 0.1559797132298675,
+  "chance_share": 0.08689212540113553,
+  "t_event_s": 4.124781625325799
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 1,
+  "recall_r": -0.10211179373496493,
+  "encode_r": 0.6071339376972058,
+  "kbps_state": 3.1336,
+  "kbps_full": 13.3736,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1336,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3,
+    "floor_hit": true,
+    "r": 0.7892917490954909,
+    "event_r": 0.8003189773685451
+   },
+   "libopus@full": {
+    "requested_kbps": 13.3736,
+    "used_kbps": 13.3736,
+    "actual_kbps": 12.0312,
+    "floor_hit": false,
+    "r": 0.9228536597811365,
+    "event_r": 0.932852124115405
+   },
+   "aac@state": {
+    "requested_kbps": 3.1336,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3584,
+    "floor_hit": true,
+    "r": 0.8700092818557636,
+    "event_r": 0.8815276065882944
+   },
+   "aac@full": {
+    "requested_kbps": 13.3736,
+    "used_kbps": 13.3736,
+    "actual_kbps": 14.820799999999998,
+    "floor_hit": false,
+    "r": 0.910381360792164,
+    "event_r": 0.9223777784322097
+   }
+  },
+  "event_recall_r": 0.01679054634182073,
+  "late_weight_share_event_cells": 0.05904531686042086,
+  "chance_share": 0.09497064079652795,
+  "t_event_s": 4.936464868648463
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 2,
+  "recall_r": -0.054973994331250095,
+  "encode_r": 0.6173653096600282,
+  "kbps_state": 3.1552,
+  "kbps_full": 13.3952,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1552,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.2856000000000005,
+    "floor_hit": true,
+    "r": 0.7729814531205657,
+    "event_r": 0.6786309322386652
+   },
+   "libopus@full": {
+    "requested_kbps": 13.3952,
+    "used_kbps": 13.3952,
+    "actual_kbps": 12.02,
+    "floor_hit": false,
+    "r": 0.9180429580861804,
+    "event_r": 0.8899253409890449
+   },
+   "aac@state": {
+    "requested_kbps": 3.1552,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.372,
+    "floor_hit": true,
+    "r": 0.8507397971064077,
+    "event_r": 0.6664824959683864
+   },
+   "aac@full": {
+    "requested_kbps": 13.3952,
+    "used_kbps": 13.3952,
+    "actual_kbps": 14.8448,
+    "floor_hit": false,
+    "r": 0.8947942148967493,
+    "event_r": 0.7484188222395947
+   }
+  },
+  "event_recall_r": -0.1462685520812253,
+  "late_weight_share_event_cells": 0.052156478971249504,
+  "chance_share": 0.07327586206896551,
+  "t_event_s": 6.21870972509087
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 3,
+  "recall_r": -0.1116553929853049,
+  "encode_r": 0.6855206586233402,
+  "kbps_state": 3.088,
+  "kbps_full": 13.328,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.088,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.2744,
+    "floor_hit": true,
+    "r": 0.7806831598993517,
+    "event_r": 0.7931194001177013
+   },
+   "libopus@full": {
+    "requested_kbps": 13.328,
+    "used_kbps": 13.328,
+    "actual_kbps": 11.9936,
+    "floor_hit": false,
+    "r": 0.9192863194341465,
+    "event_r": 0.9443590888594209
+   },
+   "aac@state": {
+    "requested_kbps": 3.088,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3824,
+    "floor_hit": true,
+    "r": 0.8622593951036901,
+    "event_r": 0.8694432645929209
+   },
+   "aac@full": {
+    "requested_kbps": 13.328,
+    "used_kbps": 13.328,
+    "actual_kbps": 14.772,
+    "floor_hit": false,
+    "r": 0.9060689175786211,
+    "event_r": 0.9049945489694704
+   }
+  },
+  "event_recall_r": -0.16209054780041135,
+  "late_weight_share_event_cells": 0.17546621436828358,
+  "chance_share": 0.1,
+  "t_event_s": 5.484632827204137
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 4,
+  "recall_r": -0.08428212606719032,
+  "encode_r": 0.5536530739343501,
+  "kbps_state": 3.3088,
+  "kbps_full": 13.5488,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.3088,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3248,
+    "floor_hit": true,
+    "r": 0.7730063425226472,
+    "event_r": 0.7518091018638222
+   },
+   "libopus@full": {
+    "requested_kbps": 13.5488,
+    "used_kbps": 13.5488,
+    "actual_kbps": 12.2584,
+    "floor_hit": false,
+    "r": 0.9214573568626534,
+    "event_r": 0.9085829209433596
+   },
+   "aac@state": {
+    "requested_kbps": 3.3088,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.359200000000001,
+    "floor_hit": true,
+    "r": 0.8712445906862984,
+    "event_r": 0.8317582773048091
+   },
+   "aac@full": {
+    "requested_kbps": 13.5488,
+    "used_kbps": 13.5488,
+    "actual_kbps": 15.0008,
+    "floor_hit": false,
+    "r": 0.9167913870428921,
+    "event_r": 0.889425676797786
+   }
+  },
+  "event_recall_r": -0.15973628969375497,
+  "late_weight_share_event_cells": 0.10599869327629989,
+  "chance_share": 0.13418762088974856,
+  "t_event_s": 6.4289808096231145
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 5,
+  "recall_r": 0.09040280149586334,
+  "encode_r": 0.5512919510040605,
+  "kbps_state": 3.12,
+  "kbps_full": 13.36,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.12,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3168,
+    "floor_hit": true,
+    "r": 0.792459995619359,
+    "event_r": 0.824577401445055
+   },
+   "libopus@full": {
+    "requested_kbps": 13.36,
+    "used_kbps": 13.36,
+    "actual_kbps": 12.0968,
+    "floor_hit": false,
+    "r": 0.9232718819102534,
+    "event_r": 0.938106667637453
+   },
+   "aac@state": {
+    "requested_kbps": 3.12,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3608,
+    "floor_hit": true,
+    "r": 0.8719191485206172,
+    "event_r": 0.8936706265079004
+   },
+   "aac@full": {
+    "requested_kbps": 13.36,
+    "used_kbps": 13.36,
+    "actual_kbps": 14.8224,
+    "floor_hit": false,
+    "r": 0.913724028566405,
+    "event_r": 0.9243194924593502
+   }
+  },
+  "event_recall_r": 0.16482251408398968,
+  "late_weight_share_event_cells": 0.053798646256100376,
+  "chance_share": 0.0782051282051282,
+  "t_event_s": 6.415595485996408
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 6,
+  "recall_r": 0.056504756687880305,
+  "encode_r": 0.5320811500398632,
+  "kbps_state": 3.1856,
+  "kbps_full": 13.425600000000001,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1856,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.2791999999999994,
+    "floor_hit": true,
+    "r": 0.7830648401491822,
+    "event_r": 0.8125839569131308
+   },
+   "libopus@full": {
+    "requested_kbps": 13.425600000000001,
+    "used_kbps": 13.425600000000001,
+    "actual_kbps": 12.1896,
+    "floor_hit": false,
+    "r": 0.9221977130781456,
+    "event_r": 0.9496924074610715
+   },
+   "aac@state": {
+    "requested_kbps": 3.1856,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.364799999999999,
+    "floor_hit": true,
+    "r": 0.8652605018653289,
+    "event_r": 0.8758658317805367
+   },
+   "aac@full": {
+    "requested_kbps": 13.425600000000001,
+    "used_kbps": 13.425600000000001,
+    "actual_kbps": 14.875200000000001,
+    "floor_hit": false,
+    "r": 0.9112756802174105,
+    "event_r": 0.920696489605553
+   }
+  },
+  "event_recall_r": -0.11738677363050025,
+  "late_weight_share_event_cells": 0.31671278639586037,
+  "chance_share": 0.07910597689603215,
+  "t_event_s": 6.371341614475022
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 7,
+  "recall_r": 0.1407883674948759,
+  "encode_r": 0.6409700030582193,
+  "kbps_state": 3.1264000000000003,
+  "kbps_full": 13.3664,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1264000000000003,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3288,
+    "floor_hit": true,
+    "r": 0.7948159153056622,
+    "event_r": 0.7693017779672939
+   },
+   "libopus@full": {
+    "requested_kbps": 13.3664,
+    "used_kbps": 13.3664,
+    "actual_kbps": 11.896,
+    "floor_hit": false,
+    "r": 0.9221594528209025,
+    "event_r": 0.9109337499972807
+   },
+   "aac@state": {
+    "requested_kbps": 3.1264000000000003,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3656,
+    "floor_hit": true,
+    "r": 0.871198031151962,
+    "event_r": 0.8507317530152524
+   },
+   "aac@full": {
+    "requested_kbps": 13.3664,
+    "used_kbps": 13.3664,
+    "actual_kbps": 14.813600000000001,
+    "floor_hit": false,
+    "r": 0.9135156453244373,
+    "event_r": 0.9116522854291602
+   }
+  },
+  "event_recall_r": 0.05836384989173158,
+  "late_weight_share_event_cells": 0.027519297659754954,
+  "chance_share": 0.05706243602865916,
+  "t_event_s": 6.061512675826136
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 8,
+  "recall_r": -0.0061366201204771775,
+  "encode_r": 0.4414728242566012,
+  "kbps_state": 3.1056,
+  "kbps_full": 13.345600000000001,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1056,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3768,
+    "floor_hit": true,
+    "r": 0.771659622981053,
+    "event_r": 0.8123420072111476
+   },
+   "libopus@full": {
+    "requested_kbps": 13.345600000000001,
+    "used_kbps": 13.345600000000001,
+    "actual_kbps": 11.941600000000001,
+    "floor_hit": false,
+    "r": 0.9204446806835573,
+    "event_r": 0.9462818816592609
+   },
+   "aac@state": {
+    "requested_kbps": 3.1056,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3608,
+    "floor_hit": true,
+    "r": 0.8673382296367929,
+    "event_r": 0.8832797300126298
+   },
+   "aac@full": {
+    "requested_kbps": 13.345600000000001,
+    "used_kbps": 13.345600000000001,
+    "actual_kbps": 14.788799999999998,
+    "floor_hit": false,
+    "r": 0.9130802639912834,
+    "event_r": 0.9323922363434041
+   }
+  },
+  "event_recall_r": -0.34048161153978995,
+  "late_weight_share_event_cells": 0.16037834410585106,
+  "chance_share": 0.09840288511076764,
+  "t_event_s": 4.342912819837604
+ },
+ {
+  "ok": true,
+  "tag": "salience_gated",
+  "seed": 9,
+  "recall_r": -0.05146797466465659,
+  "encode_r": 0.4272566786768335,
+  "kbps_state": 3.2592,
+  "kbps_full": 13.4992,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.2592,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.288,
+    "floor_hit": true,
+    "r": 0.7711552173208385,
+    "event_r": 0.7405433630317989
+   },
+   "libopus@full": {
+    "requested_kbps": 13.4992,
+    "used_kbps": 13.4992,
+    "actual_kbps": 12.3672,
+    "floor_hit": false,
+    "r": 0.9228574240747727,
+    "event_r": 0.92176820211052
+   },
+   "aac@state": {
+    "requested_kbps": 3.2592,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3632,
+    "floor_hit": true,
+    "r": 0.8517127116819844,
+    "event_r": 0.7229030958659857
+   },
+   "aac@full": {
+    "requested_kbps": 13.4992,
+    "used_kbps": 13.4992,
+    "actual_kbps": 14.9336,
+    "floor_hit": false,
+    "r": 0.9056931202929722,
+    "event_r": 0.8212797727469567
+   }
+  },
+  "event_recall_r": 0.08706910451796251,
+  "late_weight_share_event_cells": 0.034429494006507945,
+  "chance_share": 0.08419243986254296,
+  "t_event_s": 5.908661613539252
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 0,
+  "recall_r": -0.01852489595141202,
+  "encode_r": 0.5267845723202557,
+  "kbps_state": 3.2408,
+  "kbps_full": 13.480799999999999,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.2408,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.332,
+    "floor_hit": true,
+    "r": 0.7691761263683068,
+    "event_r": 0.7526675744366786
+   },
+   "libopus@full": {
+    "requested_kbps": 13.480799999999999,
+    "used_kbps": 13.480799999999999,
+    "actual_kbps": 12.2712,
+    "floor_hit": false,
+    "r": 0.9183014817627093,
+    "event_r": 0.9187599245471091
+   },
+   "aac@state": {
+    "requested_kbps": 3.2408,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3656,
+    "floor_hit": true,
+    "r": 0.8519224527103055,
+    "event_r": 0.7555394407599159
+   },
+   "aac@full": {
+    "requested_kbps": 13.480799999999999,
+    "used_kbps": 13.480799999999999,
+    "actual_kbps": 14.9136,
+    "floor_hit": false,
+    "r": 0.9007197822752142,
+    "event_r": 0.8143722704725214
+   }
+  },
+  "event_recall_r": 0.27471821573125466,
+  "late_weight_share_event_cells": 0.18828708920800932,
+  "chance_share": 0.09701308318933596,
+  "t_event_s": 4.124781625325799
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 1,
+  "recall_r": -0.11290848977330961,
+  "encode_r": 0.7047076675310939,
+  "kbps_state": 3.1336,
+  "kbps_full": 13.3736,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1336,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3,
+    "floor_hit": true,
+    "r": 0.7892917490954909,
+    "event_r": 0.8003189773685451
+   },
+   "libopus@full": {
+    "requested_kbps": 13.3736,
+    "used_kbps": 13.3736,
+    "actual_kbps": 12.0312,
+    "floor_hit": false,
+    "r": 0.9228536597811365,
+    "event_r": 0.932852124115405
+   },
+   "aac@state": {
+    "requested_kbps": 3.1336,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3584,
+    "floor_hit": true,
+    "r": 0.8700092818557636,
+    "event_r": 0.8815276065882944
+   },
+   "aac@full": {
+    "requested_kbps": 13.3736,
+    "used_kbps": 13.3736,
+    "actual_kbps": 14.820799999999998,
+    "floor_hit": false,
+    "r": 0.910381360792164,
+    "event_r": 0.9223777784322097
+   }
+  },
+  "event_recall_r": 0.04435585383593829,
+  "late_weight_share_event_cells": 0.04523417154646718,
+  "chance_share": 0.10084248149093694,
+  "t_event_s": 4.936464868648463
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 2,
+  "recall_r": 0.05555115472798623,
+  "encode_r": 0.5674260086411096,
+  "kbps_state": 3.1552,
+  "kbps_full": 13.3952,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1552,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.2856000000000005,
+    "floor_hit": true,
+    "r": 0.7729814531205657,
+    "event_r": 0.6786309322386652
+   },
+   "libopus@full": {
+    "requested_kbps": 13.3952,
+    "used_kbps": 13.3952,
+    "actual_kbps": 12.02,
+    "floor_hit": false,
+    "r": 0.9180429580861804,
+    "event_r": 0.8899253409890449
+   },
+   "aac@state": {
+    "requested_kbps": 3.1552,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.372,
+    "floor_hit": true,
+    "r": 0.8507397971064077,
+    "event_r": 0.6664824959683864
+   },
+   "aac@full": {
+    "requested_kbps": 13.3952,
+    "used_kbps": 13.3952,
+    "actual_kbps": 14.8448,
+    "floor_hit": false,
+    "r": 0.8947942148967493,
+    "event_r": 0.7484188222395947
+   }
+  },
+  "event_recall_r": 0.18346306732419776,
+  "late_weight_share_event_cells": 0.04004965078047435,
+  "chance_share": 0.07378296146044624,
+  "t_event_s": 6.21870972509087
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 3,
+  "recall_r": -0.10315967660894987,
+  "encode_r": 0.7287509291762089,
+  "kbps_state": 3.088,
+  "kbps_full": 13.328,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.088,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.2744,
+    "floor_hit": true,
+    "r": 0.7806831598993517,
+    "event_r": 0.7931194001177013
+   },
+   "libopus@full": {
+    "requested_kbps": 13.328,
+    "used_kbps": 13.328,
+    "actual_kbps": 11.9936,
+    "floor_hit": false,
+    "r": 0.9192863194341465,
+    "event_r": 0.9443590888594209
+   },
+   "aac@state": {
+    "requested_kbps": 3.088,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3824,
+    "floor_hit": true,
+    "r": 0.8622593951036901,
+    "event_r": 0.8694432645929209
+   },
+   "aac@full": {
+    "requested_kbps": 13.328,
+    "used_kbps": 13.328,
+    "actual_kbps": 14.772,
+    "floor_hit": false,
+    "r": 0.9060689175786211,
+    "event_r": 0.9049945489694704
+   }
+  },
+  "event_recall_r": -0.287236626897877,
+  "late_weight_share_event_cells": 0.2256806733578827,
+  "chance_share": 0.1,
+  "t_event_s": 5.484632827204137
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 4,
+  "recall_r": -0.012214875427466415,
+  "encode_r": 0.6795239949802813,
+  "kbps_state": 3.3088,
+  "kbps_full": 13.5488,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.3088,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3248,
+    "floor_hit": true,
+    "r": 0.7730063425226472,
+    "event_r": 0.7518091018638222
+   },
+   "libopus@full": {
+    "requested_kbps": 13.5488,
+    "used_kbps": 13.5488,
+    "actual_kbps": 12.2584,
+    "floor_hit": false,
+    "r": 0.9214573568626534,
+    "event_r": 0.9085829209433596
+   },
+   "aac@state": {
+    "requested_kbps": 3.3088,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.359200000000001,
+    "floor_hit": true,
+    "r": 0.8712445906862984,
+    "event_r": 0.8317582773048091
+   },
+   "aac@full": {
+    "requested_kbps": 13.5488,
+    "used_kbps": 13.5488,
+    "actual_kbps": 15.0008,
+    "floor_hit": false,
+    "r": 0.9167913870428921,
+    "event_r": 0.889425676797786
+   }
+  },
+  "event_recall_r": -0.15973628975709397,
+  "late_weight_share_event_cells": 0.12530517333636154,
+  "chance_share": 0.1349129593810445,
+  "t_event_s": 6.4289808096231145
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 5,
+  "recall_r": 0.0481016935522746,
+  "encode_r": 0.5861880508831149,
+  "kbps_state": 3.12,
+  "kbps_full": 13.36,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.12,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3168,
+    "floor_hit": true,
+    "r": 0.792459995619359,
+    "event_r": 0.824577401445055
+   },
+   "libopus@full": {
+    "requested_kbps": 13.36,
+    "used_kbps": 13.36,
+    "actual_kbps": 12.0968,
+    "floor_hit": false,
+    "r": 0.9232718819102534,
+    "event_r": 0.938106667637453
+   },
+   "aac@state": {
+    "requested_kbps": 3.12,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3608,
+    "floor_hit": true,
+    "r": 0.8719191485206172,
+    "event_r": 0.8936706265079004
+   },
+   "aac@full": {
+    "requested_kbps": 13.36,
+    "used_kbps": 13.36,
+    "actual_kbps": 14.8224,
+    "floor_hit": false,
+    "r": 0.913724028566405,
+    "event_r": 0.9243194924593502
+   }
+  },
+  "event_recall_r": 0.16482255982127642,
+  "late_weight_share_event_cells": 0.11738632514097576,
+  "chance_share": 0.0782051282051282,
+  "t_event_s": 6.415595485996408
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 6,
+  "recall_r": -0.01248020191142274,
+  "encode_r": 0.611184864884802,
+  "kbps_state": 3.1856,
+  "kbps_full": 13.425600000000001,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1856,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.2791999999999994,
+    "floor_hit": true,
+    "r": 0.7830648401491822,
+    "event_r": 0.8125839569131308
+   },
+   "libopus@full": {
+    "requested_kbps": 13.425600000000001,
+    "used_kbps": 13.425600000000001,
+    "actual_kbps": 12.1896,
+    "floor_hit": false,
+    "r": 0.9221977130781456,
+    "event_r": 0.9496924074610715
+   },
+   "aac@state": {
+    "requested_kbps": 3.1856,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.364799999999999,
+    "floor_hit": true,
+    "r": 0.8652605018653289,
+    "event_r": 0.8758658317805367
+   },
+   "aac@full": {
+    "requested_kbps": 13.425600000000001,
+    "used_kbps": 13.425600000000001,
+    "actual_kbps": 14.875200000000001,
+    "floor_hit": false,
+    "r": 0.9112756802174105,
+    "event_r": 0.920696489605553
+   }
+  },
+  "event_recall_r": -0.15333126240721534,
+  "late_weight_share_event_cells": 0.830631790178664,
+  "chance_share": 0.06705173279758915,
+  "t_event_s": 6.371341614475022
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 7,
+  "recall_r": 0.02698914087274833,
+  "encode_r": 0.5334356650214302,
+  "kbps_state": 3.1264000000000003,
+  "kbps_full": 13.3664,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1264000000000003,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3288,
+    "floor_hit": true,
+    "r": 0.7948159153056622,
+    "event_r": 0.7693017779672939
+   },
+   "libopus@full": {
+    "requested_kbps": 13.3664,
+    "used_kbps": 13.3664,
+    "actual_kbps": 11.896,
+    "floor_hit": false,
+    "r": 0.9221594528209025,
+    "event_r": 0.9109337499972807
+   },
+   "aac@state": {
+    "requested_kbps": 3.1264000000000003,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3656,
+    "floor_hit": true,
+    "r": 0.871198031151962,
+    "event_r": 0.8507317530152524
+   },
+   "aac@full": {
+    "requested_kbps": 13.3664,
+    "used_kbps": 13.3664,
+    "actual_kbps": 14.813600000000001,
+    "floor_hit": false,
+    "r": 0.9135156453244373,
+    "event_r": 0.9116522854291602
+   }
+  },
+  "event_recall_r": -0.04893021587014337,
+  "late_weight_share_event_cells": 0.07370817487748738,
+  "chance_share": 0.058085977482088026,
+  "t_event_s": 6.061512675826136
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 8,
+  "recall_r": 0.05117872220774239,
+  "encode_r": 0.560251338261795,
+  "kbps_state": 3.1056,
+  "kbps_full": 13.345600000000001,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.1056,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.3768,
+    "floor_hit": true,
+    "r": 0.771659622981053,
+    "event_r": 0.8123420072111476
+   },
+   "libopus@full": {
+    "requested_kbps": 13.345600000000001,
+    "used_kbps": 13.345600000000001,
+    "actual_kbps": 11.941600000000001,
+    "floor_hit": false,
+    "r": 0.9204446806835573,
+    "event_r": 0.9462818816592609
+   },
+   "aac@state": {
+    "requested_kbps": 3.1056,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3608,
+    "floor_hit": true,
+    "r": 0.8673382296367929,
+    "event_r": 0.8832797300126298
+   },
+   "aac@full": {
+    "requested_kbps": 13.345600000000001,
+    "used_kbps": 13.345600000000001,
+    "actual_kbps": 14.788799999999998,
+    "floor_hit": false,
+    "r": 0.9130802639912834,
+    "event_r": 0.9323922363434041
+   }
+  },
+  "event_recall_r": 0.40230321924212753,
+  "late_weight_share_event_cells": 0.25388514662557504,
+  "chance_share": 0.09325090159711488,
+  "t_event_s": 4.342912819837604
+ },
+ {
+  "ok": true,
+  "tag": "flat_nm",
+  "seed": 9,
+  "recall_r": 0.03205036770920146,
+  "encode_r": 0.551602982736667,
+  "kbps_state": 3.2592,
+  "kbps_full": 13.4992,
+  "codecs": {
+   "libopus@state": {
+    "requested_kbps": 3.2592,
+    "used_kbps": 6.0,
+    "actual_kbps": 5.288,
+    "floor_hit": true,
+    "r": 0.7711552173208385,
+    "event_r": 0.7405433630317989
+   },
+   "libopus@full": {
+    "requested_kbps": 13.4992,
+    "used_kbps": 13.4992,
+    "actual_kbps": 12.3672,
+    "floor_hit": false,
+    "r": 0.9228574240747727,
+    "event_r": 0.92176820211052
+   },
+   "aac@state": {
+    "requested_kbps": 3.2592,
+    "used_kbps": 8.0,
+    "actual_kbps": 9.3632,
+    "floor_hit": true,
+    "r": 0.8517127116819844,
+    "event_r": 0.7229030958659857
+   },
+   "aac@full": {
+    "requested_kbps": 13.4992,
+    "used_kbps": 13.4992,
+    "actual_kbps": 14.9336,
+    "floor_hit": false,
+    "r": 0.9056931202929722,
+    "event_r": 0.8212797727469567
+   }
+  },
+  "event_recall_r": 0.029126532917952266,
+  "late_weight_share_event_cells": 0.045915117161586555,
+  "chance_share": 0.07609229258713794,
+  "t_event_s": 5.908661613539252
+ }
+]

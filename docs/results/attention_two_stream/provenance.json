@@ -1,0 +1,13 @@
+{
+ "stamped_utc": "2026-09-21T08:54:06.172048+00:00",
+ "head": "41fea94f3c05c3afd22aef853781d074b2478ea9",
+ "dependencies": {
+  "tools/universal-wave-translation-layer": {
+   "sha": "59fcb9b53e183694ad127994d73f20d270c3bf20",
+   "dirty": false,
+   "exists": true
+  }
+ },
+ "note": "",
+ "rerun_rule": "Re-run the NULL and the MEASUREMENT together, or not at all. A threshold computed by the same code as the measurement moves with it, and comparing a fresh measurement against a stale bar manufactures a result in the exciting direction."
+}

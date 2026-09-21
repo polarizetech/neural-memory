@@ -1,6 +1,6 @@
 .venv/
-results/
-build/
+/results/
+/build/
 __pycache__/
 *.egg-info/
 .pytest_cache/
