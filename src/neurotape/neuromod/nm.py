@@ -82,10 +82,11 @@ def build_nm(cfg: Config, timeline, env: np.ndarray, env_rate: float) -> NMTrace
             e = np.convolve(e, np.ones(k) / k, mode="same")
             e = e / (np.percentile(e, 99) + 1e-12)
             nm += att.amp * np.interp(t - enc.t0, np.arange(e.size) / env_rate, e, left=0.0, right=0.0)
-        if cfg.protocol.recall_mode == "nm_pulse":
+        if cfg.protocol.recall_mode in ("nm_pulse", "nm_sustained", "cue_nm"):
             for seg in timeline.segments:
                 if seg.kind == "recall":
-                    nm[(t >= seg.t0) & (t < seg.t0 + nmc.pulse_s)] += nmc.pulse_amp
+                    t_end = seg.t0 + nmc.pulse_s if cfg.protocol.recall_mode == "nm_pulse" else seg.t1
+                    nm[(t >= seg.t0) & (t < t_end)] += nmc.pulse_amp
     else:
         # flat-NM ablation: constant at the tonic level, no ramp, no phasic, no pulse
         nm = np.full_like(t, nmc.tonic)

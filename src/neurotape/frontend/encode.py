@@ -48,7 +48,7 @@ def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) ->
     T = min(a.env.shape[1] for a in ans)
     env = np.stack([a.env[:, :T] for a in ans])
     S, B, _ = env.shape
-    cue_s = pr.cue_fraction * pr.encode_s if pr.recall_mode == "cue" else 0.0
+    cue_s = pr.cue_fraction * pr.encode_s if pr.cued else 0.0
     shown_streams = ([_shuffle_waveform(s, 0.25, rng) for s in streams] if pr.shuffle_input else streams)
     log: dict = {}
 

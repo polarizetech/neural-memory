@@ -207,6 +207,23 @@ class Attention(_Strict):
     amp: float = 0.15
 
 
+class NmExcitability(_Strict):
+    """Recall-phase DRIVE, candidate 1: NM raises excitatory-cell excitability and does NOT raise inhibition.
+
+    Basis: Bacon, Pickering & Mellor 2020, Cereb Cortex 30:6135, doi:10.1093/cercor/bhaa159 (PMC7609922):
+    endogenous LC noradrenaline raises CA1 pyramidal excitation-spike coupling via beta-adrenoceptors without
+    changing feedforward excitatory or inhibitory input. The classical beta-AR mechanism is block of the slow
+    AHP (Madison & Nicoll 1982, cited there). Here: the AdEx adaptation current w is the AHP-like K+ current.
+      ahp_scale = clip(1 - strength*ahp_block_per_nm*(NM - nm_ref), 0, 1)     multiplies w
+      VT        = VT - strength*dVT_mV_per_nm*(NM - nm_ref)                   (NM above reference only)
+    E cells only. The two gains were fixed BEFORE any run, from one stated anchor: at the recall NM level
+    (nm_ref + pulse_amp = +0.3) the AHP is fully blocked and threshold drops 2 mV. `strength` scales both and
+    is what a sweep varies; the whole sweep is reported."""
+    ahp_block_per_nm: float = 1.0 / 0.3
+    dVT_mV_per_nm: float = 2.0 / 0.3
+    strength: float = 1.0
+
+
 class Mechanisms(_Strict):
     """One switch per mechanism. All True = the full model."""
     t_current: bool = True
@@ -216,6 +233,8 @@ class Mechanisms(_Strict):
     creb: bool = True
     tonic_drift: bool = True
     theta: bool = True                      # False = theta.mode forced to "off"
+    nm_excitability: bool = False           # recall-phase drive candidate 1 (OFF: the published-results model)
+    nm_inhibitory_setpoint: bool = True     # False = NM no longer biases the I cells
     plasticity: bool = True                 # False = frozen weights (a fixed spiking reservoir)
 
 
@@ -226,7 +245,13 @@ class Protocol(_Strict):
     # the slow processes is delay * time_compression.
     recall_delays_s: list[float] = [5.0, 60.0]
     recall_s: float | None = None           # None = encode_s
-    recall_mode: Literal["cue", "no_cue", "nm_pulse"] = "cue"
+    # nm_pulse: a 1 s NM pulse at probe onset.  nm_sustained: NM elevated by pulse_amp for the WHOLE probe.
+    # cue_nm: the cue plus NM elevated for the whole probe.
+    recall_mode: Literal["cue", "no_cue", "nm_pulse", "nm_sustained", "cue_nm"] = "cue"
+
+    @property
+    def cued(self) -> bool:
+        return self.recall_mode in ("cue", "cue_nm")
     cue_fraction: float = Field(0.15, ge=0.0, le=1.0)
     cue_stream: int = 0
     shuffle_input: bool = False             # control: block-shuffled envelopes drive the net
@@ -269,6 +294,7 @@ class Config(_Strict):
     creb: Creb = Creb()
     neuromod: Neuromod = Neuromod()
     theta: Theta = Theta()
+    nm_excitability: NmExcitability = NmExcitability()
     attention: Attention = Attention()
     mechanisms: Mechanisms = Mechanisms()
     protocol: Protocol = Protocol()

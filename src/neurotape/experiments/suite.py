@@ -276,7 +276,7 @@ def _recall_modes_worker(job):
         foreign = [ro.resample_targets(analyse(synthetic_streams(1, cfg.protocol.encode_s, seed=10_000 + cfg.seed * 100 + j)[0],
                                                cfg.frontend, seconds=cfg.protocol.encode_s, keep_fine=False).env[None], inputs.env_rate, dc.rate_hz)
                    for j in range(N_FOREIGN)]
-        max_lag = int((1.0 if cfg.protocol.recall_mode == "cue" else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)) * dc.rate_hz)
+        max_lag = int((1.0 if cfg.protocol.cued else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)) * dc.rate_hz)
         for rec, seg in zip(out["recall"], res.timeline.recalls()):
             X = ro.activity_features(*res.spikes_e, res.n_exc, seg.t0, seg.t1, dc.rate_hz, dc.filter_tau_ms)
             kg = int(round((seg.cue_s + 1.0) * dc.rate_hz)); m = min(len(X), len(Y)); pr = dec.predict(X[:m])[kg:]
@@ -335,5 +335,72 @@ def exp_recall_modes(cfg: Config, seeds, workers):
         rep += (f"### `{mode}`\n\n" + _table(rows) + f"\n- pattern r, settle baseline: {C.fmt(base)}; recall (last delay) - baseline: {C.fmt(d_pat)} -> "
                 f"{'assembly REACTIVATES above baseline' if d_pat['beats'] else 'no reactivation above baseline'}\n"
                 f"- best-lag seeds at p<0.05: expect ~{expected:.1f} of {len(rs)} by chance at each delay\n\n")
+    C.save(out, cfg, runs, summ, rep)
+    return out
+
+
+# ------------------------------------------------------------------ recall-phase drive, candidate 1
+DRIVE_STRENGTHS = (1.0, 2.0, 4.0)       # declared before any run; the WHOLE sweep is reported
+
+
+def exp_recall_drive(cfg: Config, seeds, workers):
+    """NM -> excitatory excitability (AHP block + threshold drop), without raising inhibition.
+
+    SUCCESS CRITERION, fixed in advance: decoded recall matches its OWN stream better than 20 foreign streams
+    (whole 95% CI of own - foreign above zero). Higher firing alone does not count.
+    Conditions. Modes where NM is at reference during the probe (cue, no_cue) and the 1 s pulse (nm_pulse) are
+    run with the drive off and on at strength 1. Modes where NM is ELEVATED for the whole probe (nm_sustained,
+    cue_nm) carry the sweep, with the NM -> inhibitory-set-point coupling both on (the base model) and off
+    (the drive as specified: excitability up, inhibition not raised)."""
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import get_context
+    out = C.results_dir("recall_drive")
+
+    def cond(mode, strength, inh_setpoint=True):
+        c = cfg.model_copy(deep=True); c.protocol.recall_mode = mode
+        c.mechanisms.nm_excitability = strength > 0; c.nm_excitability.strength = max(strength, 1.0) if strength > 0 else 1.0
+        c.mechanisms.nm_inhibitory_setpoint = inh_setpoint
+        return c
+    conds = {}
+    for mode in ("cue", "no_cue", "nm_pulse"):
+        conds[f"{mode} | drive off"] = cond(mode, 0); conds[f"{mode} | drive x1"] = cond(mode, 1.0)
+    for mode in ("nm_sustained", "cue_nm"):
+        conds[f"{mode} | drive off"] = cond(mode, 0)
+        conds[f"{mode} | drive off, NM-inh off"] = cond(mode, 0, False)
+        conds[f"{mode} | drive x1"] = cond(mode, 1.0)
+        for k in DRIVE_STRENGTHS:
+            conds[f"{mode} | drive x{k:g}, NM-inh off"] = cond(mode, k, False)
+    with ProcessPoolExecutor(max(workers, 1), mp_context=get_context("spawn")) as ex:
+        runs = list(ex.map(_recall_modes_worker, C.jobs_for(conds, seeds, {"n": 1})))
+    g = C.by_tag(runs)
+    tri = lambda f: " / ".join(f(k) for k in range(len(next(iter(g.values()))[0]["recall"])))
+    rows = [("condition", "recall E rate, Hz", "own - foreign best-lag r (SUCCESS if CI > 0)", "foreign-null p<0.05, seeds",
+             "time-locked r (guarded)", "reactivation (pattern r)", "encode held-out r", "consolidation E rate, Hz")]
+    summ, wins = {}, []
+    for tag, rs in g.items():
+        per = []
+        for k in range(len(rs[0]["recall"])):
+            R = [r["recall"][k] for r in rs]
+            d = C.paired_diff([x["foreign"]["own"] for x in R], [x["foreign"]["foreign_mean"] for x in R])
+            per.append(dict(delay_s=R[0]["delay_s"], rate=C.ci95([x["rate_e_hz"] for x in R]), own_minus_foreign=d,
+                            n_sig=int(sum(x["foreign"]["p"] < 0.05 for x in R)), locked=C.ci95([x["guarded_r"][0] for x in R]),
+                            pattern=C.ci95([x["pattern_r"] for x in R])))
+            if d["beats"]:
+                wins.append(f"{tag} @ {R[0]['delay_s']:g} s: {C.fmt(d)}")
+        summ[tag] = dict(delays=per, encode=C.ci95([r["encode_heldout_r"][0] for r in rs]),
+                         rate_consolidation=C.ci95([r.get("rate_e_consolidate_hz") for r in rs]))
+        rows.append((tag, tri(lambda k: f"{per[k]['rate']['mean']:.3f}"),
+                     tri(lambda k: f"{per[k]['own_minus_foreign']['mean']:+.3f} [{per[k]['own_minus_foreign']['lo']:+.3f}, {per[k]['own_minus_foreign']['hi']:+.3f}]"
+                         + ("**" if per[k]["own_minus_foreign"]["beats"] else "")),
+                     tri(lambda k: f"{per[k]['n_sig']}/{len(rs)}"), tri(lambda k: f"{per[k]['locked']['mean']:+.3f}"),
+                     tri(lambda k: f"{per[k]['pattern']['mean']:+.3f}"), C.fmt(summ[tag]["encode"]), f"{summ[tag]['rate_consolidation']['mean']:.3f}"))
+    n_tests = sum(len(v["delays"]) for v in summ.values())
+    rep = ("## Recall-phase drive, candidate 1 -- NM raises excitatory excitability (AHP block + threshold drop)\n\n"
+           "Basis: Bacon, Pickering & Mellor 2020 (doi:10.1093/cercor/bhaa159). Cells: three delays, `a / b / c`. "
+           "**Success = own - foreign with its whole 95% CI above zero; higher firing alone does not count.**\n\n" + _table(rows) +
+           f"\n### Verdict\n\n{len(wins)} of {n_tests} condition x delay cells meet the criterion"
+           f" (about {0.025 * n_tests:.1f} expected by chance from one-sided 2.5% tails).\n" +
+           ("".join(f"- {w}\n" for w in wins) if wins else "- none\n") +
+           "\nThe drive strength was not tuned: x1 was fixed from one stated anchor before any run, and x2 / x4 are the declared sweep, reported whole.\n")
     C.save(out, cfg, runs, summ, rep)
     return out

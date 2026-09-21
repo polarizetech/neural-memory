@@ -66,3 +66,24 @@ def test_tonic_drift_is_slow_ou():
     # ENSEMBLE autocorrelation across cells (a per-cell estimate over 4 tau is biased far negative)
     ac = np.mean([np.corrcoef(x[:, k], x[:, k + 50])[0, 1] for k in range(0, 150, 10)])  # lag = tau -> ~1/e
     assert 0.2 < ac < 0.55
+
+
+def test_nm_excitability_drive_raises_spiking_in_e_cells_only_and_is_absent_when_off():
+    """Recall-phase drive candidate 1: same current step, more spikes under elevated NM; nothing when off."""
+    import brian2 as b2
+    from neurotape.neurons.model import make_group, constant_array, equations
+    assert "ahp_scale" not in equations(False) and "- w - I_T" in equations(False)      # OFF = the original text
+    counts = {}
+    for label, on, nm, kind in (("off_hi", False, 0.42, "exc"), ("on_ref", True, 0.12, "exc"), ("on_hi", True, 0.42, "exc"), ("inh_on_hi", True, 0.42, "inh")):
+        b2.start_scope()
+        cfg = quiet_cfg(); cfg.mechanisms.nm_excitability = on; cfg.mechanisms.nm_inhibitory_setpoint = False
+        p = cfg.network.exc if kind == "exc" else cfg.network.inh
+        g = make_group(1, p, cfg, kind, constant_array(nm), constant_array(1.0), "c", np.random.default_rng(0)); g.V = p.EL_mV * b2.mV
+        sp = b2.SpikeMonitor(g); net = b2.Network(g, sp); g.I_inj = 250 * b2.pA; net.run(500 * b2.ms); counts[label] = sp.num_spikes
+    assert counts["on_hi"] > counts["off_hi"]                   # NM raises excitation-spike coupling
+    assert counts["on_ref"] == counts["off_hi"]                 # neutral at the reference NM level
+    b2.start_scope()
+    cfg = quiet_cfg(); cfg.mechanisms.nm_inhibitory_setpoint = False
+    g = make_group(1, cfg.network.inh, cfg, "inh", constant_array(0.42), constant_array(1.0), "c", np.random.default_rng(0)); g.V = -70 * b2.mV
+    sp = b2.SpikeMonitor(g); g.I_inj = 250 * b2.pA; b2.Network(g, sp).run(500 * b2.ms)
+    assert sp.num_spikes == counts["inh_on_hi"]                 # I cells never get the drive

@@ -34,10 +34,10 @@ REST, LOADED, SPIKE, RESET = 0, 1, 2, 3
 STATE_NAMES = {REST: "REST", LOADED: "LOADED", SPIKE: "SPIKE/BURST", RESET: "RESET"}
 
 EQUATIONS = """
-dV/dt = (gL*(EL - V) + gL*DeltaT*exp(clip((V - VT_eff)/DeltaT, -50, 8)) - w - I_T
+dV/dt = (gL*(EL - V) + gL*DeltaT*exp(clip((V - VT_eff)/DeltaT, -50, 8)) - __AHP__w - I_T
          + I_syn + I_bg + I_drift + I_nm + I_theta + I_gap + I_inj)/C : volt (unless refractory)
 dw/dt = (a*(V - EL) - w)/tau_w : amp
-VT_eff = VT - dVT_creb*clip(creb, 0, 1) : volt
+VT_eff = VT - dVT_creb*clip(creb, 0, 1)__VTNM__ : volt
 
 # --- T-type calcium current (Destexhe et al. 1996; ModelDB 3343) ---
 Vm = clip(V, -120*mV, -20*mV) + T_shift : volt
@@ -86,6 +86,22 @@ nstate = 2*int(since_spike < t_spike_w)
       + 1*int(since_spike >= t_reset_w and hT > hT_loaded) : integer
 """
 
+NM_EXC_EQS = """
+# --- NM -> excitability (Bacon, Pickering & Mellor 2020): AHP block + threshold drop, E cells only ---
+nm_x = clip(NM(t) - nm_ref, 0, 1) : 1
+ahp_scale = clip(1 - k_ahp*nm_x, 0, 1) : 1
+"""
+
+
+def equations(nm_excitability: bool) -> str:
+    """With the mechanism OFF the equation text is byte-identical to the model the published results came
+    from -- so the generated code, and therefore every spike, is too. Multiplying by a 1.0 gain instead would
+    change the expression tree, and under -ffast-math that is enough to diverge a chaotic network."""
+    if nm_excitability:
+        return EQUATIONS.replace("__AHP__", "ahp_scale*").replace("__VTNM__", " - k_vt*nm_x") + NM_EXC_EQS
+    return EQUATIONS.replace("__AHP__", "").replace("__VTNM__", "")
+
+
 RESET_CODE = "V = V_reset; w += b_adapt; Ca_s += Ca_spike"
 THRESHOLD = "V > V_cut"
 
@@ -106,7 +122,9 @@ def namespace(p: NeuronParams, cfg: Config, kind: str) -> dict:
         I0=cfg.noise.I0_pA * pA, sigma_bg=cfg.noise.sigma_pA * pA, tau_bg=cfg.noise.tau_ms * ms,
         tau_drift=cfg.drift.tau_s * second,
         sigma_drift=(cfg.drift.sigma_pA if m.tonic_drift else 0.0) * pA,
-        k_inh=(nm.k_inh_pA if kind == "inh" else 0.0) * pA, nm_ref=nm.nm_ref,
+        k_inh=(nm.k_inh_pA if (kind == "inh" and m.nm_inhibitory_setpoint) else 0.0) * pA, nm_ref=nm.nm_ref,
+        k_ahp=cfg.nm_excitability.strength * cfg.nm_excitability.ahp_block_per_nm,
+        k_vt=cfg.nm_excitability.strength * cfg.nm_excitability.dVT_mV_per_nm * mV,
         theta_amp=(cfg.theta.amp_pA if cfg.theta.target in (kind, "both") else 0.0) * pA,
         tau_CaT=pl.tau_CaT_ms * ms, k_CaT=pl.k_CaT_per_nA_ms / (nA * ms),
         tau_Cas=cr.tau_Ca_soma_ms * ms, k_T_s=cr.k_T_per_nA_ms / (nA * ms),
@@ -124,7 +142,8 @@ def make_group(n: int, p: NeuronParams, cfg: Config, kind: str, NM: b2.TimedArra
                theta: b2.TimedArray | None = None, order: int = 0) -> b2.NeuronGroup:
     ns = namespace(p, cfg, kind)
     ns.update(NM=NM, noise_scale=noise_scale, theta=theta if theta is not None else constant_array(0.0))
-    g = b2.NeuronGroup(n, EQUATIONS, threshold=THRESHOLD, reset=RESET_CODE,
+    on = cfg.mechanisms.nm_excitability and kind == "exc"
+    g = b2.NeuronGroup(n, equations(on), threshold=THRESHOLD, reset=RESET_CODE,
                        refractory=p.t_ref_ms * ms, method="euler", namespace=ns, name=name, order=order)
     g.V = (p.EL_mV + rng.uniform(0, 8, n)) * mV
     g.hT = 0.01

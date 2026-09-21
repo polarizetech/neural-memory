@@ -82,7 +82,7 @@ def evaluate(res, inputs, cfg: Config, targets: np.ndarray | None = None) -> dic
     out["recall"] = []
     # Uncued modes have no time reference: replay, if any, may start anywhere, so the lag search is wide.
     # The null is searched over the SAME range, so the wider search is priced, not free.
-    max_lag_s = 1.0 if cfg.protocol.recall_mode == "cue" else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)
+    max_lag_s = 1.0 if cfg.protocol.cued else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)
     si_, st_ = res.spikes_e
     count = lambda a, b: np.bincount(si_[(st_ >= a) & (st_ < b)], minlength=res.n_exc).astype(float)
     enc_counts, settle = count(enc.t0, enc.t1), res.timeline.segment("settle")
@@ -135,5 +135,7 @@ def evaluate(res, inputs, cfg: Config, targets: np.ndarray | None = None) -> dic
     out["p_max"] = float(res.p.max()); out["creb_max"] = float(res.creb.max())
     out["nm_events"] = int(len(res.nm.events_s)); out["wall_s"] = float(res.wall_s)
     i, t = res.spikes_e
+    cons = [sg for sg in res.timeline.segments if sg.kind == "consolidate"]
+    out["rate_e_consolidate_hz"] = float(sum(((t >= sg.t0) & (t < sg.t1)).sum() for sg in cons) / res.n_exc / max(sum(sg.dur for sg in cons), 1e-9))
     out["rate_e_encode_hz"] = float(((t >= enc.t0) & (t < enc.t1)).sum() / res.n_exc / enc.dur)
     return out, dec

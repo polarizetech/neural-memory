@@ -49,7 +49,7 @@ class Timeline:
 def build_timeline(cfg: Config) -> Timeline:
     p = cfg.protocol
     rec = p.recall_s if p.recall_s is not None else p.encode_s
-    cue = p.cue_fraction * p.encode_s if p.recall_mode == "cue" else 0.0
+    cue = p.cue_fraction * p.encode_s if p.cued else 0.0
     segs = [Segment("settle", "settle", 0.0, p.settle_s)]
     t = p.settle_s
     segs.append(Segment("encode", "encode", t, t + p.encode_s))

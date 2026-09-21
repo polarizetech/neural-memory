@@ -127,6 +127,26 @@ network hearing noise bursts.** Landing inside the CI is a shape match, not a va
 The learning-stimulus amplitude `(N f + √(N f) ξ)·1 s·h0`, N = 25, f = 100 Hz, is taken **literally**
 from the Brian2 reference and was not cross-checked against the C++ implementation.
 
+### Recall-phase drive, candidate 1: NM → excitatory excitability — Bacon, Pickering & Mellor 2020, *Cereb Cortex* 30:6135, doi:10.1093/cercor/bhaa159 (PMC7609922) — source supplied by the operator; held in the library; **introduction `READ`, results and methods not read**
+
+The claim taken from it: endogenous LC noradrenaline raises CA1 pyramidal excitation–spike coupling via
+β-adrenoceptors **without changing feedforward excitatory or inhibitory input**. Its introduction names
+block of the slow AHP as NA's most robust excitability effect (Madison & Nicoll 1982, `MEMORY`).
+
+| parameter | value | source |
+|---|---|---|
+| `nm_excitability.ahp_block_per_nm` | 1/0.3 | **placeholder.** Anchor: the AHP-like current (AdEx `w`) is fully blocked at the recall NM level, `nm_ref + pulse_amp` = +0.3. "Full block" follows the sAHP literature qualitatively; the number is ours |
+| `nm_excitability.dVT_mV_per_nm` | 2 mV / 0.3 | **placeholder.** A 2 mV threshold drop at the same NM level; not taken from the paper |
+| `nm_excitability.strength` | 1 (sweep: 1, 2, 4) | multiplies both; **the sweep was declared before any run and is reported whole** |
+| `mechanisms.nm_excitability` | **off** | with it off the equation *text* is byte-identical to the published-results model, verified by reproducing a committed run exactly |
+| `mechanisms.nm_inhibitory_setpoint` | on | the base model lets NM bias the I cells; the drive as specified must **not** raise inhibition, so its conditions are run with this off as well as on |
+| recall modes `nm_sustained`, `cue_nm` | — | NM elevated by `pulse_amp` for the whole probe. Needed because the 1 s `nm_pulse` sits entirely inside the guarded window the score excludes, so an NM-tied drive would act only where nothing is scored |
+
+E cells only; neutral at the reference NM level (unit-tested). **What it is not:** a model of β-AR signalling,
+of the sAHP's kinetics (AdEx `w` has τ = 150 ms; a real sAHP lasts seconds), or of CA1.
+**Held for later, deliberately not built:** a disinhibitory drive (**ACh-like, not LC** — PMC8513881) and
+theta-to-threshold, which goes last because it can make cells fire regardless of content.
+
 ## What is NOT built, stated so nobody has to discover it
 
 - **CoNNear inversion (the PRIMARY playback) has never run.** No TensorFlow, no weights; weights are
