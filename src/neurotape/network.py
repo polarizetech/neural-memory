@@ -128,7 +128,7 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         # Measured: a full build is 17-43 s and, being serialised, bounded the whole suite.
         build_dir = _worker_build_dir(build_root)
     _activate(cfg, build_dir)
-    b2.seed(cfg.seed)
+    b2.seed(cfg.seed + cfg.sim.replicate_offset)      # wiring comes from the numpy rng below, which does NOT take the offset
     b2.defaultclock.dt = cfg.sim.dt_ms * ms
 
     net_c, mix, mech = cfg.network, cfg.mixing, cfg.mechanisms
@@ -327,10 +327,15 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
             raise ValueError(f"snapshot instants {snap_instants} share only a {step_ms} ms grid: too many samples")
         snap = b2.StateMonitor(S_ee, ["h", "z"], record=True, dt=step_ms * ms, name="snap")
         objs.append(snap)
+    cat_m = b2.StateMonitor(E, "CaT", record=True, dt=1 * ms, name="cat_m") if cfg.sim.log_cat else None
+    if cat_m is not None:
+        objs.append(cat_m)
     net = b2.Network(*objs)
     for seg in tl.segments:
         on = seg.kind in cfg.sim.log_states_in
         st_e.active = st_i.active = on
+        if cat_m is not None:
+            cat_m.active = seg.kind == "encode"
         net.run(seg.dur * second, profile=cfg.sim.profile)
     profile = ""
     if cfg.sim.device == "cpp_standalone":
@@ -364,7 +369,8 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         lfp_Ii=np.array(lfp_m.Ii_sum[0] / pA), lfp_Ir=np.array(lfp_m.Ir_sum[0] / pA),
         theta_t=th_t, theta=th, theta_phase=th_phase, onsets_s=onsets,
         profile=profile,
-        extra=dict(snapshots=_pick_snapshots(snap, snap_instants) if snap is not None else None,
+        extra=dict(CaT=(np.array(cat_m.t / second), np.array(cat_m.CaT)) if cat_m is not None else None,
+                   snapshots=_pick_snapshots(snap, snap_instants) if snap is not None else None,
                    in_e=(np.asarray(S_in_e.i[:]), np.asarray(S_in_e.j[:])), cue_views=cue_views,
                    fb_learned=(np.array(S_fb.h[:]) - 1.0 + np.array(S_fb.z[:])) if S_fb is not None else None,
                    M_pop=(np.array(gate_m.t / second), np.array(gate_m.M_sum[0])) if gate_m is not None else None,

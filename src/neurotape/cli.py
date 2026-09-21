@@ -3,7 +3,7 @@
   neurotape encode a.wav b.wav c.csv --config cfg.yaml      one full run: encode -> consolidate -> recall
   neurotape encode --demo 2 --config cfg.yaml               ... on labelled synthetic streams
   neurotape exp <name> --config cfg.yaml --seeds 10 --workers 4
-      names: delay streams ablations baselines lehr population attention codec salience recall_modes recall_drive binaural completion all
+      names: delay streams ablations baselines lehr population attention codec salience recall_modes recall_drive binaural completion storage_diagnostic all
 """
 from __future__ import annotations
 
@@ -78,14 +78,14 @@ def cmd_encode(a) -> None:
 
 
 def cmd_exp(a) -> None:
-    from .experiments import lehr, storage, suite
+    from .experiments import diagnostic, lehr, storage, suite
     cfg = load_config(a.config)
     seeds = list(range(a.seeds))
     table = dict(delay=suite.exp_delay, streams=suite.exp_streams, ablations=suite.exp_ablations,
                  baselines=suite.exp_baselines, lehr=lehr.exp_lehr, population=suite.exp_population,
                  attention=suite.exp_attention, codec=storage.exp_codec, salience=storage.exp_salience,
-                 recall_modes=suite.exp_recall_modes, recall_drive=suite.exp_recall_drive, binaural=suite.exp_binaural, completion=suite.exp_completion)
-    names = [n for n in table if n not in ("recall_drive", "binaural", "completion")] if a.name == "all" else [a.name]
+                 recall_modes=suite.exp_recall_modes, recall_drive=suite.exp_recall_drive, binaural=suite.exp_binaural, completion=suite.exp_completion, storage_diagnostic=diagnostic.exp_storage_diagnostic)
+    names = [n for n in table if n not in ("recall_drive", "binaural", "completion", "storage_diagnostic")] if a.name == "all" else [a.name]
     if a.seeds < 10:
         print(f"NOTE: {a.seeds} seeds requested; the reporting standard for this project is >= 10.")
     for n in names:

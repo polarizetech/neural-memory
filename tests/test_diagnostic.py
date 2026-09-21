@@ -47,3 +47,28 @@ def test_d2_snapshots_are_taken_at_the_three_instants_and_change_no_spike():
     assert h["labels"] == ["pre_encode", "post_encode", "pre_first_recall"]
     assert np.allclose(h["t"], h["expect"], atol=1e-6) and h["shape"] == [h["n_syn"], 3]
     assert h["pre_is_baseline"] and 0.0 <= h["frac"] <= 1.0
+
+
+def _toy_activity(n=30, T=4.0, seed=0, assembly=range(0, 10), rate_in=120.0, rate_out=2.0):
+    rng = np.random.default_rng(seed); i, t = [], []
+    for c in range(n):
+        k = rng.poisson((rate_in if c in assembly else rate_out) * T); i += [c] * k; t += list(rng.uniform(1.0, 1.0 + T, k))
+    o = np.argsort(t); return np.array(i)[o], np.array(t)[o]
+
+
+def test_d3_predictor_writes_the_co_active_assembly_and_the_decode_ranks_its_own_stream_first():
+    from neurotape.recall import storage as S
+    cfg = Config(); n = 30; rng = np.random.default_rng(1)
+    m_ = rng.random((n, n)) < 0.3; np.fill_diagonal(m_, False); si, sj = np.nonzero(m_)
+    nm_t = np.array([0.0, 100.0]); nm_v = np.array([0.12, 0.12])
+    pred = lambda a, seed: S.predict_dw(*_toy_activity(n, assembly=a, seed=seed), si, sj, n, cfg, nm_t, nm_v, None, None, 1.0, 5.0, {"enc": 4.0, "late": 60.0})
+    A = pred(range(0, 10), 0)
+    inside = (si < 10) & (sj < 10)
+    assert A["enc"][0][inside].mean() > 0.3 and abs(A["enc"][0][~inside & (si >= 10) & (sj >= 10)].mean()) < 0.02   # writes the assembly, leaves the rest
+    assert A["late"][1][inside].mean() > A["enc"][1][inside].mean() >= 0                                          # capture grows during consolidation
+    observed = pred(range(0, 10), 99)["enc"][0]                       # "what was written": the same assembly, a different noise realisation
+    foreign = [pred(range(3 * k % 20, 3 * k % 20 + 10), 10 + k)["enc"][0] for k in range(1, 6)]
+    d = S.stream_decode(observed, [A["enc"][0]] + foreign, n_perm=300)
+    assert d["rank"] == 1 and d["beats_perm95"] and d["r_stored"] > d["r_foreign_max"]
+    flat = S.stream_decode(np.zeros(si.size), [A["enc"][0]] + foreign, n_perm=50)
+    assert flat["defined"] is False                                   # no dW -> the decode is UNDEFINED, not rank 21

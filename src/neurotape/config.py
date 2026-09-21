@@ -380,6 +380,10 @@ class Sim(_Strict):
     weight_log_dt_s: float = 5.0
     keep_build: bool = False
     profile: bool = False
+    # D3: a REPLICATE of the same network -- identical wiring (drawn from `seed`), but a different membrane-noise
+    # stream and different auditory-nerve spike generation. 0 = the run itself.
+    replicate_offset: int = 0
+    log_cat: bool = False                   # D3, instrumentation: per-cell T-current calcium at 1 ms during encoding
     snapshot_weights: bool = False          # D2, INSTRUMENTATION ONLY: every E->E weight (h and z) at three instants
     log_provenance: bool = False            # C5, ANALYSIS ONLY: record each spike's own I_ff and I_rec
 

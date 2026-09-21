@@ -46,6 +46,7 @@ def _shuffle_waveform(s: Stream, block_s: float, rng) -> Stream:
 def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) -> Inputs:
     rng = np.random.default_rng(cfg.seed + 101)
     fe, pr = cfg.frontend, cfg.protocol
+    rep = cfg.sim.replicate_offset                      # D3: a different spike-generation stream, same everything else
     ans = [analyse(s, fe, seconds=pr.encode_s, keep_fine=keep_fine) for s in streams]
     T = min(a.env.shape[1] for a in ans)
     env = np.stack([a.env[:, :T] for a in ans])
@@ -61,7 +62,7 @@ def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) ->
         tonic = cfg.neuromod.tonic
 
         def binaural(seconds, seed, only=None):
-            L, R = anmod.run_an_binaural(anmod.ear_mixtures(shown_streams, seconds, cfg, only=only), cfg, seed, tonic)
+            L, R = anmod.run_an_binaural(anmod.ear_mixtures(shown_streams, seconds, cfg, only=only), cfg, seed + rep, tonic)
             both, n = concat(L, R), None
             if fe.mso:
                 m, n = mso_population(L, R, cfg, seed)
@@ -79,11 +80,11 @@ def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) ->
     elif fe.kind == "an":
         tonic = cfg.neuromod.tonic
         mix = anmod.acoustic_mixture(shown_streams, pr.encode_s, fe.level_db_spl)
-        enc = anmod.run_an(mix, cfg, cfg.seed, tonic)
+        enc = anmod.run_an(mix, cfg, cfg.seed + rep, tonic)
         cue = None
         if cue_s > 0:
             solo = anmod.acoustic_mixture(shown_streams, cue_s, fe.level_db_spl, only=pr.cue_stream)
-            cue = anmod.run_an(solo, cfg, cfg.seed + 1, tonic)
+            cue = anmod.run_an(solo, cfg, cfg.seed + 1 + rep, tonic)
         if fe.brainstem == "cnmodel":
             enc = cn_stage(enc)
         log["fibre_axis"] = anmod.fibre_axis(enc)
@@ -93,7 +94,8 @@ def build_inputs(streams: list[Stream], cfg: Config, keep_fine: bool = False) ->
             if pr.shuffle_input else env
         dt = 1.0 / fe.envelope_rate_hz
         rates = cfg.mixing.rate_max_hz * np.clip(P @ shown.reshape(S * B, T), 0, 1.5).T
-        t, i = poisson_spikes(rates, dt, rng)
+        spk_rng = rng if rep == 0 else np.random.default_rng(cfg.seed + 101 + rep)
+        t, i = poisson_spikes(rates, dt, spk_rng)
         meta = dict(population=np.array(["fb"] * P.shape[0], dtype=str),
                     modality=np.array(["generic"] * P.shape[0]))
         enc = SpikeInput(t, i, P.shape[0], T * dt, meta, "filterbank",
