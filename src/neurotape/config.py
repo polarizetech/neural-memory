@@ -380,6 +380,7 @@ class Sim(_Strict):
     weight_log_dt_s: float = 5.0
     keep_build: bool = False
     profile: bool = False
+    snapshot_weights: bool = False          # D2, INSTRUMENTATION ONLY: every E->E weight (h and z) at three instants
     log_provenance: bool = False            # C5, ANALYSIS ONLY: record each spike's own I_ff and I_rec
 
 

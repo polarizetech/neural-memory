@@ -111,6 +111,13 @@ def _activate(cfg: Config, build_dir: Path | None):
     b2.start_scope()
 
 
+def _pick_snapshots(snap, instants: dict) -> dict:
+    t = np.array(snap.t / second); h, z = np.array(snap.h), np.array(snap.z)
+    idx = [int(np.argmin(np.abs(t - v))) for v in instants.values()]
+    assert all(abs(t[k] - v) < 1e-6 for k, v in zip(idx, instants.values())), "a snapshot instant fell off the sample grid"
+    return dict(labels=list(instants), t=t[idx], h=h[:, idx], z=z[:, idx])
+
+
 def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> RunResult:
     t_wall = time.time()
     rng = np.random.default_rng(cfg.seed)
@@ -305,6 +312,21 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     lfp_m = b2.StateMonitor(LFP, ["Ie_sum", "Ii_sum", "Ir_sum"], record=True, dt=1 * ms, name="lfp_m")
     objs += [sm_e, sm_i, st_e, st_i, rank_m, rank_reset, slow, w_m, LFP, S_lfp, lfp_m]
 
+    # D2 weight snapshots: EVERY E->E synapse, early phase (h) and late phase (z) kept separate, at three instants --
+    # immediately before encoding, at the end of encoding, and immediately before the first recall cue. A plain
+    # StateMonitor whose clock is the greatest common divisor of those instants, so each one falls exactly on a
+    # sample; it reads and never writes. (StateMonitor.record_single_timestep() was tried first and is NOT usable
+    # under cpp_standalone: it sent the clock to 1e7 s and the run produced no spikes.)
+    snap, snap_instants = None, {}
+    if cfg.sim.snapshot_weights:
+        first_recall = tl.recalls()[0]
+        snap_instants = {"pre_encode": enc.t0, "post_encode": enc.t1, "pre_first_recall": first_recall.t0}
+        ms_i = [int(round(v * 1000)) for v in snap_instants.values()]
+        step_ms = int(np.gcd.reduce(ms_i))
+        if tl.total_s * 1000 / step_ms > 5000:
+            raise ValueError(f"snapshot instants {snap_instants} share only a {step_ms} ms grid: too many samples")
+        snap = b2.StateMonitor(S_ee, ["h", "z"], record=True, dt=step_ms * ms, name="snap")
+        objs.append(snap)
     net = b2.Network(*objs)
     for seg in tl.segments:
         on = seg.kind in cfg.sim.log_states_in
@@ -342,7 +364,8 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         lfp_Ii=np.array(lfp_m.Ii_sum[0] / pA), lfp_Ir=np.array(lfp_m.Ir_sum[0] / pA),
         theta_t=th_t, theta=th, theta_phase=th_phase, onsets_s=onsets,
         profile=profile,
-        extra=dict(in_e=(np.asarray(S_in_e.i[:]), np.asarray(S_in_e.j[:])), cue_views=cue_views,
+        extra=dict(snapshots=_pick_snapshots(snap, snap_instants) if snap is not None else None,
+                   in_e=(np.asarray(S_in_e.i[:]), np.asarray(S_in_e.j[:])), cue_views=cue_views,
                    fb_learned=(np.array(S_fb.h[:]) - 1.0 + np.array(S_fb.z[:])) if S_fb is not None else None,
                    M_pop=(np.array(gate_m.t / second), np.array(gate_m.M_sum[0])) if gate_m is not None else None,
                    w_in_nS=float(w_in_nS), front_end=si.front_end, input_log=inputs.log,
