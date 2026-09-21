@@ -191,7 +191,7 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
     i_, j_ = rand_conn(si.n, net_c.n_inh, mix.p_in_inh); S_in_i.connect(i=i_, j=j_)
 
     # ---- plastic E->E: calcium early phase + tagging and capture ----
-    S_ee = b2.Synapses(E, E, stc.PLASTIC_MODEL, on_pre=stc.ON_PRE, on_post=stc.ON_POST,
+    S_ee = b2.Synapses(E, E, stc.plastic_model(cfg), on_pre=stc.ON_PRE, on_post=stc.ON_POST,
                        delay=stc.delays(cfg), method="heun", namespace=stc.namespace(cfg),
                        dt=cfg.plasticity.update_dt_ms * ms, name="ee", order=2)
     ee_i, ee_j = rand_conn(net_c.n_exc, net_c.n_exc, net_c.p_conn, no_self=True)
@@ -210,6 +210,16 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
 
     # ---- gap junctions ----
     objs = [E, I, IN, S_in_e, S_in_i, S_ee, S_ei, S_ie, S_ii]
+    gate_m = None
+    if mech.mismatch_gate:
+        # C2: pool the cells' own feedforward-vs-recurrent mismatch into one population value and hand it
+        # back to every E cell. Computed entirely from synaptic currents inside the network.
+        GATE = b2.NeuronGroup(1, "M_sum : 1", name="gate")
+        S_g_in = b2.Synapses(E, GATE, "M_sum_post = mism_pre/n_e : 1 (summed)", namespace=dict(n_e=float(net_c.n_exc)), name="gate_in")
+        S_g_in.connect()
+        S_g_out = b2.Synapses(GATE, E, "M_pop_post = M_sum_pre : 1 (summed)", name="gate_out"); S_g_out.connect()
+        gate_m = b2.StateMonitor(GATE, "M_sum", record=True, dt=10 * ms, name="gate_m")
+        objs += [GATE, S_g_in, S_g_out, gate_m]
     gap_pairs = []
     if mech.gap_junctions:
         gap_pairs = gapmod.ring_pairs(net_c.n_inh, cfg.gap.neighbourhood, cfg.gap.p, rng)
@@ -288,7 +298,8 @@ def simulate(cfg: Config, inputs: Inputs, build_root: Path | None = None) -> Run
         lfp_Ii=np.array(lfp_m.Ii_sum[0] / pA), lfp_Ir=np.array(lfp_m.Ir_sum[0] / pA),
         theta_t=th_t, theta=th, theta_phase=th_phase, onsets_s=onsets,
         profile=profile,
-        extra=dict(w_in_nS=float(w_in_nS), front_end=si.front_end, input_log=inputs.log,
+        extra=dict(M_pop=(np.array(gate_m.t / second), np.array(gate_m.M_sum[0])) if gate_m is not None else None,
+                   w_in_nS=float(w_in_nS), front_end=si.front_end, input_log=inputs.log,
                    n_gap_pairs=len(gap_pairs), n_ee=int(n_syn), logged_syn=logged),
     )
     res.wall_s = time.time() - t_wall

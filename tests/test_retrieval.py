@@ -61,3 +61,41 @@ def test_c4_prior_drift_erodes_the_trace_per_spike_and_repulsion_raises_threshol
     # eroded once per spike, exactly (the 10 ms monitor can sit one spike behind the spike count)
     assert n1 > 0 and any(c1 == pytest.approx(0.5 * 0.99 ** k, rel=1e-4) for k in (n1, n1 - 1))
     assert n2 < n0                                                          # recent use -> harder to fire ("seek novel")
+
+
+def _write_test(cfg, M=None, creb_post=0.0, z0=0.0, lab=None, ms=300):
+    """Toy: one synapse held above the LTP calcium threshold. Does the early-phase weight h get WRITTEN?"""
+    b2.start_scope(); b2.defaultclock.dt = 0.1 * b2.ms
+    cfg.plasticity.noise = False
+    grp = b2.NeuronGroup(2, "M_pop : 1\ncreb : 1\nlab : 1\nCaT : 1\np : 1\nsum_h_diff : 1\ng_e : siemens", name="toy")
+    if M is not None: grp.M_pop = M
+    grp.creb = creb_post
+    if lab is not None: grp.lab = lab
+    S = b2.Synapses(grp, grp, stc.plastic_model(cfg), method="heun", namespace=stc.namespace(cfg), dt=1 * b2.ms, name="toy_syn")
+    S.connect(i=[0], j=[1]); S.h = 1.0; S.z = z0; S.Ca = 100.0                  # far above theta_p for the whole run
+    b2.Network(grp, S).run(ms * b2.ms)
+    return float(S.h[0]) - 1.0
+
+
+def test_c2_mismatch_gate_three_regimes():
+    assert stc.plastic_model(Config()) == stc.PLASTIC_MODEL                     # off = the published synapse text
+    off = _write_test(Config()); assert off > 0.05                              # ungated: the synapse is written
+    g = Config(); g.mechanisms.mismatch_gate = True
+    assert _write_test(g, M=0.05) == pytest.approx(0.0, abs=1e-9)               # below theta_low: retrieval only
+    assert _write_test(g, M=0.4) == pytest.approx(off, rel=1e-6)                # mid regime: plasticity open
+    hi_no_bias = _write_test(g, M=0.9, creb_post=0.0); hi_bias = _write_test(g, M=0.9, creb_post=0.2)
+    assert hi_no_bias == pytest.approx(0.0, abs=1e-9) and hi_bias == pytest.approx(off, rel=1e-6)   # new trace -> allocation-biased cells
+    assert _write_test(g, M=0.9, creb_post=0.2, z0=0.5) == pytest.approx(0.0, abs=1e-9)             # existing assembly protected
+
+
+def test_c2_mismatch_is_high_when_feedforward_dominates_and_low_when_balanced():
+    b2.start_scope(); cfg = quiet_cfg(); cfg.mechanisms.mismatch_gate = True
+    g = m.make_group(3, cfg.network.exc, cfg, "exc", m.constant_array(0.12), m.constant_array(1.0), "c", np.random.default_rng(0))
+    g.V = -70 * b2.mV
+    g.run_regularly("g_ext = ge_in; g_e = gr_in", dt=0.1 * b2.ms)
+    g.namespace.update(ge_in=0 * b2.nS, gr_in=0 * b2.nS)
+    st = b2.StateMonitor(g, "mism", record=True, dt=5 * b2.ms); net = b2.Network(g, st)
+    out = []
+    for ff, rec in ((2.0, 0.0), (1.0, 1.0), (0.0, 2.0)):
+        g.namespace.update(ge_in=ff * b2.nS, gr_in=rec * b2.nS); net.run(400 * b2.ms); out.append(float(st.mism[0][-1]))
+    assert out[0] > 0.9 and out[1] < 0.1 and out[2] > 0.9      # |ff - rec| normalised: input-only and recurrent-only both mismatch

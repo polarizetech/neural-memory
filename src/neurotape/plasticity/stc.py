@@ -51,6 +51,23 @@ ON_PRE = {"pre_v": "g_e_post += g0*clip(h + z, 0, 10)", "pre_ca": "Ca += Ca_pre*
 ON_POST = "Ca += Ca_post*plastic_on"
 
 
+def plastic_model(cfg: Config) -> str:
+    """The synapse equations, with the early-phase WRITE multiplied by a gate when any gating mechanism is on.
+    With none on this returns PLASTIC_MODEL unchanged (hash-pinned). Every gate factor reads network-internal
+    variables of the postsynaptic cell, except C6's, which is an evaluation mode and is labelled non-biological."""
+    m, g = cfg.mechanisms, cfg.mismatch_gate
+    factors = []
+    if m.mismatch_gate:
+        mid = "1"
+        factors.append(f"(int(M_pop_post >= th_low)*(int(M_pop_post <= th_high)*{mid} + int(M_pop_post > th_high)"
+                       f"*clip(creb_post/creb_ref, 0, 1)*int(z < z_protect)))")
+    if not factors:
+        return PLASTIC_MODEL
+    text = PLASTIC_MODEL.replace("plastic_on*(gamma_p", "plastic_on*pgate*(gamma_p").replace("plastic_on*noise_on*sqrt(", "plastic_on*pgate*noise_on*sqrt(")
+    assert text.count("pgate") == 2
+    return text + "pgate = " + "*".join(factors) + " : 1\n"
+
+
 def namespace(cfg: Config) -> dict:
     pl, m, F = cfg.plasticity, cfg.mechanisms, cfg.time_compression
     from brian2 import nS
@@ -66,6 +83,8 @@ def namespace(cfg: Config) -> dict:
         plastic_on=1.0 if m.plasticity else 0.0,
         noise_on=1.0 if pl.noise else 0.0,
         g0=cfg.network.g0_nS * nS,
+        th_low=cfg.mismatch_gate.theta_low, th_high=cfg.mismatch_gate.theta_high,
+        z_protect=cfg.mismatch_gate.z_protect, creb_ref=cfg.mismatch_gate.creb_ref,
     )
 
 

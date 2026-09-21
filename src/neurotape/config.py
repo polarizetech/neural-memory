@@ -269,6 +269,25 @@ class PriorDrift(_Strict):
     use_per_spike: float = 0.1
 
 
+class MismatchGate(_Strict):
+    """C2. Per cell, mismatch = |I_ff - I_rec| / (|I_ff| + |I_rec| + eps), each current low-passed over `tau_ms`;
+    pooled to ONE population value M (the mean over E cells). Both currents are the cell's own synaptic
+    currents -- nothing external. Three regimes gate the early-phase WRITE (induction and its noise; capture of
+    already-tagged synapses is not gated):
+        M < theta_low              retrieval only: plasticity off
+        theta_low <= M <= theta_high   lability window for the active assembly (C3, if on; else plasticity on)
+        M > theta_high             new-trace mode: plasticity scaled by the postsynaptic cell's allocation bias
+                                   (its intrinsic trace, C1's variable) and BLOCKED at already-consolidated
+                                   synapses (z >= z_protect) -- the existing assembly is protected
+    Thresholds are placeholders; the declared sweep is in ASSUMPTIONS.md."""
+    tau_ms: float = 50.0
+    eps_pA: float = 1.0
+    theta_low: float = 0.2
+    theta_high: float = 0.6
+    z_protect: float = 0.1
+    creb_ref: float = 0.2
+
+
 class Mechanisms(_Strict):
     """One switch per mechanism. All True = the full model."""
     t_current: bool = True
@@ -280,6 +299,7 @@ class Mechanisms(_Strict):
     theta: bool = True                      # False = theta.mode forced to "off"
     nm_excitability: bool = False           # recall-phase drive candidate 1 (OFF: the published-results model)
     intrinsic_trace: bool = False           # C1: the CREB-like trace also reduces adaptation / lowers threshold
+    mismatch_gate: bool = False             # C2: population feedforward-vs-recurrent mismatch gates the write
     prior_drift: bool = False               # C4: the trace erodes per spike
     prior_repulsion: bool = False           # C4 option: recent use RAISES threshold. Sign unsettled.
     nm_inhibitory_setpoint: bool = True     # False = NM no longer biases the I cells
@@ -345,6 +365,7 @@ class Config(_Strict):
     nm_excitability: NmExcitability = NmExcitability()
     intrinsic_trace: IntrinsicTrace = IntrinsicTrace()
     prior_drift: PriorDrift = PriorDrift()
+    mismatch_gate: MismatchGate = MismatchGate()
     mso: MSO = MSO()
     ephaptic: Ephaptic = Ephaptic()
     attention: Attention = Attention()

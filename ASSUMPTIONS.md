@@ -193,6 +193,10 @@ condition beating the foreign-stream null) was not met.
 | C1 | `intrinsic_trace.dVT_mV` | 2 mV | placeholder: extra threshold lowering at trace = 1, on top of `creb.dVT_mV` |
 | **C4** `mechanisms.prior_drift` | `prior_drift.erosion_per_spike` | 0.01 | placeholder. The trace loses this fraction **per spike of its own cell** — erosion per *use*, independent of any synaptic rate, so the prior can drift while the synaptic trace does not |
 | **C4 option** `mechanisms.prior_repulsion` | `repulsion_mV`, `tau_use_s`, `use_per_spike` | 2 mV, 5 s, 0.1 | placeholder. A fast recent-use variable **raises** threshold ("seek novel"). **Sign unsettled**: the adaptation literature reports both attractive and repulsive tuning shifts (`MEMORY`, no source read); only the repulsive form is implemented, and it is its own switch |
+| **C2** `mechanisms.mismatch_gate` | `tau_ms`, `eps_pA` | 50 ms, 1 pA | placeholder. Per cell, mismatch = \|I_ff − I_rec\| / (\|I_ff\| + \|I_rec\| + eps) on the cell's **own** low-passed feedforward and recurrent excitatory currents; pooled to one population value (the mean over E cells). A silent cell reads 0. Note both *input-only* and *recurrent-only* states read as high mismatch — it is an unsigned contrast |
+| C2 | `theta_low`, `theta_high` | 0.2, 0.6 | **placeholder. Declared sweep, fixed before any run: (0.1, 0.5), (0.2, 0.6), (0.3, 0.8); the whole sweep is to be reported.** Below low: retrieval only, the write is off. Between: lability window for the active assembly (C3). Above high: new-trace mode |
+| C2 | `z_protect`, `creb_ref` | 0.1, 0.2 | placeholder. In new-trace mode the write is scaled by the postsynaptic cell's allocation bias `clip(creb/creb_ref, 0, 1)` (C1's variable) and **blocked where z ≥ z_protect** — the consolidated assembly is protected. The gate acts on early-phase induction and its noise; capture of already-tagged synapses is not gated |
+| C2 | sources | — | prediction-error boundary conditions for reconsolidation: PMC7820768; **and the failed replication: PMC8831535**. Operator-supplied; **read depth: abstracts, not read by this build** |
 
 ## What is NOT built, stated so nobody has to discover it
 
