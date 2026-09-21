@@ -115,6 +115,11 @@ def bestlag_with_null(pred, true, rate_hz, max_lag_s, n_surr, seed) -> dict:
     from uwtl.surrogates import iaaft
     max_lag = int(max_lag_s * rate_hz)
     cc = _lagged(pred, true, max_lag)
+    if not np.isfinite(cc).any():
+        # a recall window with NO spikes decodes to a constant: every correlation is undefined. That is a
+        # legitimate outcome (total silence), not an error -- it crashed one of 180 drive runs before this guard.
+        return dict(r=float("nan"), lag_ms=float("nan"), null_mean=float("nan"), null_p95=float("nan"), p=1.0,
+                    null_shift_p95=float("nan"), p_iaaft=1.0, smear_ms=float("nan"), silent=True)
     obs = float(np.nanmax(cc))
     rng = np.random.default_rng(seed)
     null = []

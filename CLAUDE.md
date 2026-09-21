@@ -35,6 +35,13 @@ pulse does not wake the network, it quiets it** (it raises the inhibitory set po
 that is not there). The binding constraint is **silence** — ~13 spikes across 200 cells in 8.5 s, no
 self-sustaining activity — so the next step is a recall-phase drive with its own ablation.
 
+**Recall-phase drive, candidate 1 (NM → E-cell excitability; 180 runs + a 40-run frozen-weight control): 0 of 18
+conditions and 0 of 54 condition × delay cells meet the success criterion** (~1.35 expected by chance). The drive
+works as a drive — recall firing 0.008 → 0.05–29 Hz — and the reactivation score rises to +0.6, but reactivation
+is **identical with frozen weights**, so it is wiring, not memory. The diagnosis moves from *nothing fires* to
+*what fires carries no temporal content*. Operator's sequencing: **800 E / 200 I next, before more mechanisms**;
+the ACh-like disinhibitory and theta-to-threshold drives are held in `docs/DEFERRED.md`.
+
 ## Run
 
 ```bash
@@ -147,7 +154,9 @@ src/neurotape/
 12. **The circular-shift null over-fires on near-silent predictions** (6/10 seeds "significant" where a
     foreign-stream null says 1/10), and is degenerate for uncued recall, where the lag search spans the
     record. `recall_modes` tests against 20 foreign streams from the same generator instead.
-13. `state` is a `StateMonitor` method, and `w` collided with the adaptation variable — both
+13. **A recall window with zero spikes crashed the best-lag statistic** (1 of 180 drive runs): a constant
+    prediction makes every correlation undefined. Total silence is now a reported outcome (`silent: true`, p = 1).
+14. `state` is a `StateMonitor` method, and `w` collided with the adaptation variable — both
    renamed (`nstate`, `w_syn`).
 
 ## Not done — see ASSUMPTIONS.md § "What is NOT built"

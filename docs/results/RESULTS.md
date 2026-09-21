@@ -63,6 +63,76 @@ hash seed is pinned now (workers inherit it; the CLI re-execs once), and every R
 and synaptic pathway has an explicit scheduling order; two independent CLI invocations now return
 identical numbers.
 
+## Recall-phase drive, candidate 1 (2026-09-21) — NM raises excitatory excitability — `recall_drive/REPORT.md`
+
+Mechanism and basis in `ASSUMPTIONS.md` (Bacon, Pickering & Mellor 2020): NM-dependent block of the AHP-like
+current plus a threshold drop, E cells only, neutral at the reference NM level, off by default (a committed run
+reproduces bit-for-bit with it off). `quick.yaml`, one stream, pinned hash seed, **18 conditions × 10 seeds =
+180 runs; 1 failed** (`nm_sustained | drive off`, seed 1: a recall window with *zero* spikes crashed the
+best-lag statistic — now a reported outcome with a test; that condition has n = 9).
+
+**Success criterion, fixed before any run:** decoded recall matches its own stream better than 20 foreign
+streams — the whole 95 % CI of (own − foreign best-lag r) above zero. Higher firing alone does not count.
+
+### Verdict: 0 of 18 conditions pass. 0 of 54 condition × delay cells pass.
+
+**Multiple-comparison count, kept in view:** 54 cells, each a one-sided 2.5 % test, so **~1.35 passes were
+expected by chance and none occurred.** On the other tail, **3 of 54** cells have a CI entirely *below* zero
+(`no_cue | off` @ 2 h, `nm_pulse | ×1` @ 30 min, `nm_sustained | ×1, NM-inh off` @ 2 h) against the same
+~1.35 expected: nothing to explain on either side. Seeds with foreign-null p < 0.05: never more than 2 of 10 in a cell.
+
+Cells are the three delays (5 min / 30 min / 2 h of slow-process time). `NM-inh off` = NM no longer biases the I cells.
+
+| condition | recall E rate, Hz | own − foreign best-lag r (mean) | passes | reactivation (pattern r) | encode r |
+|---|---|---|---|---|---|
+| cue · drive off | 0.008 / 0.011 / 0.010 | +0.033 / +0.011 / +0.028 | 0/3 | +0.06 / +0.04 / −0.01 | 0.833 |
+| cue · drive ×1 | 0.009 / 0.011 / 0.010 | +0.031 / −0.001 / −0.003 | 0/3 | +0.08 / +0.04 / −0.01 | 0.662 |
+| no_cue · drive off | 0.007 / 0.010 / 0.009 | −0.020 / −0.018 / −0.027 | 0/3 | +0.06 / +0.02 / 0.00 | 0.833 |
+| no_cue · drive ×1 | 0.007 / 0.010 / 0.009 | −0.010 / −0.029 / +0.006 | 0/3 | +0.08 / +0.02 / 0.00 | 0.662 |
+| nm_pulse (1 s) · drive off | 0.006 / 0.009 / 0.008 | −0.020 / −0.004 / −0.012 | 0/3 | +0.06 / +0.02 / 0.00 | 0.833 |
+| nm_pulse (1 s) · drive ×1 | 0.014 / 0.017 / 0.016 | −0.008 / −0.022 / +0.004 | 0/3 | +0.08 / +0.02 / −0.01 | 0.662 |
+| nm_sustained · drive off (n = 9) | **0.001** / 0.001 / 0.001 | −0.030 / +0.029 / +0.009 | 0/3 | +0.10 / +0.06 / +0.08 | 0.833 |
+| nm_sustained · drive off, NM-inh off | 0.007 / 0.010 / 0.009 | −0.011 / −0.023 / +0.015 | 0/3 | +0.06 / +0.02 / 0.00 | 0.826 |
+| nm_sustained · drive ×1 | 0.052 / 0.056 / 0.053 | +0.002 / −0.011 / +0.017 | 0/3 | +0.39 / +0.27 / +0.34 | 0.662 |
+| nm_sustained · drive ×1, NM-inh off | 0.54 / 0.60 / 0.58 | −0.006 / −0.005 / −0.024 | 0/3 | +0.16 / +0.05 / +0.07 | 0.708 |
+| nm_sustained · drive ×2, NM-inh off | 1.77 / 1.79 / 1.79 | 0.000 / −0.028 / +0.002 | 0/3 | +0.32 / +0.15 / +0.19 | 0.561 |
+| nm_sustained · drive ×4, NM-inh off | 15.6 / 15.8 / 23.2 | +0.024 / 0.000 / +0.021 | 0/3 | +0.59 / +0.48 / +0.50 | 0.500 |
+| cue_nm · drive off | 0.007 / 0.006 / 0.005 | −0.025 / +0.022 / +0.015 | 0/3 | +0.14 / +0.09 / −0.01 | 0.833 |
+| cue_nm · drive off, NM-inh off | 0.014 / 0.016 / 0.014 | +0.031 / −0.004 / +0.017 | 0/3 | +0.09 / +0.04 / −0.01 | 0.826 |
+| cue_nm · drive ×1 | 0.064 / 0.067 / 0.063 | **+0.057 [−0.003, +0.117]** / −0.015 / 0.000 | 0/3 | +0.44 / +0.34 / +0.39 | 0.662 |
+| cue_nm · drive ×1, NM-inh off | 0.56 / 0.58 / 0.59 | −0.015 / −0.006 / −0.003 | 0/3 | +0.22 / +0.08 / +0.10 | 0.708 |
+| cue_nm · drive ×2, NM-inh off | 1.79 / 1.79 / 1.84 | +0.004 / −0.031 / −0.015 | 0/3 | +0.40 / +0.19 / +0.20 | 0.561 |
+| cue_nm · drive ×4, NM-inh off | 21.1 / 21.3 / 29.1 | +0.054 / −0.002 / +0.072 | 0/3 | +0.60 / +0.56 / +0.53 | 0.500 |
+
+The whole sweep (×1, ×2, ×4) is above; ×1 was fixed from one stated anchor before any run, and no strength was
+chosen after looking. The nearest miss is `cue_nm · ×1` at 5 min, lower CI bound −0.003.
+
+### What the drive did and did not do
+
+- **It is a drive.** Recall-phase firing goes from 0.008 Hz to 0.05 Hz (×1), 0.55 Hz (×1 with the NM→inhibition
+  coupling off), 1.8 Hz (×2) and 16–29 Hz (×4). Silence is no longer the constraint at ×1 and above.
+  Consolidation-phase firing stays quiet (0.008–0.036 Hz), as intended: the drive is tied to elevated NM.
+- **Elevated NM without the drive makes things *quieter*** — 0.001 Hz under `nm_sustained · drive off` — because
+  the base model's NM raises the inhibitory set point. That confirms the earlier `nm_pulse` finding and is why
+  the drive conditions were also run with that coupling off.
+- **The reactivation score rises — and it is not memory.** Encoding-active cells fire again under the drive
+  (pattern r up to +0.6). A control was run because this number moved: the same drive with **frozen weights**
+  (`recall_drive_frozen_control_runs.json`, 40 runs, 0 failed). Reactivation is **unchanged without
+  plasticity**: plastic − frozen = 0.000 [−0.006, +0.005] / +0.002 / −0.004 at ×1 and −0.05 [−0.12, +0.02] at ×4.
+  So it reflects fixed wiring and excitability — the cells the input drives hardest are the cells a global
+  excitability boost recruits first — not a consolidated trace.
+  In that control, plastic − frozen on the success statistic has 1 of 6 cells with a CI above zero
+  (×4 @ 5 min, +0.068 [+0.011, +0.124]; ~0.15 expected by chance). Neither arm passes the criterion itself, so
+  this is noted, not claimed.
+- **The drive costs encoding accuracy:** encode r 0.833 → 0.66 (×1) → 0.50 (×4), because salience-triggered
+  phasic NM engages it *during encoding* too. A drive confined to the recall phase would need its own gate.
+- **Read with the first run:** the network now fires at recall and still returns nothing stream-specific, with
+  weights frozen or plastic alike. That moves the diagnosis from *"nothing fires"* to *"what fires carries no
+  temporal content"* — the expected property of a rate-assembly store.
+
+**Next, per the operator's sequencing:** the excitability drive is null → **800 E / 200 I before any further
+mechanism.** The disinhibitory (ACh-like) and theta-to-threshold drives stay held — `docs/DEFERRED.md`.
+
 ## What the mechanisms demonstrably *did* do (so the nulls are not no-ops)
 
 From `exp3_ablations/ENCODE_SIDE.md`: late-phase consolidation happened in **3.8 %** of E→E synapses in

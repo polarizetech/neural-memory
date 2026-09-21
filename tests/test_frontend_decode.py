@@ -140,6 +140,12 @@ def test_readout_recovers_a_linear_code_and_the_null_rejects_silence():
     assert np.mean(np.array(res) < 0.05) <= 0.25                                        # the shift null does not pass blips
 
 
+def test_a_silent_recall_window_is_a_result_not_a_crash():
+    env = np.abs(np.sin(np.linspace(0, 20, 300)))[:, None] * np.ones((1, 3))
+    out = ro.bestlag_with_null(np.zeros((300, 3)), env, 100.0, 0.5, 10, 0)
+    assert out["silent"] and out["p"] == 1.0 and np.isnan(out["r"])
+
+
 def test_ordering_score_detects_order():
     rng = np.random.default_rng(1)
     true = rng.standard_normal((1200, 4)).cumsum(0)
