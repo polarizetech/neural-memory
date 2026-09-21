@@ -42,6 +42,18 @@ is **identical with frozen weights**, so it is wiring, not memory. The diagnosis
 *what fires carries no temporal content*. Operator's sequencing: **800 E / 200 I next, before more mechanisms**;
 the ACh-like disinhibitory and theta-to-threshold drives are held in `docs/DEFERRED.md`.
 
+**Built and NOT run (2026-09-21).** (1) The **binaural front end** — stereo loader, ITD+ILD spatialiser (not an
+HRTF), two independent cochleae, a wired MSO coincidence population, a neurophonic computed from postsynaptic
+currents, and a linear ephaptic term absent at `g_eph = 0`; its experiment was started and **stopped at the
+operator's instruction, nothing read**. (2) **Retrieval-as-writing and iterative settling, C1–C8**, every switch
+default off, one commit per component: intrinsic trace (reusing the CREB-like variable), mismatch gate, lability
+window, prior drift, provenance logging, a frozen-read evaluation mode (labelled non-biological), and recall in K
+cycles through a **learned** delayed feedback projection. **Hard rule, enforced by construction: every gating or
+re-injection signal is computed inside the network; labels, assembly identity and decoder output never feed
+back.** `exp completion` **refuses to run** — the operator's precondition (a drive condition beating the
+foreign-stream null) failed at 0 of 18. Deferred mechanisms: [`docs/DEFERRED.md`](docs/DEFERRED.md). 50 tests;
+all switches off reproduces a committed run bit-for-bit.
+
 ## Run
 
 ```bash
@@ -52,7 +64,7 @@ uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python -e ".[de
 uv pip install --python .venv/bin/python "Cython<3" pandas
 uv pip install --python .venv/bin/python --no-build-isolation "cochlea @ git+https://github.com/mrkrd/cochlea.git"
 
-.venv/bin/python -m pytest -q                                  # 27 tests, ~45 s
+.venv/bin/python -m pytest -q                                  # 50 tests, ~5 min
 .venv/bin/neurotape encode a.wav b.wav --config configs/default.yaml
 .venv/bin/neurotape encode --demo 2 --config configs/quick.yaml   # labelled synthetic streams
 .venv/bin/neurotape exp <name> --config configs/quick.yaml --seeds 10 --workers 6

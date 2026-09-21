@@ -133,6 +133,24 @@ chosen after looking. The nearest miss is `cue_nm · ×1` at 5 min, lower CI bou
 **Next, per the operator's sequencing:** the excitability drive is null → **800 E / 200 I before any further
 mechanism.** The disinhibitory (ACh-like) and theta-to-threshold drives stay held — `docs/DEFERRED.md`.
 
+## Built, NOT run (2026-09-21) — binaural front end; retrieval-as-writing; iterative settling
+
+Recorded here so an absence of results is not mistaken for a null.
+
+- **Binaural front end, MSO, neurophonic, ephaptic term** — implemented and unit-tested (commit `ae42d41f`).
+  `exp binaural` was started and **stopped at the operator's instruction before completion; nothing from it was
+  read or kept.** No binaural number exists in this file.
+- **Retrieval-as-writing and iterative settling (C1–C8)** — implemented behind default-off switches, one commit
+  per component, 50 tests, and with every switch off a committed run reproduces **bit-for-bit**.
+  **`exp completion` has never been run**: the operator's precondition was that a recall-phase drive condition
+  first beat the 20-foreign-stream null, and `recall_drive` gave **0 of 18**. The experiment refuses to start
+  (`NEUROTAPE_ALLOW_COMPLETION=1` overrides deliberately). Its 31 conditions are declared in
+  `experiments/suite.py:completion_conditions`.
+- One thing found while building that bears on any future run: the **strict completion set is empty** — every
+  E cell receives ~10 % of the input channels, so no cell is left undriven by even a 25 % cue. The metric falls
+  back to the least-driven quartile, labelled as weaker. Sparser input connectivity would be needed for a
+  clean completion test, and that is a modelling change, not a parameter to nudge.
+
 ## What the mechanisms demonstrably *did* do (so the nulls are not no-ops)
 
 From `exp3_ablations/ENCODE_SIDE.md`: late-phase consolidation happened in **3.8 %** of E→E synapses in
