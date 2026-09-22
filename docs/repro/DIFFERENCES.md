@@ -55,3 +55,22 @@ but 534 s for the slow terms. That is part of `fast_forward`/compression and can
 8. **R3 controls** (plasticity off; shuffled cue) are run on the as-is model at both delays, and again on any
    configuration that is reported as reproducing.
 9. A run that errors is a failed seed and counts against (b).
+
+## Addenda (dated; nothing above was edited)
+
+- **2026-09-21 16:00 — like-for-like Q.** R1 showed the reference's rate read-out counts one spike twice for every active
+  cell (TARGET.md, corrections). R2 therefore stores per-cell counts and reports Q both ways; criterion (a) is judged on
+  `Q_ref_readout` (the reference's read-out applied to neurotape's counts), and the true-count Q is printed beside it.
+  Decided after R1 and before any R2 8 h result existed; the one R2 result seen by then (as-is, 10 s) is two orders of
+  magnitude from the target either way.
+- **2026-09-21 16:35 — as-is failed at 10 s** (Q 0.0004 ± 0.0018), so the ladder was started. `lif` was included in it
+  at once rather than held back (decision 7), because a 10 s run costs four minutes.
+- **2026-09-21 17:00 — how `fast_forward` is implemented.** As the paper does it, not as a silenced simulation:
+  (1) simulate to t = 20 s; (2) integrate the early-phase relaxation, protein and late-phase equations for 28 790 s with
+  no spikes (`fast_forward_state`; checked against the paper's closed-form Eq. 2 to five decimals); (3) a new simulation
+  of the same network from that state — 10 s re-settle, cue, read-out — with fresh noise. The rung also sets the
+  time-compression factor to 1, so nothing anywhere in the run is compressed; it therefore has a 10 s variant too.
+  The CREB-like variable, where present, is carried across by its own exponential decay.
+- **Orphaned processes.** The first launch of the as-is stage was not killed by the restart (the CLI re-executes itself
+  under another command line); its five workers ran beside the second launch for nine minutes and were then killed.
+  Nothing it produced was kept.

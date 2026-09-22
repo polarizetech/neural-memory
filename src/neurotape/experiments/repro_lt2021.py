@@ -19,8 +19,8 @@ Each key of VARIANTS removes ONE of them:
   slow           slow OU drift + theta pacemaker + CREB-like excitability               paper: none
   theta_pro      theta_pro = h_0/(NM + 0.001) at tonic NM 0.12  (= 8.3 h_0)             paper: 0.5 h_0, constant
   pl_clock       plasticity ODEs on a 1 ms clock                                        paper: the neuron step
-  fast_forward   8 h = 480 s of FULL SPIKING with slow terms sped up 60x                paper: no spiking between
-                                                                                        stimuli, slow terms integrated
+  fast_forward   TIME COMPRESSION: slow terms sped up 60x everywhere, and 8 h = 480 s    paper: no compression; no spiking
+                 of FULL SPIKING                                                        between stimuli, slow terms integrated
   inhibition     w_ie = w_ii = 8 g0 (conductance-based, reversal -80 mV)                paper: 4 h_0, current-based
   lif            the whole neuron + synapse model (conductance AdEx, its noise)          paper: current-based LIF
 """
@@ -70,6 +70,8 @@ def base_config(seed: int, v: dict, plasticity: bool = True) -> Config:
         cfg.plasticity.update_dt_ms = cfg.sim.dt_ms
     if v.get("inh4"):
         cfg.network.w_ie_nS = 4.0; cfg.network.w_ii_nS = 4.0
+    if v.get("fast_forward"):
+        cfg.time_compression = 1.0              # the paper compresses nothing: slow terms run in real time while spiking
     return cfg
 
 
@@ -118,6 +120,27 @@ def tag_counts(h, z, n_ca, theta_tag, syn_i, syn_j):
     return out
 
 
+def fast_forward_state(h, z, p, syn_j, n_post, theta_pro, theta_tag, tau_h_s, tau_p_s, tau_z_s, alpha, T_s, dt_s=5.0):
+    """The paper's fast-forward: with no spikes, calcium stays below both thresholds, so the early phase only relaxes,
+    h(t) = 1 + (h - 1) exp(-0.1 t / tau_h), and what remains are the protein and late-phase equations of plasticity/stc.py
+    (its PLASTIC_MODEL, with LTP = LTD = 0), integrated here in REAL time -- no compression -- with a midpoint step."""
+    h = np.asarray(h, float); z = np.asarray(z, float).copy(); p = np.asarray(p, float).copy(); d0 = h - 1.0
+    def rates(t, z_, p_):
+        d = d0 * np.exp(-0.1 * t / tau_h_s)
+        synth = np.bincount(syn_j, weights=np.abs(d), minlength=n_post) > theta_pro
+        dp = (-p_ + alpha * synth) / tau_p_s
+        pj = p_[syn_j]
+        dz = (alpha * pj * (1 - z_) * (d > theta_tag) - alpha * pj * (z_ + 0.5) * (-d > theta_tag)) / tau_z_s
+        return dz, dp
+    t = 0.0
+    while t < T_s - 1e-9:
+        dt = min(dt_s, T_s - t)
+        dz1, dp1 = rates(t, z, p)
+        dz2, dp2 = rates(t + dt / 2, z + dz1 * dt / 2, p + dp1 * dt / 2)
+        z += dz2 * dt; p += dp2 * dt; t += dt
+    return 1.0 + d0 * np.exp(-0.1 * T_s / tau_h_s), z, p
+
+
 # ------------------------------------------------------------------------------------------------------------
 # the paper's cell, for the `lif` rung only: current-based leaky integrate-and-fire with its OU background (Table 1,
 # Eqs. 8-9). Everything plastic still comes from neurotape's plasticity/stc.py.
@@ -150,8 +173,26 @@ def _lif_groups(b2, cfg, n_exc, n_inh, quiet, theta_pro):
 # one run
 # ------------------------------------------------------------------------------------------------------------
 def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembly", plasticity: bool = True,
-             consolidate_sim_s: float | None = None, n_exc: int = N_EXC, n_inh: int = N_INH) -> dict:
-    """recall: '10s' or '8h'. cue: 'assembly' (first 75 assembly cells) or 'shuffled' (75 never-learned cells)."""
+             consolidate_sim_s: float | None = None, n_exc: int = N_EXC, n_inh: int = N_INH, _phase: str = "full", _init: dict | None = None) -> dict:
+    """recall: '10s' or '8h'. cue: 'assembly' (first 75 assembly cells) or 'shuffled' (75 never-learned cells).
+
+    With `fast_forward` in the variant, the 8 h run is done the PAPER'S way, in three steps: (1) simulate to t = 20 s;
+    (2) no spiking for 28 790 s -- h decays, protein and the late phase are integrated (`fast_forward_state`), exactly
+    the terms the reference's fast-forward integrates; (3) a new simulation of the SAME network (same wiring seed, fresh
+    noise) starting from that state: 10 s re-settle, cue, read-out."""
+    if "fast_forward" in variant.split("+") and recall == "8h" and _phase == "full":
+        kw = dict(seed=seed, recall=recall, variant=variant, cue=cue, plasticity=plasticity, n_exc=n_exc, n_inh=n_inh)
+        a = simulate(_phase="learn_only", **kw)
+        st = a.pop("_state")
+        h1, z1, p1 = fast_forward_state(st["h"], st["z"], st["p"], st["syn_j"], n_exc, st["theta_pro"], st["theta_tag"], st["tau_h_s"], st["tau_p_s"],
+                                        st["tau_z_s"], st["alpha"], CONSOLIDATE_REAL_S)
+        b = simulate(_phase="recall_only", _init=dict(h=h1, z=z1, p=p1, creb=st["creb"] * np.exp(-CONSOLIDATE_REAL_S / st["tau_creb_real_s"]) if st["creb"] is not None else None,
+                                                      counts_learn=a["counts_learn"]), **kw)
+        b["tags"] = dict(a["tags"], **b["tags"]); b["protein"] = dict(a["protein"], **b["protein"])
+        for k in ("rate_learning_pulse_hz", "standby_e_hz", "standby_i_hz", "learn_spike_hash"):
+            b[k] = a[k]
+        b["wall_s"] += a["wall_s"]; b["fast_forward"] = "analytic (paper's method)"
+        return b
     import time as _time
     import brian2 as b2
     from brian2 import ms, mV, nS, pA, nA, second
@@ -176,19 +217,26 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
     n_ca = max(int(round(N_CA * n_exc / N_EXC)), 4); n_cue = n_ca // 2
     rng = np.random.default_rng(seed)
     _activate(cfg, _worker_build_dir(None)); bd = _worker_build_dir(None)
-    b2.seed(seed); b2.defaultclock.dt = cfg.sim.dt_ms * ms
+    b2.seed(seed + (500_000 if _phase == "recall_only" else 0)); b2.defaultclock.dt = cfg.sim.dt_ms * ms
     net_c, mech = cfg.network, cfg.mechanisms
 
     cons = (CONSOLIDATE_REAL_S / F) if consolidate_sim_s is None else consolidate_sim_s
-    ff = bool(v.get("fast_forward")) and recall == "8h"
+    ff = False                                   # (the fast-forward is analytic -- see the docstring -- not a silenced simulation)
     t_cue = T_CUE_10S if recall == "10s" else round(T_CUE_10S + cons, 1)
-    total = t_cue + 0.6
+    if _phase == "learn_only":
+        t_cue = None; total = T_CUE_10S + 0.1
+    elif _phase == "recall_only":
+        t_cue = 10.0; total = t_cue + 0.6
+    else:
+        total = t_cue + 0.6
     # ---- gates on a 0.1 s grid (every stimulus edge lies on it) ----
     n_g = int(round(total / 0.1)) + 2
     g_learn, g_cue, g_quiet = np.zeros(n_g), np.zeros(n_g), np.ones(n_g)
-    for tl_ in T_LEARN:
-        g_learn[int(round(tl_ / 0.1))] = 1.0
-    g_cue[int(round(t_cue / 0.1))] = 1.0
+    if _phase != "recall_only":
+        for tl_ in T_LEARN:
+            g_learn[int(round(tl_ / 0.1))] = 1.0
+    if t_cue is not None:
+        g_cue[int(round(t_cue / 0.1))] = 1.0
     if ff:       # the paper's fast-forward: NO spiking between the stimuli -- background held off, then a 10 s re-settle
         g_quiet[int(round((T_CUE_10S + 0.1) / 0.1)):int(round((t_cue - 10.0) / 0.1))] = 0.0
     GL = b2.TimedArray(g_learn, dt=0.1 * second, name="ta_glearn"); GC = b2.TimedArray(g_cue, dt=0.1 * second, name="ta_gcue")
@@ -270,8 +318,13 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
     net = b2.Network(*objs)
 
     instants = {"pre_learning": T_LEARN[0], "end_of_learning": T_SNAP_LEARNED, "pre_10s_recall": T_CUE_10S}
-    if recall == "8h":
+    if recall == "8h" and _phase == "full":
         instants["pre_8h_recall"] = t_cue
+    if _phase == "recall_only":
+        instants = {"pre_8h_recall": t_cue}
+        S_ee.h = _init["h"]; S_ee.z = _init["z"]; E.p = _init["p"]
+        if _init.get("creb") is not None and "creb" in E.variables:
+            E.creb = _init["creb"]
     edges = sorted({0.0, total} | set(instants.values()) | {round(x + 0.1, 1) for x in instants.values()})
     for a, b in zip(edges[:-1], edges[1:]):
         snap.active = snap_p.active = any(abs(a - x) < 1e-9 for x in instants.values())
@@ -287,8 +340,21 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
     ans = np.arange(n_cue, n_ca) if cue == "assembly" else np.arange(0, n_ca)        # shuffled cue: the WHOLE stored assembly is "not cued"
     never = np.setdiff1d(np.arange(n_exc), np.concatenate([np.arange(n_ca), cued]))
     ctrl_assembly = np.random.default_rng(seed + 4242).choice(never, n_cue, replace=False)
-    v_rec = window_rates(i, t, t_cue + 0.1, n_exc); v_learn = window_rates(i, t, 11.0, n_exc)
+    v_learn = np.asarray(_init["counts_learn"], float) / RATE_WINDOW_S if _phase == "recall_only" else window_rates(i, t, 11.0, n_exc)
     v_standby = np.bincount(i[(t >= 5.0) & (t < 10.0)], minlength=n_exc) / 5.0
+    tags = {name: tag_counts(H[:, k], Z[:, k], n_ca, cfg.plasticity.theta_tag, ee_i, ee_j) for k, name in enumerate(instants)}
+    protein = {name: dict(assembly=float(P[:n_ca, k].mean()), rest=float(P[n_ca:, k].mean())) for k, name in enumerate(instants)}
+    if _phase == "learn_only":
+        k20 = list(instants).index("pre_10s_recall")
+        theta_pro = (cfg.plasticity.theta_pro_default if v.get("theta_pro_paper") else 1.0 / (cfg.neuromod.tonic + 0.001)) * (net_c.p_conn * n_exc / 160.0)
+        return dict(seed=seed, wall_s=_time.time() - t_wall, tags=tags, protein=protein, counts_learn=(v_learn * RATE_WINDOW_S).astype(int).tolist(),
+                    rate_learning_pulse_hz=float(((t >= 10.0) & (t < 10.1) & (i < n_ca)).sum() / n_ca / 0.1), standby_e_hz=float(v_standby.mean()),
+                    standby_i_hz=float((np.array(sm_i.t / second) < 10.0).sum() / n_inh / 10.0),
+                    learn_spike_hash=int(np.round(t[t < T_CUE_10S] * 1e5).astype(np.int64).sum() % (2 ** 31)),
+                    _state=dict(h=H[:, k20].copy(), z=Z[:, k20].copy(), p=P[:, k20].copy(), syn_j=ee_j, theta_pro=theta_pro, theta_tag=cfg.plasticity.theta_tag,
+                                tau_h_s=cfg.plasticity.tau_h_s, tau_p_s=cfg.plasticity.tau_p_s, tau_z_s=cfg.plasticity.tau_z_s, alpha=cfg.plasticity.alpha,
+                                creb=np.array(E.creb[:]) if "creb" in E.variables else None, tau_creb_real_s=cfg.creb.tau_s))
+    v_rec = window_rates(i, t, t_cue + 0.1, n_exc)
     out = dict(seed=seed, recall=recall, variant=variant, cue=cue, plasticity=plasticity, t_cue=t_cue, F=F, wall_s=_time.time() - t_wall,
                **q_star(v_rec, cued, ans, never), MI=mutual_information(v_learn, v_rec),
                Q_ref_readout=q_star(reference_readout(v_rec), cued, ans, never)["Q"],
@@ -297,9 +363,8 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
                rate_learning_pulse_hz=float(((t >= 10.0) & (t < 10.1) & (i < n_ca)).sum() / n_ca / 0.1),
                rate_cue_pulse_hz=float(((t >= t_cue) & (t < t_cue + 0.1) & np.isin(i, cued)).sum() / cued.size / 0.1),
                standby_e_hz=float(v_standby.mean()), standby_i_hz=float((np.array(sm_i.t / second) < 10.0).sum() / n_inh / 10.0),
-               consolidation_e_hz=float(((t >= 30.0) & (t < t_cue - 10.0)).sum() / n_exc / max(t_cue - 40.0, 1e-9)) if recall == "8h" else None,
-               tags={name: tag_counts(H[:, k], Z[:, k], n_ca, cfg.plasticity.theta_tag, ee_i, ee_j) for k, name in enumerate(instants)},
-               protein={name: dict(assembly=float(P[:n_ca, k].mean()), rest=float(P[n_ca:, k].mean())) for k, name in enumerate(instants)},
+               consolidation_e_hz=float(((t >= 30.0) & (t < t_cue - 10.0)).sum() / n_exc / max(t_cue - 40.0, 1e-9)) if (recall == "8h" and _phase == "full") else None,
+               tags=tags, protein=protein,
                learn_spike_hash=int(np.round(t[t < T_CUE_10S] * 1e5).astype(np.int64).sum() % (2 ** 31)))
     return out
 
@@ -355,7 +420,8 @@ RUNS_DIR = C.ROOT / "docs" / "repro" / "runs"
 
 STAGES = {
     "as_is": [("as_is", dict(variant="as_is"), ("8h", "10s"))],
-    "ladder10s": [(f"ladder:{k}", dict(variant=k), ("10s",)) for k in VARIANTS if k not in ("as_is", "lif", "fast_forward")],
+    "as_is10s": [("as_is", dict(variant="as_is"), ("10s",))],
+    "ladder10s": [(f"ladder:{k}", dict(variant=k), ("10s",)) for k in VARIANTS if k not in ("as_is", "fast_forward")],
     "controls": [("ctrl:plasticity_off", dict(variant="as_is", plasticity=False), ("8h", "10s")),
                  ("ctrl:shuffled_cue", dict(variant="as_is", cue="shuffled"), ("8h", "10s"))],
     "controls10s": [("ctrl:plasticity_off", dict(variant="as_is", plasticity=False), ("10s",)),
