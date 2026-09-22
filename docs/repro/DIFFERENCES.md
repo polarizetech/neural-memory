@@ -74,3 +74,9 @@ but 534 s for the slow terms. That is part of `fast_forward`/compression and can
 - **Orphaned processes.** The first launch of the as-is stage was not killed by the restart (the CLI re-executes itself
   under another command line); its five workers ran beside the second launch for nine minutes and were then killed.
   Nothing it produced was kept.
+- **2026-09-21 18:35 — after the 10 s ladder.** Nine single removals at 10 s: only **`lif`** (the paper's own cell in
+  place of neurotape's) recovers recall (Q 0.0385 ± 0.0131, MI 0.896; every other rung Q ≤ 0.005). So, per decision 7:
+  the 8 h delay is run for `lif` (its 480 s of compressed spiking, ~1.5 h a run) and for `fast_forward` (as-is with the
+  paper's analytic consolidation and no compression); the cheap combinations `lif+theta_pro`, `lif+pl_clock`,
+  `lif+fast_forward` are run; and the **paper configuration** `lif+theta_pro+fast_forward+pl_clock` — every listed
+  difference removed — is run at both delays with the R3 controls on it (decision 8). All decided before any of them ran.
