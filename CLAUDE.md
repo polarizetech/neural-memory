@@ -59,6 +59,20 @@ the preset `gb2012_hippocampal_cal` — **default unchanged; G&B values are from
 the write flips from depression-only to **potentiation-only (0 depression tags)** and is still not stream-specific
 (A: 1st in 1/10; B with `input_plastic`: 1/10, and 98–99 % of input synapses potentiate by the same ~0.94 h₀). Nothing was changed in response.
 
+**REPRODUCTION OF LUBOEINSKI & TETZLAFF 2021 (2026-09-21/22) — [`docs/repro/REPORT.md`](docs/repro/REPORT.md).** Can the harness
+store and recall anything? Target and criteria pre-registered in `docs/repro/TARGET.md` from the paper's source data (Q 0.030 → 0.035,
+MI 0.87 → 0.98). **R1: the authors' C++ reference, unmodified (three macOS build fixes), passes all three criteria** (Q 0.0298 → 0.0348,
+MI 0.885 → 0.971, 10/10). **R2: neurotape as-is fails at both delays** (Q 0.0004 → 0.0065) — the assembly forms (every within-assembly
+synapse tagged, potentiated, consolidated) but the network sits at 0.001 Hz and a half-assembly cue does not spread. **Of nine single
+differences, only the neuron model matters:** the paper's LIF cell in place of neurotape's AdEx + T-current cell, with neurotape's own
+`plasticity/stc.py` untouched, recovers recall (Q 0.0385 → 0.0774, MI 0.90 → 1.00, 10/10 at both delays, improvement in the paper's
+direction); nothing else moves it. **With every difference removed it over-recalls** (Q 0.044 → 0.065, spread 4–5× the paper's; standby
+0.28 Hz vs the reference's 1.03) — (a) fails on magnitude in the stronger direction, (b) and (c) pass. Plasticity off collapses to chance;
+a shuffled cue still wakes the consolidated assembly to 2.6× control (incoming weights potentiate too, as in the paper) while the recall
+pattern does not match (MI 0.25 vs 0.93). **The 500 Hz learning drive writes potentiation only — the opposite sign to every tape run.**
+Found in the reference: its rate read-out double-counts one spike per active cell (Q ~3 % high in the paper's data; MI unaffected).
+`neurotape exp repro_lt2021` (stage by `NEUROTAPE_REPRO_STAGE`); 8 tests; 270 runs, 0 failed.
+
 **Built and NOT run (2026-09-21).** (1) The **binaural front end** — stereo loader, ITD+ILD spatialiser (not an
 HRTF), two independent cochleae, a wired MSO coincidence population, a neurophonic computed from postsynaptic
 currents, and a linear ephaptic term absent at `g_eph = 0`; its experiment was started and **stopped at the
@@ -86,7 +100,7 @@ uv pip install --python .venv/bin/python --no-build-isolation "cochlea @ git+htt
 .venv/bin/neurotape encode --demo 2 --config configs/quick.yaml   # labelled synthetic streams
 .venv/bin/neurotape exp <name> --config configs/quick.yaml --seeds 10 --workers 6
 #   delay streams ablations baselines lehr population attention codec salience recall_modes | all
-#   (not in `all`: recall_drive  storage_diagnostic  residual_decode  storage_A  storage_B  binaural [held]  completion [blocked])
+#   (not in `all`: recall_drive  storage_diagnostic  residual_decode  storage_A  storage_B  repro_lt2021  binaural [held]  completion [blocked])
 ```
 
 Outputs: `results/<timestamp>_<name>/` — `config.yaml`, `runs.json` (every seed, including failed

@@ -216,7 +216,11 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
     F = cfg.time_compression
     n_ca = max(int(round(N_CA * n_exc / N_EXC)), 4); n_cue = n_ca // 2
     rng = np.random.default_rng(seed)
-    _activate(cfg, _worker_build_dir(None)); bd = _worker_build_dir(None)
+    bd = _worker_build_dir(None)
+    # select the standalone device BEFORE reinit (P1's lesson: after a runtime-device test, `_activate`'s reinit-then-set leaves
+    # the previous standalone device marked as already built and its next build raises)
+    b2.set_device("cpp_standalone", build_on_run=False, directory=str(bd))
+    _activate(cfg, bd)
     b2.seed(seed + (500_000 if _phase == "recall_only" else 0)); b2.defaultclock.dt = cfg.sim.dt_ms * ms
     net_c, mech = cfg.network, cfg.mechanisms
 
