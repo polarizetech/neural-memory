@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Tag an experiment milestone and post its receipt to the PR. Agents use this, never bare `git tag`.
+# usage: .agents/tools/tag <tag> "<message>"
+set -euo pipefail
+git tag -a "$1" -m "$(date +%F) $2"
+"$(dirname "$0")/prereg-receipt" "$1"

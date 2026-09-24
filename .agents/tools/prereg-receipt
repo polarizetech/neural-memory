@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Post a tag receipt to the current branch's PR (GitHub's comment time is a third-party clock).
+# usage: .agents/tools/prereg-receipt <tag>
+set -euo pipefail
+tag="$1"
+hash() { if [ -f "$1" ]; then shasum -a 256 "$1" | cut -c1-64; else echo "n/a"; fi; }
+commit=$(git rev-parse "$tag^{commit}")
+tagdate=$(git for-each-ref --format='%(taggerdate:iso-strict)' "refs/tags/$tag")
+eid="${tag%%-*}"
+body=$(cat <<MSG
+<!-- prereg-receipt v1 tag=$tag commit=$commit -->
+**Tag receipt** \`$tag\`
+- commit: \`$commit\`
+- tagged: $tagdate
+- PREREG.md sha256: \`$(hash "experiments/$eid/PREREG.md")\`
+- ENV.lock sha256: \`$(hash "experiments/$eid/ENV.lock")\`
+MSG
+)
+gh pr comment --body "$body" 2>/dev/null || echo "prereg-receipt: no PR yet; re-run after gh pr create" >&2

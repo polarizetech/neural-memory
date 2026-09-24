@@ -27,4 +27,12 @@ This repo logs LLM conversations to the branch's PR and to `conversations/` via 
   MSG
   ```
 
+## Preregistration
+
+Read and obey `.agents/protocols/PREREG_PROTOCOL.md` before running, modifying, or reporting any experiment.
+
+## Experiment branches and PRs
+
+Read and obey `.agents/protocols/EXPERIMENT_PR_LOG.md`. Use one branch (`experiment/<EID>`) and one draft PR per experiment. Tag with `.agents/tools/tag`, never bare `git tag`.
+
 <!-- kit_ap:end -->

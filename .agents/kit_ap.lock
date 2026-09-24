@@ -5,13 +5,22 @@
   "dirty": false,
   "modules": [
     "core",
-    "convo-log"
+    "convo-log",
+    "prereg",
+    "experiment-pr-log"
   ],
   "files": {
     ".agents/README.md": "cdd2674ab44505fd34bc4736fca90829253f4ec9ed4ee8935acacba4aa0f746a",
     ".agents/bin/kit_ap": "46923ebcd522160bcc239c3f2c9f9a2de26b88d9b20de3ebe06b8aada83dfc16",
+    ".agents/config/convo-log.d/experiment-pr-log.json": "f1dd6ac386a5ca8aa3137438660aad5ada680197b725e4e4dd848afb78766988",
+    ".agents/githooks/pre-commit": "b3e5905afe49af1481979e38e0e222ab25e8a5592d15fc9300b112448a7b09c4",
     ".agents/protocols/CONVERSATIONS.md": "7f2a73ed617829a9306f01348b070897b5c622d1871ce1e0318a8d6653d55f92",
+    ".agents/protocols/EXPERIMENT_PR_LOG.md": "5dcf91dee7042eb2ec9147d646c29a25d7e726ec435b2920795c6d6a87d5497d",
+    ".agents/protocols/PREREG_PROTOCOL.md": "8d4c9423e03b59445a02d341a84b8349cd91a8b0593a19dcd0b66b3236169384",
     ".agents/tools/convo-log": "608f965f81d1e20f07febd97b03637bcb301041913a543bb2a64793245996114",
+    ".agents/tools/prereg-receipt": "cacfd92d7ae07e329d7abebaa120846dcacd038ae80995a503651701ec5e987e",
+    ".agents/tools/prereg-status": "a9f083a343abd29be7907c5a4b4e56df6ed40bfb14449541d8d72b1446d10ee4",
+    ".agents/tools/tag": "beb6d6044a5cdc486a5271676c600c038f1f1e50ef88407eedeaa2f85193aced",
     ".github/hooks/kit_ap-convo-log.json": "a8d419dcd713d4f9ac9f78a83b749e35c154bf69adf5d203e3ddb88672d7b9ad",
     ".github/hooks/kit_ap-core.json": "0e5a1a6763aa34c4ac2e48870b4a384fe594ccf1630bd6dc90fb2b6c642dbb8e"
   }
