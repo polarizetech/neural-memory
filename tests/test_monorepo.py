@@ -21,6 +21,8 @@ def test_a_missing_tool_raises_with_the_submodule_line():
 
 def test_the_shared_tools_this_repo_uses_resolve():
     assert (monorepo.tool("result-provenance") / "provenance.py").is_file()
-    assert hasattr(monorepo.import_uwtl().surrogates, "iaaft")
+    monorepo.import_uwtl()
+    import importlib
+    assert hasattr(importlib.import_module("uwtl.surrogates"), "iaaft")   # a submodule: `import uwtl` alone does not load it
     s = monorepo.stamp(["tools/result-provenance"])
     assert s["repo"]["name"] == "sim-neural-memory" and "tools/result-provenance" in s["dependencies"]
