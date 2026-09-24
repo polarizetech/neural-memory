@@ -1,0 +1,38 @@
+# E01-stentor-map -- every parameter the run uses. Read by run.py; frozen by the E01-stentor-map-prereg tag.
+eid: E01-stentor-map
+model_tag: model-v0.1.0                 # src/neurotape must be unchanged from this tag (run.py refuses otherwise)
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]   # each seed = one network AND one stimulus family
+base_config: configs/habituation.yaml   # periphery: Zilany 2014 via cochlea; everything else HabConfig defaults
+arms:
+  std:       {depression: {"on": true},  longterm: {mode: "off"}}                         # two-pool cascade
+  hebb_only: {depression: {"on": false}, longterm: {mode: hebbian, eta_hebb: 0.0125}}  # the recognising arm (x1/4)
+  none:      {depression: {"on": false}, longterm: {mode: "off"}}                         # plasticity-off control
+salience: "off"                          # every arm; NM plays no part in E01
+stimulus:
+  duration_s: 0.2                       # all of SR1-SR3 (results do NOT transfer to the 1.5 s stimuli of steps 1-2)
+  base_level_db: 60
+  n_novel: 20                           # SR1 recognition null
+response_window: stimulus               # spikes during the 0.2 s presentation, minus expected spontaneous spikes
+sr1:
+  n_presentations: 16
+  isi_s: 3.0
+  delay_s: 1800.0
+  recovery_scales: [1.0, 0.25, 0.1, 0.0]   # 0 = frozen; applied at training onset, to trained AND control
+  scaled_parameter: {std: depression.tau_slow_s, hebb_only: longterm.tau_s, none: null}
+  probe_tail_s: 0.3
+  floor_multiple: 2.0                   # a control response below 2x its expected spontaneous count = floor
+sr2:
+  rates_hz: [0.01, 0.03, 0.1, 0.3, 1.0, 3.0]
+  n_presentations: 16
+  steady_state_last: 4
+  fit_primary_hz: [0.03, 0.3]
+  fit_secondary_hz: [0.1, 1.0]
+  excluded_from_fit_hz: [0.01]          # run and reported, not fitted (PREREG section 9, item 10)
+  schedules: [periodic, shuffled]
+  bootstrap: {n: 2000, seed: 0}
+sr3:
+  n_presentations: 16
+  isi_s: 3.0
+  insert_at: 8
+  inserts: {none: null, plus10: 10, plus20: 20, gap: silence}
+  scored_presentation: 9
