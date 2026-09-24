@@ -1,0 +1,18 @@
+{
+  "source": "https://github.com/polarizetech/kit-adaptive-preregistration.git",
+  "ref": "main",
+  "commit": "6f855ac6be0c1c242189221a33f80a394546bd46",
+  "dirty": false,
+  "modules": [
+    "core",
+    "convo-log"
+  ],
+  "files": {
+    ".agents/README.md": "cdd2674ab44505fd34bc4736fca90829253f4ec9ed4ee8935acacba4aa0f746a",
+    ".agents/bin/kit_ap": "46923ebcd522160bcc239c3f2c9f9a2de26b88d9b20de3ebe06b8aada83dfc16",
+    ".agents/protocols/CONVERSATIONS.md": "7f2a73ed617829a9306f01348b070897b5c622d1871ce1e0318a8d6653d55f92",
+    ".agents/tools/convo-log": "608f965f81d1e20f07febd97b03637bcb301041913a543bb2a64793245996114",
+    ".github/hooks/kit_ap-convo-log.json": "a8d419dcd713d4f9ac9f78a83b749e35c154bf69adf5d203e3ddb88672d7b9ad",
+    ".github/hooks/kit_ap-core.json": "0e5a1a6763aa34c4ac2e48870b4a384fe594ccf1630bd6dc90fb2b6c642dbb8e"
+  }
+}
