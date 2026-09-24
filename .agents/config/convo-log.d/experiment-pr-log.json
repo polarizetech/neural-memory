@@ -1,0 +1,5 @@
+{
+  "paths": {
+    "^experiment/(.+)$": "experiments/{1}/conversation.jsonl"
+  }
+}

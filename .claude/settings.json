@@ -20,6 +20,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.agents/tools/prereg-status\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "Stop": [
