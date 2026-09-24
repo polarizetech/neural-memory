@@ -29,7 +29,7 @@ on the PR for that version and in git beside the results.
 | File | What it does |
 |---|---|
 | `.agents/tools/tag <tag> "<message>"` | `git tag -a` with a dated message, then posts the receipt. Agents use this, **never bare `git tag`**, for experiment tags. |
-| `.agents/tools/prereg-receipt <tag>` | Posts a tag receipt to the branch's PR: commit, tag date, and sha256 of `experiments/<EID>/PREREG.md` and `ENV.lock`. GitHub's comment time is the third-party clock. |
+| `.agents/tools/prereg-receipt <tag>` | Posts a tag receipt to the branch's PR: commit, tag date, EID, and sha256 of `experiments/<EID>/PREREG.md` and `ENV.lock` as committed at the tag (so a receipt posted late still describes what was tagged). The EID is the tag minus its `-prereg`/`-interim-N`/`-run`/`-closed` suffix; other tags (e.g. `model-v*`) get `n/a`. GitHub's comment time is the third-party clock. |
 | `.agents/tools/prereg-status` | Prints one line of context (branch, EID, tags present, whether `PREREG.md` is FROZEN). Claude Code runs it on every prompt via the `UserPromptSubmit` hook. |
 
 ## 3. Commit guard (`.agents/githooks/pre-commit`)
