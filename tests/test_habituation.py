@@ -126,3 +126,17 @@ def test_slow_per_spike_shares_the_spontaneous_steady_state():
         out[per] = (st.xs.mean(), ff.xs.mean())
     assert abs(out["release"][0] - out["spike"][0]) < 0.02
     assert abs(out["spike"][0] - out["spike"][1]) < 0.02
+
+
+def test_frozen_recovery_leaves_uneroded_synapses_alone():
+    """tau = inf with post_spont = 0 somewhere: the fast-forward must leave L finite and unchanged there."""
+    import math
+    sim, st = make_sim(small(longterm=dict(mode="hebbian", eta_hebb=0.2)))
+    sim.post_spont[:5] = 0.0
+    cc = sim.cfg.model_copy(deep=True); cc.longterm.tau_s = math.inf
+    from dataclasses import replace
+    fz = replace(sim, cfg=cc, net=replace(sim.net, cfg=cc))
+    before = st.L.copy()
+    fz.fast_forward(st, 600.0)
+    assert np.all(np.isfinite(st.L))
+    assert np.array_equal(st.L[:, :, :5], before[:, :, :5])
