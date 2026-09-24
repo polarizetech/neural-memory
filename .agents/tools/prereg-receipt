@@ -3,17 +3,28 @@
 # usage: .agents/tools/prereg-receipt <tag>
 set -euo pipefail
 tag="$1"
-hash() { if [ -f "$1" ]; then shasum -a 256 "$1" | cut -c1-64; else echo "n/a"; fi; }
 commit=$(git rev-parse "$tag^{commit}")
+# Hash each file AS COMMITTED AT THE TAG, not the working tree, so a receipt posted late still describes what was tagged.
+hash() { if [ -n "$eid" ] && git cat-file -e "$commit:$1" 2>/dev/null; then git show "$commit:$1" | shasum -a 256 | cut -c1-64; else echo "n/a"; fi; }
 tagdate=$(git for-each-ref --format='%(taggerdate:iso-strict)' "refs/tags/$tag")
-eid="${tag%%-*}"
+# The EID is the tag minus its milestone suffix. EIDs contain hyphens (E01-stentor-map), so cutting at the first
+# hyphen hashed experiments/E01/... and posted n/a. A tag with no milestone suffix (model-v0.1.0) has no EID.
+case "$tag" in
+  *-prereg) eid="${tag%-prereg}" ;;
+  *-run) eid="${tag%-run}" ;;
+  *-closed) eid="${tag%-closed}" ;;
+  *-interim-[0-9]*) eid="${tag%-interim-*}" ;;
+  *) eid="" ;;
+esac
 body=$(cat <<MSG
 <!-- prereg-receipt v1 tag=$tag commit=$commit -->
 **Tag receipt** \`$tag\`
 - commit: \`$commit\`
 - tagged: $tagdate
-- PREREG.md sha256: \`$(hash "experiments/$eid/PREREG.md")\`
-- ENV.lock sha256: \`$(hash "experiments/$eid/ENV.lock")\`
+- experiment: ${eid:-none (not an experiment milestone tag)}
+- PREREG.md sha256 at the tag: \`$(hash "experiments/$eid/PREREG.md")\`
+- ENV.lock sha256 at the tag: \`$(hash "experiments/$eid/ENV.lock")\`
 MSG
 )
+command -v gh >/dev/null 2>&1 || { echo "prereg-receipt: gh not found on PATH; receipt not posted (re-run once gh is on PATH)" >&2; exit 0; }
 gh pr comment --body "$body" 2>/dev/null || echo "prereg-receipt: no PR yet; re-run after gh pr create" >&2
