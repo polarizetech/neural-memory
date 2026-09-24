@@ -112,6 +112,8 @@ def _lagged(pred, true, max_lag):
 
 
 def bestlag_with_null(pred, true, rate_hz, max_lag_s, n_surr, seed) -> dict:
+    from ..monorepo import import_uwtl
+    import_uwtl()
     from uwtl.surrogates import iaaft
     max_lag = int(max_lag_s * rate_hz)
     cc = _lagged(pred, true, max_lag)

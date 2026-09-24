@@ -209,10 +209,8 @@ def _save(outdir: Path, cfg, runs, summary, report):
         head += f"**{len(failed)} of {len(runs)} runs FAILED and are excluded:** " + \
                 "; ".join(f"{r['tag']}/seed {r['seed']}: {r['error']}" for r in failed[:5]) + "\n\n"
     try:
-        import sys
-        sys.path.insert(0, str(C.ROOT.parents[1] / "tools" / "result-provenance"))
-        import provenance
-        (outdir / "provenance.json").write_text(json.dumps(provenance.stamp([]), indent=1, default=str))
+        from ..monorepo import stamp
+        (outdir / "provenance.json").write_text(json.dumps(stamp(["tools/result-provenance"]), indent=1, default=str))
     except Exception as e:
         head += f"_provenance stamp unavailable: {e}_\n\n"
     (outdir / "REPORT.md").write_text(head + report)

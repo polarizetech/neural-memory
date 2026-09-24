@@ -1,6 +1,20 @@
-# CLAUDE.md — projects/neurotape
+# CLAUDE.md — sim-neural-memory (the `neurotape` package)
 
-**Stage: SKETCH** (2026-09-20). A bench with no `serve.py`; not served, not listed in `served.json`.
+**Stage: SKETCH** (2026-09-20). A bench with no `serve.py`; nothing here is served.
+
+**Its own repo since 2026-09-24** (`polarizetech/sim-neural-memory`, private). It was `projects/neurotape` in the
+`audio-projects` monorepo; the 32 commits of history came across by `git subtree split`, and the monorepo keeps a
+pointer README there. **It still uses the monorepo's shared tools rather than copies**, found through
+`src/neurotape/monorepo.py`:
+- the checkout is `$NEUROTAPE_MONOREPO`, else `../audio-projects` beside this repo, else `~/Sites/audio-projects`;
+- a candidate counts only if it has `tools/REGISTRY.md`;
+- if none resolves, it **raises with the clone command** — it never copies a tool or falls back to a local one.
+
+Used in code: `tools/result-provenance` (every results folder; `provenance.json` now also records this repo's own
+commit) and `tools/universal-wave-translation-layer` (`uwtl`, the IAAFT null). Also used, in docs only:
+`tools/paper-library` (sources) and `tools/research-link`'s `BUILD-MANIFEST.md` convention. The monorepo's
+protocols (`STAGES.md`, `CONCURRENCY.md`, the build posture and honesty rules in its root `CLAUDE.md`) still apply
+here. Any path below written as `tools/…` or `research/…` means the monorepo's.
 
 **What it is.** A falsification testbed: encode several simultaneous waveforms into a biologically
 grounded spiking network, store them through synaptic tagging and capture, and try to play them
@@ -125,9 +139,10 @@ all switches off reproduces a committed run bit-for-bit.
 ## Run
 
 ```bash
-cd projects/neurotape
+# the shared tools: a monorepo checkout beside this repo (with the uwtl submodule initialised)
+git -C ../audio-projects submodule update --init tools/universal-wave-translation-layer
 uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python -e ".[dev]" \
-    -e ../../tools/universal-wave-translation-layer
+    -e ../audio-projects/tools/universal-wave-translation-layer
 # auditory-nerve front end (GPL-3, builds only against Cython < 3):
 uv pip install --python .venv/bin/python "Cython<3" pandas
 uv pip install --python .venv/bin/python --no-build-isolation "cochlea @ git+https://github.com/mrkrd/cochlea.git"
