@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # CLAUDE.md — sim-neural-memory (the `neurotape` package)
 
 **Stage: SKETCH** (2026-09-20). A bench with no `serve.py`; nothing here is served.
