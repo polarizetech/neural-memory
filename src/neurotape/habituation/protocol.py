@@ -26,6 +26,13 @@ from .periphery import Periphery, relay_spikes
 from .stimuli import SoundSpec, silence
 
 
+def _star(rec: float, lam: np.ndarray) -> np.ndarray:
+    """Fixed point rec/lam of dL/dt = rec - lam L. Where lam == 0 (recovery frozen AND nothing eroding) L has no
+    fixed point and does not move; any finite value works there because exp(-0 h) = 1 keeps L unchanged. Without
+    this, 0/0 put NaN into L (found by the E01 smoke run; never reached with a finite recovery time)."""
+    return np.divide(rec, lam, out=np.ones_like(lam, dtype=float), where=lam > 0)
+
+
 @dataclass
 class Sim:
     cfg: HabConfig
@@ -81,11 +88,11 @@ class Sim:
                 R = np.full_like(st.xf, r0 * U)
             if lt.mode == "presynaptic":
                 lam = 1 / lt.tau_s + eta_pre(cfg) * R
-                Ls = (1 / lt.tau_s) / lam
+                Ls = _star(1 / lt.tau_s, lam)
                 st.L = np.maximum(Ls + (st.L - Ls) * np.exp(-lam * h), lt.L_min)
             elif lt.mode == "hebbian":
                 lam = 1 / lt.tau_s + lt.eta_hebb * R[:, :, None] * self.post_spont[None, None, :]
-                Ls = (1 / lt.tau_s) / lam
+                Ls = _star(1 / lt.tau_s, lam)
                 st.L = np.clip(Ls + (st.L - Ls) * np.exp(-lam * h), lt.L_min, lt.L_max)
         st.nm = st.nm * np.exp(-seconds / cfg.salience.tau_nm_s)
         st.ge[:] = 0; st.gi[:] = 0; st.gei[:] = 0
