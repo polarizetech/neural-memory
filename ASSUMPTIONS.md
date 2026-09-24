@@ -260,6 +260,60 @@ its early-phase change feeds the postsynaptic cell's protein trigger through `su
 θ_pro then counts both projections ((20 + 32)/160). Input→I synapses stay fixed. The weight snapshots cover input→E
 when the switch is on. Off = the published text and a bit-identical run (tested).
 
+## Minimal habituation model (2026-09-23) — `neurotape.habituation`, `configs/habituation.yaml`
+
+This is a separate model. It shares only the auditory-nerve package, the experiment plumbing and the provenance stamp with
+the full model. The preregistration, including exactly what was seen before it was written, is `docs/habituation/PREREG.md`.
+
+**Read depth for this section.**
+
+- Tsodyks & Markram 1997 (*PNAS* 94:719): the model excerpt was `READ` through scite ("recovers with a time constant of about 1 sec").
+- Ulanovsky, Las, Farkas & Nelken 2004 (*J Neurosci* 24:10440): abstract `READ` ("several time scales concurrently … from
+  hundreds of milliseconds to tens of seconds"), plus one citing passage placing corticocortical depression recovery in the
+  same range.
+- Rankin et al. 2009 (*Neurobiol Learn Mem* 92:135): abstract only. **The numbered characteristics used as checks are `MEMORY`.**
+- Groves & Thompson 1970 (dual-process theory): `MEMORY`.
+
+| parameter | value | source / how set |
+|---|---|---|
+| relay stage | pooled AN rate per CF − its own spontaneous rate, rectified, × 150/250 Hz, + 1 Hz spontaneous | **placeholder** for a low-spontaneous thalamic (MGB-like) input. It exists because HSR auditory-nerve fibres fire ~43 spikes/s pooled in silence (measured here), and a depressing synapse driven by that is depleted by silence. MGB is not a subtraction |
+| relay units | 32 CF × 8, independent Poisson | placeholder |
+| `depression.U`, `tau_fast_s` | 0.5, 0.8 s | one-pool depression, recovery ~1 s (Tsodyks & Markram 1997, `READ`); U placeholder |
+| `a_slow`, `tau_slow_s` | 0.05 per unit release, 20 s | "tens of seconds" (Ulanovsky 2004, abstract `READ`); `a_slow` placeholder. Depletion is per unit **release**, not per spike, so a fast-depressed synapse also spares its slow pool |
+| tonotopy | Gaussian in log-frequency, σ 0.3 oct, cut at 5 %, 80 % connection probability, ×U(0.7, 1.3) | placeholder |
+| LIF cells | C 200/100 pF, gL 10 nS, EL −70, VT −50, Vr −60 mV, 2 ms refractory, τe 5 ms, τi 10 ms, 3 mV membrane noise | textbook values, not fitted |
+| `I0_pA`, `w_in_nS` | 80 pA, 8 nS | **operating-point scan** (below), against C1/C2 only |
+| E→I, I→E | p 0.2 × 2 nS, p 0.3 × 4 nS | placeholder |
+| `longterm.pre_spont_L` → `eta_pre` | 0.8 | **derived**: the rate at which spontaneous release alone holds L at 0.8. An absolute rate would mean nothing |
+| `longterm.eta_hebb` | 0.05 | engagement criterion C3: stored-channel L after 16 presentations = 0.871 (rate periphery) / 0.876 (AN). Scanned 0.002, 0.005, 0.02, 0.05 → 0.994, 0.984, 0.942, 0.871 |
+| `longterm.tau_s` | 3600 s | placeholder; a ×6 / ÷6 sweep is declared in PREREG, not run |
+| `salience.theta` | 0.5 × the naive neutral onset drive | placeholder |
+| NM gain | **solved** per run and mode: loud (+15 dB) calibration sounds peak at NM = 1.0 | C5 — without it `network` NM started ~30× below `raw` |
+| `salience.gain`, `eta_pot` | 1.0, 0.10 | gain placeholder; `eta_pot` = 2 × `eta_hebb` (definition C6) |
+
+**Operating-point scan** (rate periphery, seed 0; C1 spontaneous 0.2–2 Hz, C2 response ≥ 3× spontaneous and ≥ 30 % of cells):
+
+| I0 | w_in 2 | 4 | 8 | 12 | 16 |
+|---|---|---|---|---|---|
+| 80 pA | | | 0.29 Hz / 4.7× ✓ | 0.76 Hz / 2.8× | 1.24 Hz / 2.1× |
+| 90 pA | 0.09 Hz / 2.9× | 0.17 Hz / 3.9× | 0.52 Hz / 3.2× | 1.0 Hz / 2.2× | 1.5 Hz / 1.8× |
+| 110 pA | 0.56 Hz / 1.5× | 0.75 Hz / 1.7× | 1.11 Hz / 1.7× | | |
+| 130 pA | 1.10 Hz / 1.2× | 1.20 Hz / 1.3× | 1.46 Hz / 1.3× | | |
+
+The first setting tried (150 pA, 1.2 nS) gave a response indistinguishable from spontaneous firing: there was nothing to habituate.
+
+**Two defects found by the model's own tests, both fixed before any recognition readout.**
+
+1. NM was left non-zero by the settling period before calibration, so the solved gain gave 0.97 rather than 1.00.
+   Salience is now inert until calibrated.
+2. The Hebbian fast-forward used the mean postsynaptic trace, and under-estimated erosion in silence by ~30 %.
+   A relay spike makes its own target fire, so release and the trace are correlated. The factor is now measured by 10 s
+   of direct simulation per run, and the fast-forward is tested against direct simulation.
+
+**What it is NOT:** it has no E→E recurrence, no adaptation current, no T-current, no consolidation machinery, no
+hippocampus and no second modality. Each probe goes to its own copy of the network, which is the numerical equivalent of
+separate animals and is not a biological operation.
+
 ## What is NOT built, stated so nobody has to discover it
 
 - **CoNNear inversion (the PRIMARY playback) has never run.** No TensorFlow, no weights; weights are

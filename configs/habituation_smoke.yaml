@@ -1,0 +1,5 @@
+# Plumbing check only: rate periphery, small network, short grid. Not a result.
+seed: 0
+periphery: {kind: rate, n_cf: 16, relay_per_cf: 4}
+network: {n_exc: 60, n_inh: 15}
+protocol: {n_reps: [1, 2], delays_s: [2.0, 30.0], n_novel: 5}

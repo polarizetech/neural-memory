@@ -1,0 +1,88 @@
+seed: 0
+periphery:
+  kind: an
+  n_cf: 32
+  f_lo_hz: 125.0
+  f_hi_hz: 7000.0
+  anf_per_cf:
+  - 6
+  - 2
+  - 2
+  level_db_spl: 60.0
+  relay_per_cf: 8
+  relay_spont_hz: 1.0
+  relay_max_hz: 150.0
+  an_driven_ref_hz: 250.0
+  rate_threshold_db: 20.0
+  rate_dynamic_range_db: 40.0
+  smooth_ms: 5.0
+depression:
+  'on': true
+  U: 0.5
+  tau_fast_s: 0.8
+  slow_on: true
+  a_slow: 0.05
+  tau_slow_s: 20.0
+longterm:
+  mode: 'off'
+  pre_spont_L: 0.8
+  eta_hebb: 0.05
+  tau_s: 3600.0
+  L_min: 0.05
+  L_max: 2.0
+  post_tau_ms: 100.0
+salience:
+  mode: 'off'
+  tau_fast_ms: 20.0
+  tau_slow_s: 1.0
+  theta: 0.5
+  nm_target: 1.0
+  tau_nm_s: 0.5
+  gain: 1.0
+  eta_pot: 0.0
+network:
+  n_exc: 200
+  n_inh: 50
+  dt_ms: 0.5
+  C_e_pF: 200.0
+  C_i_pF: 100.0
+  gL_nS: 10.0
+  EL_mV: -70.0
+  VT_mV: -50.0
+  Vr_mV: -60.0
+  t_ref_ms: 2.0
+  E_e_mV: 0.0
+  E_i_mV: -80.0
+  tau_e_ms: 5.0
+  tau_i_ms: 10.0
+  noise_mV: 3.0
+  I0_pA: 80.0
+  tonotopic_sigma_oct: 0.3
+  w_in_nS: 8.0
+  p_ei: 0.2
+  w_ei_nS: 2.0
+  p_ie: 0.3
+  w_ie_nS: 4.0
+protocol:
+  stim_s: 1.5
+  isi_s: 3.0
+  n_reps:
+  - 1
+  - 2
+  - 4
+  - 8
+  - 16
+  delays_s:
+  - 2.0
+  - 30.0
+  - 300.0
+  - 1800.0
+  interference_s: 20.0
+  interference_min_delay_s: 30.0
+  n_novel: 20
+  shifts_oct:
+  - 0.16666666666666666
+  - 0.5
+  probe_tail_s: 0.3
+  direct_silence_s: 2.0
+  salient_db: 15.0

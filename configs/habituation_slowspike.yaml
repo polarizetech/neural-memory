@@ -1,0 +1,5 @@
+# EXPLORATORY, post hoc (not in PREREG): slow pool depleted per SPIKE instead of per release. Added after the first
+# hab_memory run showed the per-release slow trace records whether a channel was active, not how strongly.
+seed: 0
+periphery: {kind: an}
+depression: {slow_per: spike}

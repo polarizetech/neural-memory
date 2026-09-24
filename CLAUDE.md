@@ -85,6 +85,43 @@ back.** `exp completion` **refuses to run** — the operator's precondition (a d
 foreign-stream null) failed at 0 of 18. Deferred mechanisms: [`docs/DEFERRED.md`](docs/DEFERRED.md). 50 tests;
 all switches off reproduces a committed run bit-for-bit.
 
+## Minimal habituation model (2026-09-23) — [`docs/habituation/`](docs/habituation/RESULTS.md)
+
+**The question (the operator's):** is habituation a form of memory, with salience something that itself habituates?
+
+- **Separate numpy model, `src/neurotape/habituation/`.** No Brian2 compile, and none of the full model's placeholders.
+  - Auditory nerve (Zilany) → a labelled low-spontaneous relay.
+  - Two-timescale short-term depression, plus an optional long-term rule (presynaptic or anti-Hebbian).
+  - LIF E/I cells.
+  - An optional LC-like NM.
+- **Every probe goes to its own copy of the network**, against a paired, time-matched naive control given identical
+  spikes and noise.
+- Preregistered in [`PREREG.md`](docs/habituation/PREREG.md).
+- Commands: `neurotape exp hab_memory | hab_salience | hab_isi --config configs/habituation.yaml`.
+- 13 tests in `tests/test_habituation.py`.
+
+**Result, 260 runs, 0 failed:**
+
+- **The trace is always in the synapses.** The spectral fingerprint ranks the stored sound first of 21 in 8–10/10
+  seeds.
+- **Only a per-synapse, postsynaptically gated depression makes the response recognise it** (`hebb_only`).
+  - At rate ×¼: 10/10 seeds after 16 presentations, still above chance at **30 min**, survives 20 s of other sounds.
+  - It keeps **spectrum, not order**.
+  - A noise probe's negative afterimage identifies the stored sound in 9/10 seeds at 30 min.
+- **Presynaptic depletion generalises to every sound sharing its fibres.** This covers short-term depression, a
+  per-spike slow pool (exploratory) and the presynaptic long-term rule. Recognition ≈ 0, which fails preregistered H1
+  and H2.
+- **Step 3 (salience) is uninterpretable.**
+  - The network-driven NM loop has no bound and ran away in 3/10 seeds.
+  - There was no dishabituation in any arm (NM decays in 0.5 s; the dishabituator shares channels).
+  - A step 3b fix is proposed, not run.
+
+**Defects found by its own tests, fixed before any readout:**
+
+1. NM was left non-zero before calibration.
+2. The Hebbian fast-forward under-estimated erosion in silence by ~30 %: release and the postsynaptic trace are
+   correlated, so the factor is now measured.
+
 ## Run
 
 ```bash

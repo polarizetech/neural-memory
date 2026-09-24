@@ -1,0 +1,4 @@
+# Declared sweep (PREREG, 'Declared but not in the first pass'): eta_hebb x0.25
+seed: 0
+periphery: {kind: an}
+longterm: {eta_hebb: 0.0125}

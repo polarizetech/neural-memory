@@ -1,0 +1,7 @@
+{
+ "stamped_utc": "2026-09-24T03:35:08.222796+00:00",
+ "head": "dd1ac9c9f426cd7d43f0565d975ef286b4a66d2f",
+ "dependencies": {},
+ "note": "",
+ "rerun_rule": "Re-run the NULL and the MEASUREMENT together, or not at all. A threshold computed by the same code as the measurement moves with it, and comparing a fresh measurement against a stale bar manufactures a result in the exciting direction."
+}

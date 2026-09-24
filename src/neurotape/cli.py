@@ -4,6 +4,7 @@
   neurotape encode --demo 2 --config cfg.yaml               ... on labelled synthetic streams
   neurotape exp <name> --config cfg.yaml --seeds 10 --workers 4
       names: delay streams ablations baselines lehr population attention codec salience recall_modes recall_drive binaural completion storage_diagnostic all
+      minimal habituation model (docs/habituation/PREREG.md): hab_memory hab_salience hab_isi
 """
 from __future__ import annotations
 
@@ -78,6 +79,13 @@ def cmd_encode(a) -> None:
 
 
 def cmd_exp(a) -> None:
+    if a.name.startswith("hab_"):                     # the minimal habituation model: its own config type, no Brian2
+        from .experiments import habituation as H
+        fn = dict(hab_memory=H.exp_hab_memory, hab_salience=H.exp_hab_salience, hab_isi=H.exp_hab_isi)[a.name]
+        if a.seeds < 10:
+            print(f"NOTE: {a.seeds} seeds requested; the reporting standard for this project is >= 10.")
+        print(a.name, "->", fn(a.config or "configs/habituation.yaml", list(range(a.seeds)), a.workers), flush=True)
+        return
     from .experiments import diagnostic, diagnostic2, lehr, repro_lt2021, storage, suite
     cfg = load_config(a.config)
     seeds = list(range(a.seeds))
