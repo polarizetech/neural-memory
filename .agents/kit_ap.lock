@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/polarizetech/kit-adaptive-preregistration.git",
   "ref": "main",
-  "commit": "6f855ac6be0c1c242189221a33f80a394546bd46",
+  "commit": "e64136a3e7a5e81ec919a685546006ceb758e3a9",
   "dirty": false,
   "modules": [
     "core",
@@ -15,10 +15,10 @@
     ".agents/config/convo-log.d/experiment-pr-log.json": "f1dd6ac386a5ca8aa3137438660aad5ada680197b725e4e4dd848afb78766988",
     ".agents/githooks/pre-commit": "b3e5905afe49af1481979e38e0e222ab25e8a5592d15fc9300b112448a7b09c4",
     ".agents/protocols/CONVERSATIONS.md": "7f2a73ed617829a9306f01348b070897b5c622d1871ce1e0318a8d6653d55f92",
-    ".agents/protocols/EXPERIMENT_PR_LOG.md": "5dcf91dee7042eb2ec9147d646c29a25d7e726ec435b2920795c6d6a87d5497d",
+    ".agents/protocols/EXPERIMENT_PR_LOG.md": "e06896b088d09537ba1acf5bd81e7996116b7bb26770fc1b3123fbca9373c684",
     ".agents/protocols/PREREG_PROTOCOL.md": "8d4c9423e03b59445a02d341a84b8349cd91a8b0593a19dcd0b66b3236169384",
-    ".agents/tools/convo-log": "608f965f81d1e20f07febd97b03637bcb301041913a543bb2a64793245996114",
-    ".agents/tools/prereg-receipt": "cacfd92d7ae07e329d7abebaa120846dcacd038ae80995a503651701ec5e987e",
+    ".agents/tools/convo-log": "feac7299481de062657a5ef1c0112c8a949b61a828136a934541ed5d77d29d7a",
+    ".agents/tools/prereg-receipt": "a662bc5778b56691ee14105de1c749f9a2bd78315f418b9ca5474c2f2c67da02",
     ".agents/tools/prereg-status": "a9f083a343abd29be7907c5a4b4e56df6ed40bfb14449541d8d72b1446d10ee4",
     ".agents/tools/tag": "beb6d6044a5cdc486a5271676c600c038f1f1e50ef88407eedeaa2f85193aced",
     ".github/hooks/kit_ap-convo-log.json": "a8d419dcd713d4f9ac9f78a83b749e35c154bf69adf5d203e3ddb88672d7b9ad",
