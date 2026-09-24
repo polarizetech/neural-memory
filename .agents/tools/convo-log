@@ -23,6 +23,23 @@ LABELS = {"claude": "Claude Code", "vscode": "Copilot (VS Code)", "codex": "Code
           "chatgpt": "ChatGPT", "copilot": "GitHub Copilot", "cursor": "Cursor", "gemini": "Gemini"}
 
 
+# gh often lives outside the PATH that hook processes get (e.g. ~/.local/bin, Homebrew). Look there too, so a missing
+# PATH entry is not misread as "no PR yet" and everything silently queues.
+GH_FALLBACKS = ("~/.local/bin/gh", "/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/home/linuxbrew/.linuxbrew/bin/gh")
+
+
+def gh_bin():
+    import shutil
+    found = shutil.which("gh")
+    if found:
+        return found
+    for c in GH_FALLBACKS:
+        c = os.path.expanduser(c)
+        if os.access(c, os.X_OK):
+            return c
+    return None
+
+
 def sh(*cmd, cwd=None, inp=None):
     r = subprocess.run(cmd, cwd=cwd, input=inp, capture_output=True, text=True)
     return r.returncode, r.stdout.strip(), r.stderr.strip()
@@ -154,7 +171,7 @@ def last_assistant_from_transcript(path):
 
 
 def pr_for(root, br):
-    code, out, _ = sh("gh", "pr", "view", br, "--json", "number,url", cwd=root)
+    code, out, _ = sh(gh_bin(), "pr", "view", br, "--json", "number,url", cwd=root)
     return json.loads(out) if code == 0 and out else None
 
 
@@ -181,6 +198,9 @@ def sync(root, flush=False):
     pending = [e for e in entries if not e.get("comment")]
     if not pending:
         return
+    if not gh_bin():
+        print(f"convo-log: gh not found (PATH or {', '.join(GH_FALLBACKS)}); {len(pending)} message(s) queued", file=sys.stderr)
+        return
     pr = pr_for(root, br)
     if not pr:
         print(f"convo-log: no PR for {br} yet; {len(pending)} message(s) queued in {os.path.relpath(path, root)}", file=sys.stderr)
@@ -197,7 +217,7 @@ def sync(root, flush=False):
     for g in groups:
         url = None
         for body in render(g, user_name):
-            code, out, err = sh("gh", "pr", "comment", str(pr["number"]), "--body-file", "-", cwd=root, inp=body)
+            code, out, err = sh(gh_bin(), "pr", "comment", str(pr["number"]), "--body-file", "-", cwd=root, inp=body)
             if code:
                 print(f"convo-log: gh failed: {err}", file=sys.stderr)
                 save(path, entries)
