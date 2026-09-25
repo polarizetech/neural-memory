@@ -1,12 +1,12 @@
 @AGENTS.md
 
-# CLAUDE.md — sim-neural-memory (the `neurotape` package)
+# CLAUDE.md — neural-memory (the `neurotape` package)
 
 **Stage: SKETCH** (2026-09-20). A bench with no `serve.py`; nothing here is served.
 **PAUSED 2026-09-24.** Every finding across the project is mapped in [`docs/FINDINGS.md`](docs/FINDINGS.md);
 start there.
 
-**Its own repo since 2026-09-24** (`polarizetech/sim-neural-memory`, private). It was `projects/neurotape` in the
+**Its own repo since 2026-09-24** (`polarizetech/neural-memory`, private). It was `projects/neurotape` in the
 `audio-projects` monorepo; the 32 commits of history came across by `git subtree split`, and the monorepo keeps a
 pointer README there. **It still uses the monorepo's shared tools rather than copies**, found through
 `src/neurotape/monorepo.py`:
