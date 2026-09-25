@@ -1,0 +1,69 @@
+# E03-synthesis-block -- every parameter the run uses. Read by run.py and analyse.py; frozen by the
+# E03-synthesis-block-prereg tag. Decisions are explained in PREREG.md sections 5, 6 and 10.
+eid: E03-synthesis-block
+model_tag: model-v0.4.0          # src/ must be identical to this tag (run.py refuses otherwise)
+# The model is a deterministic ODE with deterministic jumps: no seeds. Its output is a contraction PROBABILITY.
+integrator_tolerance: 1.0e-4     # relative; a criterion value within 1e-3 of its threshold is flagged "at threshold"
+
+force:                           # Rajan 2026 tapper levels -> R&M force units [ARBITRARY; sensitivity below]
+  level3: 1.0
+  level4: 1.5
+
+# Factorial arms: recycling x mechanism x k_deg_scale (16). Every other parameter is R&M 2025's published value.
+arms:
+  recycling: [constitutive, labile]
+  mechanism: [internalisation, gating]
+  k_deg_scale: [1.0, 0.1, 0.01, 0.001]
+  k_x: 0.016666666666666666      # /min, labile factor turnover (tau 60 min) [ARBITRARY]
+
+# Protocols from Rajan et al. 2026 (Curr Biol, doi 10.1016/j.cub.2026.03.080), Methods. Drug (block) from t = 0.
+# Each runs twice per arm: synthesis_scale 1 (control) and 0 (block). Times in minutes.
+protocols:
+  puro_short:          # Fig 1C: 2 h acclimation in drug, then 60 min training, level 3, 1 tap/min
+    pre_min: 120
+    level: level3
+    period_min: 1
+    n: 60
+  chx_short:           # Fig 1E: same acclimation, level 4, 1 tap / 2 min, 60 min
+    pre_min: 120
+    level: level4
+    period_min: 2
+    n: 30
+  puro_short_15:       # Fig S1A: 15 min pre-treatment, then as puro_short
+    pre_min: 15
+    level: level3
+    period_min: 1
+    n: 60
+  long:                # Fig 1D/F: no acclimation, ~12 h overnight training, level 4, 1 tap/min; then test taps
+    pre_min: 0
+    level: level4
+    period_min: 1
+    n: 720
+    test_after_min: [2, 5, 10, 20, 30, 60, 90]     # real taps (level 4), counted from the last training tap
+  untrained_short:     # Fig 1C/E untrained: a single tap after 3 h in drug
+    tap_at_min: [180]
+    levels: [level3, level4]
+  untrained_long:      # Fig 1D/F untrained: single level-4 taps at 12 h and 13.5 h of drug exposure
+    tap_at_min: [720, 810]
+    level: level4
+
+criteria:
+  baseline_tol: 0.10         # C1 |p_block - p_ctrl| for untrained cells
+  accel_margin: 0.05         # C2 mean p over training, block - control <= -margin
+  time0_tol: 0.10            # C3 |block - control| at the first test tap after 12 h training
+  retention_margin: 0.05     # C4 block - control <= -margin ...
+  retention_delays: [20, 30, 60, 90]
+  retention_min_count: 2     # ... at >= this many of the retention delays
+  recovery_fraction: 0.5     # C5 control at 90 min >= this x untrained control at 810 min
+
+sensitivity:                 # one-at-a-time around the main setting, every arm
+  - {name: force_low,  force: {level3: 0.5, level4: 1.0}}
+  - {name: force_high, force: {level3: 1.5, level4: 2.0}}
+  - {name: kx_fast,    k_x: 0.05}
+  - {name: kx_slow,    k_x: 0.005555555555555556}
+
+gate_levels: {low: 1.0, high: 4.0}   # R1-R8 forces, as in model-v0.3.0's reproduction gate
+
+exports:                     # trace JSON for the viewer (apps/singlecell-viewer), block and control
+  - {recycling: constitutive, mechanism: internalisation, k_deg_scale: 1.0}
+  - {recycling: labile, mechanism: gating, k_deg_scale: 0.001}
