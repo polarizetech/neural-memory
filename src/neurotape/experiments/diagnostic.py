@@ -21,7 +21,6 @@ do not enter the criterion. Anything else is a FAIL, reported with the per-seed 
 """
 from __future__ import annotations
 
-import json
 
 import numpy as np
 

@@ -69,8 +69,8 @@ def exp_delay(cfg: Config, seeds, workers, streams=None):
     fig, ax = plt.subplots(figsize=(6, 3.6))
     for key, col in (("spiking", "C0"), ("esn", "C1")):
         m = [summ[str(d)][key]["mean"] for d in delays]
-        ax.errorbar(delays, m, yerr=[[mm - summ[str(d)][key]["lo"] for mm, d in zip(m, delays)],
-                                     [summ[str(d)][key]["hi"] - mm for mm, d in zip(m, delays)]], marker="o", label=key, color=col)
+        ax.errorbar(delays, m, yerr=[[mm - summ[str(d)][key]["lo"] for mm, d in zip(m, delays, strict=True)],
+                                     [summ[str(d)][key]["hi"] - mm for mm, d in zip(m, delays, strict=True)]], marker="o", label=key, color=col)
     ax.axhline(0, color="0.6", lw=0.8); ax.set_xscale("log"); ax.set_xlabel("delay after encoding (simulated s)")
     ax.set_ylabel("recall reconstruction r (time-locked)"); ax.legend(); C.stamp_figure(fig, c); fig.tight_layout(rect=(0, 0.03, 1, 1))
     fig.savefig(out / "delay.png", dpi=130); plt.close(fig)
@@ -220,7 +220,7 @@ def exp_population(cfg: Config, seeds, workers):
                 f"included the proxy is mostly the input itself: PCM {summ[mode]['pcm_with_afferent']:.3f}, latency {summ[mode]['latency_with_afferent_ms']:.0f} ms.\n"
                 f"- PCM test informative at this latency: **{'yes' if summ[mode]['informative'] else 'NO -- the latency is too short for evoked and oscillator accounts to predict different PCM; read nothing into the PCM verdict below'}**\n"
                 f"- PCM over rates: {C.fmt(c_pcm)} -- {pcm_verdict(c_pcm['mean'])}\n"
-                f"- phase lag by rate (rad): {dict(zip(D['rates_nps'], np.round(mean_lag, 2)))}; slope = {lat:.0f} ms effective latency\n"
+                f"- phase lag by rate (rad): {dict(zip(D['rates_nps'], np.round(mean_lag, 2), strict=True))}; slope = {lat:.0f} ms effective latency\n"
                 f"- stimulus-LFP coupling (PLV): {C.fmt(summ[mode]['plv'])}\n"
                 f"- recall ORDERING (Spearman rho): {C.fmt(summ[mode]['ordering'])}; recall r: {C.fmt(summ[mode]['recall_r'])}\n\n")
         ax.plot(D["rates_nps"], np.unwrap(mean_lag), marker="o", label=f"theta {mode}")
@@ -271,7 +271,7 @@ def _recall_modes_worker(job):
         cfg = Config.model_validate(job["cfg"]); dc = cfg.decode
         inputs = build_inputs(C.get_streams(job.get("streams") or {"n": 1}, cfg), cfg); res = simulate(cfg, inputs)
         out, dec = evaluate(res, inputs, cfg)
-        S_ = inputs.env.shape[0]; B_ = inputs.env.shape[1]; k_ = cfg.protocol.cue_stream
+        B_ = inputs.env.shape[1]; k_ = cfg.protocol.cue_stream
         col = slice(k_ * B_, (k_ + 1) * B_)                       # the foreign-stream test is on the CUED stream's bands
         Y = ro.resample_targets(inputs.env, inputs.env_rate, dc.rate_hz)
         out["esn"] = baselines.esn_evaluate(inputs, res.timeline, cfg, Y, cfg.seed)
@@ -279,7 +279,7 @@ def _recall_modes_worker(job):
                                                cfg.frontend, seconds=cfg.protocol.encode_s, keep_fine=False).env[None], inputs.env_rate, dc.rate_hz)
                    for j in range(N_FOREIGN)]
         max_lag = int((1.0 if cfg.protocol.cued else min(0.5 * (cfg.protocol.recall_s or cfg.protocol.encode_s), 5.0)) * dc.rate_hz)
-        for rec, seg in zip(out["recall"], res.timeline.recalls()):
+        for rec, seg in zip(out["recall"], res.timeline.recalls(), strict=True):   # a mismatch would drop recalls silently
             X = ro.activity_features(*res.spikes_e, res.n_exc, seg.t0, seg.t1, dc.rate_hz, dc.filter_tau_ms)
             kg = int(round((seg.cue_s + 1.0) * dc.rate_hz)); m = min(len(X), len(Y)); pr = dec.predict(X[:m])[kg:, col]
             own = float(np.nanmax(ro._lagged(pr, Y[kg:m, col], max_lag)))
@@ -521,7 +521,7 @@ def exp_binaural(cfg: Config, seeds, workers):
     if ok_t:
         rep += "\n### Neurophonic ITD tuning (binaural 500 Hz tone; neurophonic = summed MSO postsynaptic current)\n\n"
         rows = [("ITD, us", "neurophonic line at 500 Hz, dB", "amplitude re ITD 0", "MSO best internal delay, us", "MSO rate, Hz")]
-        ref = np.mean([[x["amp"] for x in r["rows"] if x["itd_us"] == 0][0] for r in ok_t])
+        ref = np.mean([next(x["amp"] for x in r["rows"] if x["itd_us"] == 0) for r in ok_t])
         for k, row in enumerate(ok_t[0]["rows"]):
             col = lambda key: [r["rows"][k][key] for r in ok_t]
             rows.append((row["itd_us"], f"{np.mean(col('line_db')):.1f}", f"{np.mean(col('amp')) / ref:.2f}", f"{np.mean(col('best_internal_delay_us')):+.0f}", f"{np.mean(col('mso_rate_hz')):.1f}"))

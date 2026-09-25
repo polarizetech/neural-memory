@@ -1,4 +1,6 @@
 """Single-cell physiology. g_T and hT_loaded are set by THESE tests and by nothing else."""
+import itertools
+
 import numpy as np
 from brian2 import second
 
@@ -42,7 +44,7 @@ def test_burst_probability_increases_with_hyperpolarisation_duration():
         tr = sp.spike_trains()
         probs.append(np.mean([any(b[0] > t_rel and b[2] >= 3 for b in annotate_bursts(np.array(tr[k] / second))) for k in range(40)]))
     assert probs[0] < 0.1 and probs[-1] > 0.8
-    assert all(b >= a - 0.05 for a, b in zip(probs, probs[1:]))
+    assert all(b >= a - 0.05 for a, b in itertools.pairwise(probs))
     assert probs[-1] - probs[0] > 0.7
 
 

@@ -4,6 +4,22 @@
 bumps `model-vX.Y.Z`, and each entry says which experiments it invalidates. Tags are made with
 `.agents/tools/tag`, never bare `git tag`.
 
+## Unreleased — 2026-09-25 (no numerical change; no model tag)
+
+Pre-release review and lint (`docs/REVIEW.md`). Nothing here changes any number a committed run produced, so no
+`model-v*` bump; but `src/` now differs from `model-v0.2.0`, so re-running E01/E02 through their gated `run.py`
+needs `git checkout` of the experiment's model tag first.
+
+- `ruff` (correctness rules only) added to `pyproject.toml` and the dev extra; 79 findings resolved: unused imports
+  removed, `zip(..., strict=True)` where lengths must match, `itertools.pairwise`, narrowed test exceptions.
+- `experiments/common.paired_diff` raises on unequal lengths instead of truncating (a failed seed would have
+  misaligned every later pair; no committed paired condition had one).
+- `decode/readout.bestlag_with_null`: without the private `uwtl`, the secondary IAAFT null is skipped and recorded
+  (`p_iaaft: null`, `iaaft_skipped`); with it, behaviour is unchanged.
+- `tests/test_monorepo.py` skips when the private monorepo is absent.
+- Known and NOT fixed (each would change future numbers): recall-delay bookkeeping (`recall/protocol.py`), the
+  Hebbian factor's off-steady-state start (`habituation/model.py`), the settle crash for plastic FF inhibition.
+
 ## model-v0.2.0 — 2026-09-24
 
 E02 mechanisms, every one default OFF; switched-off output unchanged (bit-for-bit below).

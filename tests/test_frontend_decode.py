@@ -1,6 +1,7 @@
 """Front ends, NM, theta, plasticity arithmetic, readout, config, playback labelling."""
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from neurotape.config import Config
 from neurotape.frontend.io import synthetic_streams, load_csv
@@ -12,7 +13,7 @@ from neurotape.decode import population as pop
 
 
 def test_config_rejects_unknown_key_and_ablations_flip_one_switch():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Config.model_validate({"mechanisms": {"t_curent": False}})       # a typo must not run the full model
     from neurotape.experiments.suite import ABLATIONS, ablated
     base = Config()
@@ -30,7 +31,7 @@ def test_filterbank_envelopes_and_sensor_band():
     t = np.arange(0, 120, 1 / 50.0)
     a = analyse(Stream("sensor", np.sin(2 * np.pi * 0.3 * t), 50.0, "synthetic:sensor"), cfg.frontend)
     assert a.fcs[0] == pytest.approx(0.1) and a.env.shape[1] == 120_000
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Config.model_validate({"frontend": {"filterbank": "gammatone", "f_lo_hz": 0.1}})
 
 
@@ -116,7 +117,6 @@ def test_theta_reset_aligns_phase_to_onsets():
 
 def test_time_compression_touches_only_the_slow_terms():
     from neurotape.plasticity import stc
-    from brian2 import second
     a, b = Config(), Config(); b.time_compression = 1.0
     na, nb = stc.namespace(a), stc.namespace(b)
     assert na["tau_h"] == nb["tau_h"] and na["gamma_p"] == nb["gamma_p"]               # induction untouched

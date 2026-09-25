@@ -2,6 +2,7 @@
 about a minute with no cochlea. Nothing here reads a recognition result."""
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from neurotape.experiments.habituation import MEMORY_ARMS, SALIENCE_ARMS, SALIENCE_BASE, _merge
 from neurotape.habituation.config import HabConfig
@@ -17,7 +18,7 @@ def small(**over) -> HabConfig:
 
 
 def test_unknown_key_raises():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         HabConfig.model_validate(dict(longterm=dict(mode="hebbian", eta_heb=0.1)))
 
 

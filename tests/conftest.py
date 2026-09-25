@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import brian2 as b2
-from brian2 import ms, mV, pA, second
+from brian2 import ms, mV, pA
 
 from neurotape.config import Config
 from neurotape.neurons.model import make_group, constant_array
