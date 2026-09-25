@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # Refuse run outputs for an experiment with no -prereg tag, and any PREREG.md change after that tag.
 # Enable with: git config core.hooksPath .agents/githooks
+# Like any git hook it can be bypassed (git commit --no-verify); the tags and receipts are the durable record.
 set -euo pipefail
 fail=0
-while IFS= read -r f; do
+while IFS= read -r -d '' f; do
   case "$f" in
     experiments/*/outputs/*|experiments/*/RESULTS.md)
       eid=$(echo "$f" | cut -d/ -f2)
@@ -15,5 +17,5 @@ while IFS= read -r f; do
         echo "BLOCKED: $f is frozen after ${eid}-prereg. Log the change in DEVIATIONS.md instead."; fail=1
       fi ;;
   esac
-done < <(git diff --cached --name-only)
+done < <(git diff --cached --name-only -z)
 exit $fail

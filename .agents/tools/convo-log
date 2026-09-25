@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """convo-log — mirror LLM coding conversations into the repo and onto the branch's PR.
 
 Usage:
@@ -8,17 +9,35 @@ Usage:
   convo-log add --role user|assistant --tool NAME [--model M] [--file F]   # manual / any other tool
   convo-log sync [--flush]     # post pending entries to the PR (--flush also posts a trailing user group)
 
-Stdlib only. Needs `git`, and `gh` (authenticated) for posting. See CONVERSATIONS.md.
+Stdlib only. Needs `git`, and `gh` (authenticated) for posting. macOS and Linux (Windows via WSL).
+Secret redaction is best-effort pattern matching, not a guarantee. See CONVERSATIONS.md.
 """
-import argparse, datetime, fcntl, glob, hashlib, json, os, re, subprocess, sys
+import argparse, datetime, glob, hashlib, json, os, re, subprocess, sys
+
+try:
+    import fcntl
+except ImportError:  # Windows without WSL: run unlocked rather than crash inside the agent's hooks
+    fcntl = None
 
 MAX_COMMENT = 60000
+# Redaction is best-effort: these catch common credential shapes, not every secret. Order matters only in that
+# whole-token patterns run before the key=value rule.
 SECRET_PATTERNS = [
-    r"sk-[A-Za-z0-9_\-]{20,}", r"sk-ant-[A-Za-z0-9_\-]{20,}", r"gh[pousr]_[A-Za-z0-9]{30,}",
-    r"github_pat_[A-Za-z0-9_]{30,}", r"AKIA[0-9A-Z]{16}", r"xox[abprs]-[A-Za-z0-9\-]{10,}",
     r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----",
+    r"\bsk-(?:ant-)?[A-Za-z0-9_\-]{20,}",                 # OpenAI, Anthropic
+    r"\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}",             # Stripe
+    r"\bgh[pousr]_[A-Za-z0-9]{30,}", r"\bgithub_pat_[A-Za-z0-9_]{30,}",
+    r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b",                      # AWS access key IDs
+    r"\bAIza[0-9A-Za-z_\-]{35}",                           # Google API keys
+    r"\bhf_[A-Za-z0-9]{30,}",                               # Hugging Face
+    r"\bxox[abprs]-[A-Za-z0-9\-]{10,}",                    # Slack
+    r"\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+",  # JWTs
 ]
-KEYVAL = re.compile(r"(?i)(\b(?:api[_-]?key|secret|token|password|passwd)\s*[:=]\s*)[\"']?[^\s\"']{8,}[\"']?")
+BEARER = re.compile(r"(?i)(\bbearer\s+)[A-Za-z0-9._~+/=\-]{8,}")
+URL_CREDENTIALS = re.compile(r"(://[^/\s:@]+:)[^@\s/]+(@)")   # scheme://user:password@host
+# NAME=value / name: "value" where NAME mentions a credential; also matches AWS_SECRET_ACCESS_KEY, DB_PASSWORD, ...
+KEYVAL = re.compile(r"(?i)(\b[A-Za-z0-9_.\-]*(?:api[_\-]?key|secret|token|passw(?:or)?d|pwd|credential|private[_\-]?key)"
+                    r"[A-Za-z0-9_.\-]*[\"']?\s*[:=]\s*)(\"[^\"\n]{4,}\"|'[^'\n]{4,}'|[^\s\"',;]{8,})")
 LABELS = {"claude": "Claude Code", "vscode": "Copilot (VS Code)", "codex": "Codex CLI",
           "chatgpt": "ChatGPT", "copilot": "GitHub Copilot", "cursor": "Cursor", "gemini": "Gemini"}
 
@@ -85,7 +104,7 @@ def log_path(root, br):
         m = re.match(pattern, br)
         if m:
             vals = {"branch": br, **{str(i + 1): g or "" for i, g in enumerate(m.groups())}}
-            return os.path.join(root, re.sub(r"\{(\w+)\}", lambda x: vals.get(x.group(1), x.group(0)), target))
+            return os.path.join(root, re.sub(r"\{(\w+)\}", lambda x, v=vals: v.get(x.group(1), x.group(0)), target))
     safe = re.sub(r"[^A-Za-z0-9._-]+", "-", br)
     return os.path.join(root, cfg.get("dir", "conversations"), safe + ".jsonl")
 
@@ -93,6 +112,8 @@ def log_path(root, br):
 def redact(text):
     for p in SECRET_PATTERNS:
         text = re.sub(p, "[redacted]", text)
+    text = BEARER.sub(r"\1[redacted]", text)
+    text = URL_CREDENTIALS.sub(r"\1[redacted]\2", text)
     return KEYVAL.sub(r"\1[redacted]", text)
 
 
@@ -100,7 +121,7 @@ def load(path):
     if not os.path.exists(path):
         return []
     with open(path) as f:
-        return [json.loads(l) for l in f if l.strip()]
+        return [json.loads(line) for line in f if line.strip()]
 
 
 def save(path, entries):
@@ -113,13 +134,31 @@ def save(path, entries):
 
 
 class Lock:
-    def __init__(self, root):
-        d = os.path.join(sh("git", "rev-parse", "--git-dir", cwd=root)[1] or ".git")
-        self.p = os.path.join(root, d, "convo-log.lock") if not os.path.isabs(d) else os.path.join(d, "convo-log.lock")
+    """An flock in .git/. `log` guards the log file and is only held for quick reads and writes. `sync` guards
+    posting to the PR, which is slow, and is taken without blocking: if another process is already posting,
+    this one leaves its entries for that one (or the next run) instead of holding up the agent's hook."""
+
+    def __init__(self, root, name="log", blocking=True):
+        d = sh("git", "rev-parse", "--git-dir", cwd=root)[1] or ".git"
+        self.p = os.path.join(d if os.path.isabs(d) else os.path.join(root, d), f"convo-log-{name}.lock")
+        self.blocking, self.acquired = blocking, False
+
     def __enter__(self):
-        self.f = open(self.p, "w"); fcntl.flock(self.f, fcntl.LOCK_EX); return self
+        self.f = open(self.p, "w")
+        if fcntl is None:
+            self.acquired = True
+            return self
+        try:
+            fcntl.flock(self.f, fcntl.LOCK_EX | (0 if self.blocking else fcntl.LOCK_NB))
+            self.acquired = True
+        except BlockingIOError:
+            pass
+        return self
+
     def __exit__(self, *a):
-        fcntl.flock(self.f, fcntl.LOCK_UN); self.f.close()
+        if fcntl is not None and self.acquired:
+            fcntl.flock(self.f, fcntl.LOCK_UN)
+        self.f.close()
 
 
 def append(root, role, text, tool, session=None, model=None):
@@ -180,7 +219,8 @@ def render(group, user_name):
     tool = LABELS.get(e0["tool"], e0["tool"])
     when = e0["ts"].replace("T", " ")[:16]
     who = f"**{user_name}** · via {tool}" if role == "user" else f"**{tool}**" + (f" ({e0['model']})" if e0.get("model") else "")
-    meta = f"<!-- convo v1 role={role} tool={e0['tool']} session={e0.get('session') or '-'} ids={','.join(e['id'] for e in group)} -->"
+    ids = ",".join(e["id"] for e in group)
+    meta = f"<!-- convo v1 role={role} tool={e0['tool']} session={e0.get('session') or '-'} ids={ids} -->"
     body = "\n\n---\n\n".join(e["text"] for e in group)
     full = f"{meta}\n{who} · {when}\n\n{body}"
     if len(full) <= MAX_COMMENT:
@@ -192,10 +232,17 @@ def render(group, user_name):
 
 
 def sync(root, flush=False):
+    """Post pending entries to the branch's PR. Only one process posts at a time; the log itself stays writable."""
+    with Lock(root, "sync", blocking=False) as posting:
+        if posting.acquired:
+            _sync(root, flush)
+
+
+def _sync(root, flush):
     br = branch(root)
     path = log_path(root, br)
-    entries = load(path)
-    pending = [e for e in entries if not e.get("comment")]
+    with Lock(root):
+        pending = [e for e in load(path) if not e.get("comment")]
     if not pending:
         return
     if not gh_bin():
@@ -203,7 +250,8 @@ def sync(root, flush=False):
         return
     pr = pr_for(root, br)
     if not pr:
-        print(f"convo-log: no PR for {br} yet; {len(pending)} message(s) queued in {os.path.relpath(path, root)}", file=sys.stderr)
+        where = os.path.relpath(path, root)
+        print(f"convo-log: no PR for {br} yet; {len(pending)} message(s) queued in {where}", file=sys.stderr)
         return
     groups = []
     for e in pending:
@@ -214,18 +262,26 @@ def sync(root, flush=False):
     if groups[-1][0]["role"] == "user" and not flush:
         groups.pop()  # wait: more user messages may follow before the reply
     user_name = sh("git", "config", "user.name", cwd=root)[1] or "User"
+    posted = {}  # entry id -> comment URL
     for g in groups:
         url = None
         for body in render(g, user_name):
             code, out, err = sh(gh_bin(), "pr", "comment", str(pr["number"]), "--body-file", "-", cwd=root, inp=body)
             if code:
                 print(f"convo-log: gh failed: {err}", file=sys.stderr)
-                save(path, entries)
-                return
-            url = url or out.splitlines()[-1] if out else url
-        for e in g:
-            e["comment"] = url or pr["url"]
-    save(path, entries)
+                break
+            url = url or (out.splitlines()[-1] if out else None)
+        else:
+            posted.update({e["id"]: url or pr["url"] for e in g})
+            continue
+        break
+    if posted:
+        with Lock(root):  # re-read: entries may have been appended while we were posting
+            entries = load(path)
+            for e in entries:
+                if e["id"] in posted and not e.get("comment"):
+                    e["comment"] = posted[e["id"]]
+            save(path, entries)
 
 
 def capture(tool, argv_json):
@@ -238,34 +294,40 @@ def capture(tool, argv_json):
             for m in data.get("input-messages") or []:
                 append(root, "user", m if isinstance(m, str) else json.dumps(m), "codex", data.get("thread-id"))
             append(root, "assistant", data.get("last-assistant-message"), "codex", data.get("thread-id"))
-            sync(root)
+        sync(root)
         return
     data = json.load(sys.stdin)
     root = repo_root(data.get("cwd") or os.getcwd())
     ev, sid = data.get("hook_event_name"), data.get("session_id")
     model = os.environ.get("CONVO_MODEL") or data.get("model")
-    with Lock(root):
-        if ev == "UserPromptSubmit":
+    if ev == "UserPromptSubmit":
+        with Lock(root):
             append(root, "user", data.get("prompt"), tool, sid)
-        elif ev == "Stop":
-            if data.get("stop_hook_active"):
-                return
-            text = data.get("last_assistant_message") or last_assistant_from_transcript(data.get("transcript_path"))
+    elif ev == "Stop":
+        if data.get("stop_hook_active"):
+            return
+        text = data.get("last_assistant_message") or last_assistant_from_transcript(data.get("transcript_path"))
+        with Lock(root):
             append(root, "assistant", text, tool, sid, model)
-            sync(root)
-        elif ev == "SessionEnd":
-            sync(root, flush=True)
+        sync(root)
+    elif ev == "SessionEnd":
+        sync(root, flush=True)
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    c = sub.add_parser("capture"); c.add_argument("tool"); c.add_argument("payload", nargs="?")
-    a = sub.add_parser("add")
+    ap = argparse.ArgumentParser(prog="convo-log", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True, metavar="COMMAND")
+    c = sub.add_parser("capture", help="record a turn from a tool's hook (claude, vscode, codex)")
+    c.add_argument("tool")
+    c.add_argument("payload", nargs="?", help="the event JSON, for tools that pass it as an argument (codex)")
+    a = sub.add_parser("add", help="record one message by hand (text on stdin, or --file)")
     a.add_argument("--role", required=True, choices=["user", "assistant"])
-    a.add_argument("--tool", required=True); a.add_argument("--model"); a.add_argument("--file")
-    a.add_argument("--no-sync", action="store_true")
-    s = sub.add_parser("sync"); s.add_argument("--flush", action="store_true")
+    a.add_argument("--tool", required=True, help="where the message came from, e.g. chatgpt")
+    a.add_argument("--model")
+    a.add_argument("--file")
+    a.add_argument("--no-sync", action="store_true", help="record only; don't post to the PR yet")
+    s = sub.add_parser("sync", help="post pending messages to the branch's PR")
+    s.add_argument("--flush", action="store_true", help="also post a trailing user message with no reply yet")
     args = ap.parse_args()
     try:
         if args.cmd == "capture":
@@ -275,12 +337,10 @@ def main():
             text = open(args.file).read() if args.file else sys.stdin.read()
             with Lock(root):
                 append(root, args.role, text, args.tool, None, args.model)
-                if not args.no_sync:
-                    sync(root)
+            if not args.no_sync:
+                sync(root)
         else:
-            root = repo_root(os.getcwd())
-            with Lock(root):
-                sync(root, flush=args.flush)
+            sync(repo_root(os.getcwd()), flush=args.flush)
     except Exception as e:  # a logging failure must never block the agent
         print(f"convo-log: {e}", file=sys.stderr)
     sys.exit(0)

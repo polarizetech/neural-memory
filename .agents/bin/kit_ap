@@ -1,44 +1,40 @@
 #!/usr/bin/env python3
-"""kit_ap — the CLI for KIT Adaptive Preregistration: one set of agent protocols, installed into every repo, for every LLM tool.
+# SPDX-License-Identifier: MIT
+"""kit_ap — install and update KIT Adaptive Preregistration protocols in a git repo.
 
-Installs protocol modules from this kit into a repo as committed, managed files:
-  .agents/                     protocols, tools, this CLI, and kit_ap.lock (source + commit + file hashes)
-  AGENTS.md                    managed block of always-on instructions (Codex, Copilot, Cursor, Gemini, …)
+Installs protocol modules from the kit into a repo as committed, managed files:
+  .agents/                     protocols, tools, this CLI, and kit_ap.lock (source, commit, file hashes)
+  AGENTS.md                    managed block of always-on instructions (Codex, Copilot, Cursor, Gemini, ...)
   CLAUDE.md                    imports AGENTS.md so Claude Code reads the same rules
   .claude/settings.json        Claude Code hooks, merged into existing settings
   .github/hooks/kit_ap-*.json  Copilot / VS Code hooks
 
-Usage:
-  kit_ap list                                    modules in the kit
-  kit_ap init [REPO] [--modules a,b] [--source URL|PATH] [--ref REF]
-                                                   (init/add/remove/update commit their changes; --no-commit to skip)
-  kit_ap add MODULE... [--repo REPO]
-  kit_ap remove MODULE... [--repo REPO]
-  kit_ap update [REPO] [--ref REF] [--force]     pull the latest kit and re-apply
-  kit_ap check [REPO] [--hook]                   out of date? managed files edited?
-  kit_ap status [REPO]
-
-Stdlib only (Python 3.9+). Needs git.
+init, add, remove and update commit what they change (only those paths); pass --no-commit to skip.
+Stdlib only (Python 3.9+). Needs git. macOS and Linux (Windows via WSL).
 """
 import argparse, glob, hashlib, json, os, re, shutil, subprocess, sys, time
 
-DEFAULT_SOURCE = "https://github.com/polarizetech/kit-adaptive-preregistration.git"
+DEFAULT_SOURCE = "https://github.com/polarizetech/adaptive-preregistration.git"
+# Earlier names of the default source. GitHub redirects them, and kit_ap records the current name instead.
+FORMER_SOURCES = ("https://github.com/polarizetech/kit-adaptive-preregistration.git",)
 DEFAULT_REF = "main"
 NAME = "KIT Adaptive Preregistration"
 AGENTS_DIR = ".agents"
 LOCK = os.path.join(AGENTS_DIR, "kit_ap.lock")
+SETTINGS = os.path.join(".claude", "settings.json")
 START, END = "<!-- kit_ap:start -->", "<!-- kit_ap:end -->"
 BLOCK_RE = re.compile(re.escape(START) + r".*?" + re.escape(END) + r"\n?", re.S)
 LEGACY_BLOCK_RE = re.compile(r"\n*<!-- convo-log:start -->.*?<!-- convo-log:end -->\n?", re.S)  # old install.sh
 MANAGED_CMD = re.compile(r"\.agents/(?:bin|tools)/|tools/convo-log")  # hook commands kit_ap owns
 MODULE_META = {"module.json", "instructions.md", "hooks"}  # module entries that are not vendored as files
-CHECK_TTL = 6 * 3600
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CHECK_TTL = 6 * 3600       # how long a successful update check is reused by the session-start hook
+CHECK_FAIL_TTL = 30 * 60   # ...and a failed (e.g. offline) one, so sessions don't each wait for the timeout
+HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 GIT_ENV = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
 
 
 class Fail(Exception):
-    pass
+    """An expected failure: reported as one line, exit status 1."""
 
 
 # ---------------------------------------------------------------- helpers
@@ -48,6 +44,8 @@ def git(*args, cwd=None, timeout=None):
         r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, timeout=timeout, env=GIT_ENV)
     except subprocess.TimeoutExpired:
         return 1, "", "timed out"
+    except FileNotFoundError:
+        raise Fail("git is not installed") from None
     return r.returncode, r.stdout.strip(), r.stderr.strip()
 
 
@@ -123,29 +121,47 @@ def cache_dir(source):
 
 
 def fetch(source, ref=DEFAULT_REF, commit=None):
-    """Check out the kit at `commit` (or the tip of `ref`) in the local cache; return its path."""
+    """Check out the kit at `commit`, or at `ref` (a branch or a tag), in the local cache; return its path."""
     if os.path.isdir(source):
         source = os.path.abspath(source)
     d = cache_dir(source)
     if os.path.isdir(os.path.join(d, ".git")):
-        code, _, err = git("fetch", "--quiet", "--force", "origin", cwd=d)
+        code, _, err = git("fetch", "--quiet", "--force", "--tags", "origin", cwd=d)
     else:
         shutil.rmtree(d, ignore_errors=True)
         code, _, err = git("clone", "--quiet", source, d)
     if code:
         raise Fail(f"cannot fetch kit from {source}: {err}")
-    target = commit or f"origin/{ref}"
+    target = commit
+    if not target:
+        for candidate in (f"origin/{ref}", f"refs/tags/{ref}"):
+            if git("rev-parse", "--verify", "--quiet", candidate + "^{commit}", cwd=d)[0] == 0:
+                target = candidate
+                break
+        else:
+            raise Fail(f"{source} has no branch or tag named {ref}")
     code, _, err = git("checkout", "--quiet", "--detach", target, cwd=d)
     if code:
         raise Fail(f"cannot check out {target} from {source}: {err}")
     return d
 
 
+def canonical_source(source):
+    """The current URL for a source the kit knows under an earlier name (the repo was renamed); else unchanged."""
+    return DEFAULT_SOURCE if source in FORMER_SOURCES else source
+
+
 def kit_info(kit):
+    """Where this kit checkout came from and which commit it is at.
+
+    The source is the checkout itself (not its remote) when its state isn't reproducible from the remote:
+    uncommitted changes, or a HEAD no remote branch contains. Otherwise add/remove couldn't re-fetch it."""
     _, url, _ = git("remote", "get-url", "origin", cwd=kit)
     _, commit, _ = git("rev-parse", "HEAD", cwd=kit)
     _, dirty, _ = git("status", "--porcelain", cwd=kit)
-    return {"source": url or kit, "commit": commit or None, "dirty": bool(dirty)}
+    on_remote = bool(url) and bool(git("branch", "-r", "--contains", "HEAD", cwd=kit)[1])
+    source = canonical_source(url) if on_remote and not dirty else os.path.abspath(kit)
+    return {"source": source, "commit": commit or None, "dirty": bool(dirty)}
 
 
 def load_modules(kit):
@@ -163,6 +179,7 @@ def load_modules(kit):
 def resolve(mods, wanted):
     """`core` plus the wanted modules and their dependencies, dependencies first."""
     order = []
+
     def visit(name, chain):
         if name not in mods:
             raise Fail(f"unknown module: {name} (see `kit_ap list`)")
@@ -173,6 +190,7 @@ def resolve(mods, wanted):
         for dep in mods[name].get("requires", []):
             visit(dep, chain + [name])
         order.append(name)
+
     for name in ["core", *wanted]:
         visit(name, [])
     return order
@@ -187,19 +205,20 @@ def module_files(m):
             dirnames[:] = [d for d in dirnames if d not in MODULE_META]
             filenames = [f for f in filenames if f not in MODULE_META]
         for fn in filenames:
-            if fn in (".DS_Store",) or fn.endswith(".pyc"):
+            if fn == ".DS_Store" or fn.endswith(".pyc"):
                 continue
             out[os.path.normpath(os.path.join(AGENTS_DIR, rel_dir, fn))] = os.path.join(dirpath, fn)
     return out
 
 
-# ---------------------------------------------------------------- applying modules to a repo
+# ---------------------------------------------------------------- computing a repo's new state
 
-def merge_claude_hooks(repo, add):
-    path = os.path.join(repo, ".claude", "settings.json")
+def merged_settings(repo, add):
+    """.claude/settings.json with kit_ap's hooks replaced by `add`; None if the file needn't exist."""
+    path = os.path.join(repo, SETTINGS)
     cur = read_json(path)
     if cur is None and os.path.exists(path) and os.path.getsize(path):
-        raise Fail(f"cannot parse {path}; fix it and re-run")
+        raise Fail(f"cannot parse {SETTINGS}; fix it and re-run")
     cur = cur or {}
     hooks = cur.get("hooks") or {}
     for event in list(hooks):
@@ -218,32 +237,34 @@ def merge_claude_hooks(repo, add):
         cur["hooks"] = hooks
     else:
         cur.pop("hooks", None)
-    if cur or os.path.exists(path):
-        write_json(path, cur)
+    return json.dumps(cur, indent=2) + "\n" if cur or os.path.exists(path) else None
 
 
-def upsert_block(path, block):
-    text = LEGACY_BLOCK_RE.sub("", read_text(path))
-    if BLOCK_RE.search(text):
-        text = BLOCK_RE.sub(lambda _: block, text, count=1)
-    else:
-        text = (text.rstrip() + "\n\n" if text.strip() else "") + block
-    write_text(path, text)
+def agents_md(repo, block):
+    """AGENTS.md with the managed block inserted or replaced. Refuses to guess if the markers are damaged."""
+    text = LEGACY_BLOCK_RE.sub("", read_text(os.path.join(repo, "AGENTS.md")))
+    starts, ends = text.count(START), text.count(END)
+    if (starts, ends) == (0, 0):
+        return (text.rstrip() + "\n\n" if text.strip() else "") + block
+    if (starts, ends) != (1, 1) or text.index(START) > text.index(END):
+        raise Fail(f"AGENTS.md has {starts} `{START}` and {ends} `{END}` marker(s); expected one of each, "
+                   "in that order. Fix them by hand so nothing outside the block is lost, then re-run.")
+    return BLOCK_RE.sub(lambda _: block, text, count=1)
 
 
-def ensure_claude_import(repo):
-    """CLAUDE.md must pull in AGENTS.md (Claude Code doesn't read AGENTS.md on its own)."""
+def claude_md(repo):
+    """CLAUDE.md importing AGENTS.md (Claude Code doesn't read AGENTS.md on its own); None if no change is needed."""
     path, agents = os.path.join(repo, "CLAUDE.md"), os.path.join(repo, "AGENTS.md")
     if os.path.exists(path) and os.path.realpath(path) == os.path.realpath(agents):
-        return  # CLAUDE.md is a symlink to AGENTS.md
+        return None  # CLAUDE.md is a symlink to AGENTS.md
     text = LEGACY_BLOCK_RE.sub("", read_text(path))
     if not re.search(r"^@AGENTS\.md\s*$", text, re.M):
         text = "@AGENTS.md\n" + ("\n" + text.lstrip("\n") if text.strip() else "")
-    write_text(path, text)
+    return text
 
 
 def render_block(mods, order, source):
-    parts = [START + f"\n<!-- Managed by KIT Adaptive Preregistration ({source}). Don't edit between these markers: "
+    parts = [START + f"\n<!-- Managed by {NAME} ({source}). Don't edit between these markers: "
                      "change the kit, then run `.agents/bin/kit_ap update`. -->"]
     for name in order:
         text = read_text(os.path.join(mods[name]["dir"], "instructions.md")).strip()
@@ -253,30 +274,12 @@ def render_block(mods, order, source):
     return "\n\n".join(parts) + "\n"
 
 
-def commit_changes(repo, paths, message):
-    """Commit only the paths kit_ap touched; other staged or unstaged work in the repo is left as it was."""
-    paths = sorted(p for p in set(paths) if os.path.lexists(os.path.join(repo, p))
-                   or git("ls-files", "--error-unmatch", "--", p, cwd=repo)[0] == 0)
-    if not paths:
-        return
-    code, _, err = git("add", "-A", "--", *paths, cwd=repo)
-    if code:
-        print(f"kit_ap: couldn't stage the changes ({err}); commit them yourself")
-        return
-    if git("diff", "--cached", "--quiet", "--", *paths, cwd=repo)[0] == 0:
-        return  # nothing changed
-    code, _, err = git("commit", "--quiet", "-m", message, "--", *paths, cwd=repo)
-    if code:
-        print(f"kit_ap: changes are staged but the commit failed:\n  {err}\nFix that, then: git commit -m {json.dumps(message.splitlines()[0])}")
-    else:
-        print(f"kit_ap: committed \"{message.splitlines()[0]}\"")
-
-
-def apply(kit, repo, wanted, force=False, ref=None, message=None):
+def plan(kit, repo, wanted, old, force):
+    """Everything apply() will write, computed and validated before anything on disk changes."""
     mods = load_modules(kit)
     order = resolve(mods, wanted)
     info = kit_info(kit)
-    old = read_lock(repo) or {}
+
     edited = modified_files(repo, old)
     if edited and not force:
         raise Fail("managed files were edited in this repo:\n  " + "\n  ".join(edited) +
@@ -296,29 +299,77 @@ def apply(kit, repo, wanted, force=False, ref=None, message=None):
         for event, groups in (read_json(os.path.join(m["dir"], "hooks", "claude.json"), {}).get("hooks") or {}).items():
             claude_hooks.setdefault(event, []).extend(groups)
 
-    touched = [".claude/settings.json", "AGENTS.md", "CLAUDE.md", LOCK]
-    for rel in (old.get("files") or {}):
-        if rel not in files and os.path.exists(os.path.join(repo, rel)):
+    managed = set(old.get("files") or {})
+    clobbered = [rel for rel, src in sorted(files.items())
+                 if rel not in managed and os.path.isfile(os.path.join(repo, rel))
+                 and sha256(os.path.join(repo, rel)) != sha256(src)]
+    if clobbered and not force:
+        raise Fail("these files already exist and aren't managed by kit_ap:\n  " + "\n  ".join(clobbered) +
+                   "\nMove them aside, or re-run with --force to replace them.")
+
+    return {
+        "mods": mods, "order": order, "info": info, "files": files,
+        "remove": sorted(rel for rel in managed if rel not in files),
+        "texts": {  # repo-relative path -> new content (None: leave as is)
+            SETTINGS: merged_settings(repo, claude_hooks),
+            "AGENTS.md": agents_md(repo, render_block(mods, order, info["source"])),
+            "CLAUDE.md": claude_md(repo),
+        },
+    }
+
+
+# ---------------------------------------------------------------- applying it
+
+def commit_changes(repo, paths, message):
+    """Commit only the paths kit_ap touched; other staged or unstaged work in the repo is left as it was."""
+    paths = sorted(p for p in set(paths)
+                   if (os.path.lexists(os.path.join(repo, p)) or git("ls-files", "--error-unmatch", "--", p, cwd=repo)[0] == 0)
+                   and git("check-ignore", "-q", "--", p, cwd=repo)[0] != 0)
+    if not paths:
+        return
+    code, _, err = git("add", "-A", "--", *paths, cwd=repo)
+    if code:
+        print(f"kit_ap: couldn't stage the changes ({err}); commit them yourself")
+        return
+    if git("diff", "--cached", "--quiet", "--", *paths, cwd=repo)[0] == 0:
+        return  # nothing changed
+    code, _, err = git("commit", "--quiet", "-m", message, "--", *paths, cwd=repo)
+    if code:
+        print(f"kit_ap: changes are staged but the commit failed:\n  {err}\n"
+              f"Fix that, then: git commit -m {json.dumps(message.splitlines()[0])}")
+    else:
+        print(f"kit_ap: committed \"{message.splitlines()[0]}\"")
+
+
+def apply(kit, repo, wanted, force=False, ref=None, message=None):
+    old = read_lock(repo) or {}
+    p = plan(kit, repo, wanted, old, force)
+    info, order = p["info"], p["order"]
+    touched = [LOCK]
+
+    for rel in p["remove"]:
+        if os.path.exists(os.path.join(repo, rel)):
             os.remove(os.path.join(repo, rel))
             prune_empty(repo, os.path.dirname(rel))
             touched.append(rel)
-    legacy = os.path.join(repo, ".github", "hooks", "convo-log.json")
-    if "tools/convo-log" in read_text(legacy):
-        os.remove(legacy)
-        touched.append(os.path.relpath(legacy, repo))
+    legacy = os.path.join(".github", "hooks", "convo-log.json")
+    if "tools/convo-log" in read_text(os.path.join(repo, legacy)):
+        os.remove(os.path.join(repo, legacy))
+        touched.append(legacy)
 
     hashes = {}
-    for rel, src in sorted(files.items()):
+    for rel, src in sorted(p["files"].items()):
         dst = os.path.join(repo, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copyfile(src, dst)
         shutil.copymode(src, dst)
         hashes[rel] = sha256(dst)
-
-    merge_claude_hooks(repo, claude_hooks)
-    upsert_block(os.path.join(repo, "AGENTS.md"), render_block(mods, order, info["source"]))
-    ensure_claude_import(repo)
-    write_json(os.path.join(repo, LOCK), {
+        touched.append(rel)
+    for rel, text in p["texts"].items():
+        if text is not None:
+            write_text(os.path.join(repo, rel), text)
+            touched.append(rel)
+    write_json(os.path.join(repo, LOCK), {  # last, so an interrupted run never looks complete
         "source": info["source"], "ref": ref or old.get("ref") or DEFAULT_REF,
         "commit": info["commit"], "dirty": info["dirty"], "modules": order, "files": hashes})
 
@@ -326,13 +377,13 @@ def apply(kit, repo, wanted, force=False, ref=None, message=None):
     print(f"kit_ap: {repo} now at {short}; modules: {', '.join(order)}")
     for name in order:
         if name not in (old.get("modules") or []):
-            for note in mods[name].get("notes", []):
+            for note in p["mods"][name].get("notes", []):
                 print(f"  [{name}] {note.replace('{repo}', repo)}")
     for legacy_file in ("tools/convo-log", "CONVERSATIONS.md"):
         if os.path.exists(os.path.join(repo, legacy_file)) and "convo-log" in order:
             print(f"  note: {legacy_file} is from the old install.sh and now lives in .agents/; delete it")
     if message:
-        commit_changes(repo, touched + list(hashes), f"{message}\n\nKit: {info['source']} @ {short}")
+        commit_changes(repo, touched, f"{message}\n\nKit: {info['source']} @ {short}")
     else:
         print("Review and commit: git add .agents AGENTS.md CLAUDE.md .claude .github")
 
@@ -353,7 +404,7 @@ def installed_kit(lock):
     """The kit version a repo is pinned to, so add/remove never change the version of other modules."""
     if lock.get("dirty") and os.path.isdir(lock["source"]) and is_kit(lock["source"]):
         return lock["source"]  # installed from a local working tree; its commit alone isn't the full picture
-    return fetch(lock["source"], lock.get("ref", DEFAULT_REF), lock.get("commit"))
+    return fetch(canonical_source(lock["source"]), lock.get("ref", DEFAULT_REF), lock.get("commit"))
 
 
 def require_lock(repo):
@@ -364,32 +415,40 @@ def require_lock(repo):
 
 
 def latest_commit(repo, lock, use_cache):
+    """The commit `ref` (branch or tag) points to at the kit's source, or None if it can't be reached."""
     ref = lock.get("ref", DEFAULT_REF)
     _, gd, _ = git("rev-parse", "--git-common-dir", cwd=repo)
     cache = os.path.join(repo, gd or ".git", "kit_ap-check.json")
-    key = f"{lock['source']}#{ref}"
+    source = canonical_source(lock["source"])
+    key = f"{source}#{ref}"
     c = read_json(cache, {})
-    if use_cache and c.get("key") == key and time.time() - c.get("ts", 0) < CHECK_TTL:
-        return c.get("sha")
-    code, out, _ = git("ls-remote", lock["source"], f"refs/heads/{ref}", timeout=5)
-    sha = out.split()[0] if code == 0 and out else None
-    if sha:
-        try:
-            write_json(cache, {"key": key, "ts": time.time(), "sha": sha})
-        except OSError:
-            pass
+    if use_cache and c.get("key") == key:
+        age = time.time() - c.get("ts", 0)
+        if age < (CHECK_TTL if c.get("sha") else CHECK_FAIL_TTL):
+            return c.get("sha")
+    code, out, _ = git("ls-remote", source, f"refs/heads/{ref}", f"refs/tags/{ref}", f"refs/tags/{ref}^{{}}",
+                       timeout=5)
+    refs = dict(reversed(line.split("\t", 1)) for line in out.splitlines() if "\t" in line) if code == 0 else {}
+    sha = refs.get(f"refs/heads/{ref}") or refs.get(f"refs/tags/{ref}^{{}}") or refs.get(f"refs/tags/{ref}")
+    try:
+        write_json(cache, {"key": key, "ts": time.time(), "sha": sha})
+    except OSError:
+        pass
     return sha
 
 
 # ---------------------------------------------------------------- commands
 
 def cmd_list(a):
-    kit = HERE if is_kit(HERE) else fetch(a.source or DEFAULT_SOURCE)
     lock = None
     try:
         lock = read_lock(repo_root("."))
     except Fail:
         pass
+    if is_kit(HERE) and not a.source:
+        kit = HERE
+    else:
+        kit = fetch(a.source or canonical_source((lock or {}).get("source") or DEFAULT_SOURCE))
     have = set((lock or {}).get("modules") or [])
     for name, m in load_modules(kit).items():
         flags = ("installed " if name in have else "") + ("default " if m.get("default") else "")
@@ -399,11 +458,19 @@ def cmd_list(a):
 
 def cmd_init(a):
     repo = repo_root(a.repo)
-    if read_lock(repo) and not a.force:
+    old = read_lock(repo)
+    if old and not a.force:
         raise Fail("kit_ap is already installed here; use `add`, `remove` or `update` (or --force)")
-    kit = fetch(a.source, a.ref or DEFAULT_REF) if a.source else HERE if is_kit(HERE) else fetch(DEFAULT_SOURCE, a.ref or DEFAULT_REF)
-    wanted = [m for m in a.modules.split(",") if m] if a.modules is not None else \
-        [n for n, m in load_modules(kit).items() if m.get("default")]
+    if a.source:
+        kit = fetch(a.source, a.ref or DEFAULT_REF)
+    else:
+        kit = HERE if is_kit(HERE) else fetch(DEFAULT_SOURCE, a.ref or DEFAULT_REF)
+    if a.modules is not None:
+        wanted = [m for m in a.modules.split(",") if m]
+    elif old:
+        wanted = old.get("modules") or []  # re-init keeps what's installed
+    else:
+        wanted = [n for n, m in load_modules(kit).items() if m.get("default")]
     run_apply(kit, repo, wanted, a.force, a.ref, None if a.no_commit else f"Add {NAME}")
 
 
@@ -434,23 +501,25 @@ def cmd_update(a):
     repo = repo_root(a.repo)
     lock = require_lock(repo)
     ref = a.ref or lock.get("ref", DEFAULT_REF)
-    kit = fetch(lock["source"], ref)
+    source = canonical_source(lock["source"])
+    kit = fetch(source, ref)
     new = kit_info(kit)["commit"]
-    if new == lock.get("commit") and not lock.get("dirty") and not a.force:
+    if new == lock.get("commit") and source == lock["source"] and not lock.get("dirty") and not a.force:
         edited = modified_files(repo, lock)
         print("kit_ap: already up to date" + (f"; edited managed files: {', '.join(edited)}" if edited else ""))
         return
+    # The update runs the fetched kit's own code, so say exactly what that is.
+    print(f"kit_ap: updating from {source} ({ref}): {(lock.get('commit') or '?')[:7]} -> {new[:7]}")
+    if source != lock["source"]:
+        print(f"kit_ap: the kit repo was renamed; recording {source} instead of {lock['source']}")
+    if source != DEFAULT_SOURCE:
+        print(f"kit_ap: note: this repo's kit source isn't the default ({DEFAULT_SOURCE}); only continue if you trust it.")
     run_apply(kit, repo, lock["modules"], a.force, ref, None if a.no_commit else f"Update {NAME} to {new[:7]}")
 
 
-def cmd_check(a):
-    try:
-        repo = repo_root(a.repo)
-        lock = require_lock(repo)
-    except Fail:
-        if a.hook:
-            return 0
-        raise
+def check(a):
+    repo = repo_root(a.repo)
+    lock = require_lock(repo)
     msgs = []
     edited = modified_files(repo, lock)
     if edited:
@@ -472,6 +541,15 @@ def cmd_check(a):
     return 1 if msgs else 0
 
 
+def cmd_check(a):
+    if not a.hook:
+        return check(a)
+    try:  # session-start hook: never fail, never print a traceback into the agent's context
+        return check(a)
+    except Exception:
+        return 0
+
+
 def cmd_status(a):
     repo = repo_root(a.repo)
     lock = require_lock(repo)
@@ -479,7 +557,7 @@ def cmd_status(a):
     print(f"commit:   {lock.get('commit')}" + (" + uncommitted changes" if lock.get("dirty") else ""))
     print(f"modules:  {', '.join(lock['modules'])}")
     a.hook = False
-    return cmd_check(a)
+    return check(a)
 
 
 def cmd_apply(a):
@@ -488,27 +566,48 @@ def cmd_apply(a):
 
 def main():
     ap = argparse.ArgumentParser(prog="kit_ap", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("list", help="modules in the kit"); p.add_argument("--source"); p.set_defaults(fn=cmd_list)
-    p = sub.add_parser("init", help="install into a repo")
-    p.add_argument("repo", nargs="?", default="."); p.add_argument("--modules", help="comma-separated (default: the kit's defaults)")
-    p.add_argument("--source", help="kit git URL or path (default: this checkout)"); p.add_argument("--ref")
-    p.add_argument("--force", action="store_true"); p.add_argument("--no-commit", action="store_true", help="leave the changes uncommitted"); p.set_defaults(fn=cmd_init)
-    for name, fn in (("add", cmd_add), ("remove", cmd_remove)):
-        p = sub.add_parser(name, help=f"{name} modules")
-        p.add_argument("modules", nargs="+"); p.add_argument("--repo", default=".")
-        p.add_argument("--force", action="store_true"); p.add_argument("--no-commit", action="store_true", help="leave the changes uncommitted"); p.set_defaults(fn=fn)
-    p = sub.add_parser("update", help="pull the latest kit and re-apply")
-    p.add_argument("repo", nargs="?", default="."); p.add_argument("--ref"); p.add_argument("--force", action="store_true")
-    p.add_argument("--no-commit", action="store_true", help="leave the changes uncommitted"); p.set_defaults(fn=cmd_update)
-    for name, fn in (("check", cmd_check), ("status", cmd_status)):
-        p = sub.add_parser(name); p.add_argument("repo", nargs="?", default=".")
-        p.add_argument("--hook", action="store_true", help="session-start mode: quiet, cached, never fails")
+    sub = ap.add_subparsers(dest="cmd", required=True, metavar="COMMAND")
+
+    def command(name, fn, help, repo="positional"):
+        p = sub.add_parser(name, help=help, description=help)
+        if repo == "positional":
+            p.add_argument("repo", nargs="?", default=".", help="the repo to act on (default: current directory)")
+        elif repo == "option":
+            p.add_argument("--repo", default=".", help="the repo to act on (default: current directory)")
         p.set_defaults(fn=fn)
-    p = sub.add_parser("_apply")  # internal: used by update to run the fetched kit's own CLI
-    p.add_argument("repo"); p.add_argument("--kit", required=True); p.add_argument("--modules", default="")
-    p.add_argument("--ref"); p.add_argument("--force", action="store_true"); p.add_argument("--message")
+        return p
+
+    def changes(p):
+        p.add_argument("--force", action="store_true", help="overwrite managed or pre-existing files that differ")
+        p.add_argument("--no-commit", action="store_true", help="leave the changes uncommitted")
+
+    p = command("list", cmd_list, "list the kit's modules", repo=None)
+    p.add_argument("--source", help="kit git URL or path to list from")
+    p = command("init", cmd_init, "install the kit into a repo")
+    p.add_argument("--modules", help="comma-separated modules (default: the kit's defaults; on re-init, what's installed)")
+    p.add_argument("--source", help="kit git URL or path (default: this checkout, else the public kit)")
+    p.add_argument("--ref", help="branch or tag of the kit to follow (default: main)")
+    changes(p)
+    for name, fn in (("add", cmd_add), ("remove", cmd_remove)):
+        p = command(name, fn, f"{name} modules", repo="option")
+        p.add_argument("modules", nargs="+", metavar="MODULE")
+        changes(p)
+    p = command("update", cmd_update, "pull the latest kit and re-apply it")
+    p.add_argument("--ref", help="switch to following this branch or tag")
+    changes(p)
+    for name, fn, help in (("check", cmd_check, "is the kit out of date, or were managed files edited?"),
+                           ("status", cmd_status, "installed version and modules, plus check")):
+        p = command(name, fn, help)
+        p.add_argument("--hook", action="store_true", help="session-start mode: quiet, cached, never fails")
+    p = sub.add_parser("_apply")  # internal: update runs the fetched kit's own CLI through this
+    p.add_argument("repo")
+    p.add_argument("--kit", required=True)
+    p.add_argument("--modules", default="")
+    p.add_argument("--ref")
+    p.add_argument("--force", action="store_true")
+    p.add_argument("--message")
     p.set_defaults(fn=cmd_apply)
+
     a = ap.parse_args()
     try:
         sys.exit(a.fn(a) or 0)
