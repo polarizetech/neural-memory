@@ -3,6 +3,7 @@ global-gain switches, per-cell recording, and the analytic receptor pools. Rate 
 Nothing here reads a recognition or retention result."""
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from neurotape.experiments.habituation import _merge
 from neurotape.habituation import analytic as A
@@ -20,11 +21,11 @@ def small(**over) -> HabConfig:
 
 
 def test_new_switches_validate():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         small(ffinh=dict(plastic=True, eta=0.01))                 # plastic needs on
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         small(ffinh=dict(on=True, plastic=True, eta=0.0))          # would never learn
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         small(receptor=dict(on=True, k_rate=1.0))                  # unknown key
 
 

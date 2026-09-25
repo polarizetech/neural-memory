@@ -155,3 +155,19 @@ At 0.03 Hz, fast-forwarded gaps give D −0.0220 (identical to SR2), and directl
 Per-seed SD is 0.065 and 0.069. Both are zero within noise, and fast-forward vs direct differ by 0.007, well
 inside it. The fast-forward is **not** the cause of SR2's unresolved slow-rate decrement: the decrement there is
 below the floor of a single-first-response measurement at 10 seeds.
+
+## Post-close review — 2026-09-25
+
+A review of the analysis (docs/REVIEW.md) found two things. Nothing above is edited.
+
+1. **The "MDE" in DEVIATIONS #1 has no power term.** t(0.975, 9)·SD/√10 is the 95 % CI half-width, i.e. the
+   effect detectable with about 50 % power. With 80 % power the values rise about 1.39×, to 4.9 % (`std`) and
+   1.7 % (`hebb_only`). No verdict changes: SR3-`std` stays UNINTERPRETABLE and SR3-`hebb_only`'s +20 dB effect
+   (−3.46 %) still exceeds it.
+2. **The SR2 bootstrap intervals are conditional.** Resamples whose mean decrement is ≤ 0 are dropped before
+   taking percentiles (for `std|shuffled`, 1624 of 2000 survive), so those intervals are conditioned on a
+   positive decrement and biased upward. They were reported as controls, not verdicts.
+3. **SR2 `hebb_only` has no time-matched control.** The Hebbian factor erodes in silence (docs/REVIEW.md, R1):
+   at 0.03 Hz the 500 s train alone costs about 25 % efficacy. The "slightly more decrement at low rates"
+   (−1.26 dB/decade) is therefore plausibly an erosion artefact, not a rate effect. SR1 is time-matched and is not
+   affected.

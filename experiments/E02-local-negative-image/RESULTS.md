@@ -180,3 +180,29 @@ E02 is closed. A follow-up would be a new experiment, and would change:
    stimulus pair) before asking any specificity question of depletion again.
 5. **For Stentor:** add the hard output threshold that R&M's model relies on, as a switchable readout, and test
    whether it alone rescues the untrained baseline under the block.
+
+## Post-close review — 2026-09-25
+
+An independent review of the analysis (docs/REVIEW.md) found four things. Nothing above is edited; these notes
+qualify it.
+
+1. **The MDE rule has two readings, and the literal one changes six cells** (DEVIATIONS #3). PREREG §3 says "an
+   effect under the MDE is UNINTERPRETABLE, never FAIL"; `analyse.py` implements the narrower "FAIL needs
+   MDE ≤ SESOI". With each criterion's own MDE and the literal reading, **P2b becomes UNINTERPRETABLE in all four
+   cells** (means −0.019…−0.001 against MDEs 0.022–0.035) and **P4b massed at 3600 s and 5400 s become
+   UNINTERPRETABLE** (0.003 vs 0.009; 0.014 vs 0.014). **The overall FAIL stands on P4a** (+0.040 against an MDE of
+   0.002), which is FAIL under either reading.
+2. **"No specific retention at any delay or overlap" (§1) is per cell, uncorrected.** Across the 54 map cells the
+   largest 95 % upper bound is 0.043; with a Bonferroni correction it is 0.066, above the SESOI. The simultaneous
+   statement is weaker than §1 reads.
+3. **§4's last sentence over-reaches.** P2b's robustness was not assessed on the sensitivity runs (n = 4), so "no
+   headline verdict's point estimate crosses its threshold" applies to P2c and P4b massed only.
+4. **"Removal separates B from H" (§6) was inferred from two separate CIs**, B's excluding 0 and H's including it,
+   not from a B − H contrast. The CIs do not overlap, but no paired B − H test was run.
+5. **Arm H's spaced − massed difference (−0.20) is confounded** (docs/REVIEW.md, R1). H's Hebbian factor starts at
+   1 and erodes in silence, so its control after the 2 h spaced schedule is far weaker (control response to A 989
+   spikes at 2 s, against 2106 massed). B's and R's comparisons start from their true steady states and stand;
+   "spaced training beats massed in no arm" rests on B and R.
+6. **Arm R, spaced: "the driven response falls below its spontaneous count"** comes from subtracting the naive
+   network's spontaneous count. The blocked control went nearly silent (about 4 spikes in 1.5 s), and that
+   subtraction is what makes P4b-spaced undefined. P4c is FAIL on total counts too (−0.72 at 5400 s, massed).

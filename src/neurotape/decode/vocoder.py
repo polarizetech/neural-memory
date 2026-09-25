@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import numpy as np
 import soundfile as sf
-from scipy import signal
 
 from ..config import Frontend
 from .. frontend.filterbank import _band_filter

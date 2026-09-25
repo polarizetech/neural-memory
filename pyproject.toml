@@ -7,6 +7,7 @@ name = "neurotape"
 version = "0.1.0"
 description = "Falsification testbed: encode simultaneous waveforms into a spiking network with synaptic tagging and capture, and try to play them back from network activity alone."
 requires-python = ">=3.11"
+license = "MIT"
 dependencies = [
     "brian2>=2.7",
     "numpy>=1.26,<2",  # brian2 2.9.0 wraps np.ndarray.ptp, removed in numpy 2
@@ -18,7 +19,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4"]
+dev = ["pytest>=7.4", "ruff>=0.6"]
 
 [project.scripts]
 neurotape = "neurotape.cli:main"
@@ -29,3 +30,30 @@ packages = ["src/neurotape"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["slow: builds and runs a (small) network; tens of seconds"]
+
+# Lint: correctness only (same tiers as the audio-projects monorepo's ruff.toml). No style rules, no formatter.
+[tool.ruff]
+line-length = 120          # advisory; E501 not selected
+target-version = "py311"
+extend-exclude = ["docs/repro/reference_build"]
+
+[tool.ruff.lint]
+select = ["F", "E9", "B", "PLE", "PLR0124", "NPY", "DTZ", "RUF"]
+ignore = [
+    "E402",                    # sys.path set-up before imports in the experiment entry points
+    "B008", "B007", "RUF100",
+    "RUF001", "RUF002", "RUF003",   # deliberate unicode (µ, ×, −, ≥) in docstrings and labels
+    "RUF005", "RUF012", "RUF022", "RUF046", "RUF059",
+    "F541",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# B023: every flagged closure is defined and called inside the same loop iteration (checked site by site,
+# 2026-09-24), which is safe. Re-check before silencing a new file here.
+"src/neurotape/experiments/suite.py" = ["B023"]
+"src/neurotape/experiments/diagnostic.py" = ["B023"]
+"src/neurotape/frontend/brainstem.py" = ["B023"]
+"docs/repro/make_report.py" = ["B023"]
+# Closed, preregistered experiment scripts are frozen at their -prereg tag and are never edited; their lint
+# findings are listed in docs/REVIEW.md instead.
+"experiments/**" = ["ALL"]
