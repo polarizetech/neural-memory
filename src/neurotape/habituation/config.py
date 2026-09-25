@@ -70,6 +70,49 @@ class LongTerm(_Strict):
     post_tau_ms: float = 100.0              # postsynaptic activity trace
 
 
+class FFInh(_Strict):
+    """Feedforward inhibition: relay -> FF (tonotopic LIF inhibitory cells) -> E. model-v0.2.0, E02.
+
+    The FF->E conductance is W_fe * G, with G a per-synapse multiplier starting at g0 (NON-ZERO: removing a pathway
+    that starts at zero is not a manipulation). With `plastic`, G follows the inhibitory STDP rule of Vogels et al.
+    2011 (Science 10.1126/science.1211095; equation from background knowledge, abstract read): on an FF spike,
+    G += eta (x_post - alpha); on an E spike, G += eta x_pre; traces decay with tau_stdp and step by 1 per spike;
+    alpha = 2 rho0 tau_stdp, rho0 = the network's MEASURED spontaneous E rate (set by make_sim). At the default
+    operating point FF cells are silent at rest, so silence cannot move G except by its relaxation toward g0 (which
+    is what the fast-forward does). Synapses whose E cell fires above rho0 while their FF cell is active
+    potentiate: a learned, stimulus-specific negative image. G relaxes to g0 with tau_s. Off by default."""
+    on: bool = False
+    n_ff: int = Field(50, ge=2)
+    tonotopic_sigma_oct: float = 0.3
+    w_rf_nS: float = 0.6                    # relay->FF peak conductance (no short-term depression on this path)
+    w_fe_nS: float = 0.3                    # FF->E peak conductance at G = 1
+    g0: float = Field(1.0, gt=0)            # initial (and resting) multiplier
+    plastic: bool = False
+    eta: float = 0.0
+    tau_stdp_ms: float = 20.0               # Vogels et al. 2011 [BG]
+    tau_s: float = 3600.0                   # relaxation of G toward g0 (matched to longterm.tau_s)
+    G_max: float = 20.0
+
+
+class Receptor(_Strict):
+    """Postsynaptic receptor inactivation on relay->E synapses (Rajan & Marshall 2025, Curr Biol
+    10.1016/j.cub.2025.05.071, [FT]). model-v0.2.0, E02.
+
+    Per relay fibre (every synapse of a fibre sees the same release, so per-synapse pools would be identical):
+    surface S (the efficacy multiplier) and internalised I. On release `rel`: k_int*rel*S moves S -> I. Between:
+        dS/dt = k_syn - k_deg S + k_rec I          dI/dt = -(k_rec + k_deg + k_des) I
+    (their eq. 2 prints -(k_rec - k_deg + k_des); the text says both pools degrade at k_deg, so +k_deg is used).
+    Rates are theirs, read PER MINUTE (stimuli were one per minute; the paper gives no unit) and converted to /s.
+    k_syn is DERIVED so the naive network under spontaneous release sits at S = 1. `synthesis_scale` multiplies
+    k_syn (the synthesis block). Off by default."""
+    on: bool = False
+    k_int: float = Field(2e-4, ge=0)        # fraction of surface receptors internalised per unit release [ARBITRARY]
+    k_rec_per_min: float = 0.1
+    k_deg_per_min: float = 0.02
+    k_des_per_min: float = 0.005
+    synthesis_scale: float = Field(1.0, ge=0)
+
+
 class Salience(_Strict):
     """A global LC-like signal NM(t). Step 3."""
     # off     : NM = 0
@@ -135,6 +178,8 @@ class HabConfig(_Strict):
     periphery: Periphery = Periphery()
     depression: Depression = Depression()
     longterm: LongTerm = LongTerm()
+    ffinh: FFInh = FFInh()
+    receptor: Receptor = Receptor()
     salience: Salience = Salience()
     network: Network = Network()
     protocol: Protocol = Protocol()
@@ -143,6 +188,10 @@ class HabConfig(_Strict):
     def _deps(self):
         if self.salience.eta_pot > 0 and self.longterm.mode != "hebbian":
             raise ValueError("salience.eta_pot writes the per-synapse L: it needs longterm.mode: hebbian")
+        if self.ffinh.plastic and not self.ffinh.on:
+            raise ValueError("ffinh.plastic needs ffinh.on")
+        if self.ffinh.plastic and self.ffinh.eta <= 0:
+            raise ValueError("ffinh.plastic with eta <= 0 would never learn")
         if self.salience.mode == "off" and (self.salience.eta_pot > 0):
             raise ValueError("salience.eta_pot > 0 with salience.mode off would never act")
         return self

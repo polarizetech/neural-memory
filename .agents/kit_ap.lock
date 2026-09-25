@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/polarizetech/kit-adaptive-preregistration.git",
   "ref": "main",
-  "commit": "1080b8ebfbe6e9a2b63367b22e760b7d022710e2",
+  "commit": "e64136a3e7a5e81ec919a685546006ceb758e3a9",
   "dirty": false,
   "modules": [
     "core",
