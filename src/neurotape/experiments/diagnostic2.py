@@ -17,7 +17,7 @@ import numpy as np
 
 from ..config import Config
 from . import common as C
-from .diagnostic import CONSOLIDATE_S, N_FOREIGN, N_PERM, REPLICATE, _job_cfg
+from .diagnostic import CONSOLIDATE_S, N_FOREIGN, N_PERM, _job_cfg
 
 BANK = C.ROOT / "results" / "frozen_bank"
 COMPONENTS = ("early", "late", "total")
@@ -159,7 +159,7 @@ def _condition(cfg: Config, seeds, workers, name: str, input_plastic: bool):
     from multiprocessing import get_context
     out = C.results_dir(f"storage_{name}")
     rule = cfg.model_copy(deep=True); rule.plasticity = type(rule.plasticity)(preset="gb2012_hippocampal_cal"); rule.mechanisms.input_plastic = input_plastic
-    bank = build_bank(cfg, seeds, workers)                    # cached; frozen activity does not depend on the rule
+    build_bank(cfg, seeds, workers)                           # builds the cache; frozen activity does not depend on the rule
     jobs = []
     for s in seeds:
         for kind in ("plastic", "plastic_off"):

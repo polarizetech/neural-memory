@@ -6,7 +6,6 @@ is no algorithmic winner-take-all anywhere.
 """
 from __future__ import annotations
 
-import shutil
 import tempfile
 import time
 from dataclasses import dataclass, field
@@ -14,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import brian2 as b2
-from brian2 import ms, mV, nS, pA, amp, second, Hz
+from brian2 import ms, mV, nS, pA, second
 
 from .config import Config
 from .coupling import gap as gapmod
@@ -114,7 +113,7 @@ def _activate(cfg: Config, build_dir: Path | None):
 def _pick_snapshots(snap, instants: dict) -> dict:
     t = np.array(snap.t / second); h, z = np.array(snap.h), np.array(snap.z)
     idx = [int(np.argmin(np.abs(t - v))) for v in instants.values()]
-    assert all(abs(t[k] - v) < 1e-6 for k, v in zip(idx, instants.values())), "a snapshot instant fell off the sample grid"
+    assert all(abs(t[k] - v) < 1e-6 for k, v in zip(idx, instants.values(), strict=True)), "a snapshot instant fell off the sample grid"
     return dict(labels=list(instants), t=t[idx], h=h[:, idx], z=z[:, idx])
 
 

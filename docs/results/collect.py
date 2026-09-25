@@ -1,10 +1,10 @@
 """Copy each experiment's REPORT/summary/runs/figures out of the gitignored results/ folder, and compute
 the ENCODE-side paired differences the ablation report does not print. Re-runnable."""
-import glob, json, shutil, sys
+import json, shutil, sys
 from pathlib import Path
 import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-from neurotape.experiments.common import ci95, paired_diff, fmt
+from neurotape.experiments.common import paired_diff, fmt
 
 HERE, RES = Path(__file__).parent, Path(__file__).resolve().parents[2] / "results"
 latest = {}

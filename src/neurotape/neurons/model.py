@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import numpy as np
 import brian2 as b2
-from brian2 import ms, mV, nS, pA, pF, nA, second, amp
+from brian2 import ms, mV, nS, pA, pF, nA, second
 
 from ..config import Config, NeuronParams
 

@@ -23,9 +23,6 @@ PASS CRITERIA -- written here before the sweep was ever run, from the paper's Re
 """
 from __future__ import annotations
 
-import shutil
-import tempfile
-from pathlib import Path
 
 import numpy as np
 from scipy import stats

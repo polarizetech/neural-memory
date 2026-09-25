@@ -3,6 +3,8 @@
 # CLAUDE.md — sim-neural-memory (the `neurotape` package)
 
 **Stage: SKETCH** (2026-09-20). A bench with no `serve.py`; nothing here is served.
+**PAUSED 2026-09-24.** Every finding across the project is mapped in [`docs/FINDINGS.md`](docs/FINDINGS.md);
+start there.
 
 **Its own repo since 2026-09-24** (`polarizetech/sim-neural-memory`, private). It was `projects/neurotape` in the
 `audio-projects` monorepo; the 32 commits of history came across by `git subtree split`, and the monorepo keeps a
@@ -37,7 +39,7 @@ frozen weights*; the echo state network **beats it at encoding** (0.730 vs 0.535
 [−0.222, −0.168]); Opus and AAC win by ~1.0 in r; salience gating shows no benefit. The mechanisms
 were engaged while failing — late-phase consolidation in 3.8 % of synapses (0 % with tagging off,
 2.5 % with NM flat), LOADED 17 % of encoding — so these are nulls, not no-ops.
-**The one clear positive:** which stream is dominant is recoverable from **rank position** (77 % vs a
+**The one clear positive** (qualified 2026-09-25, see `docs/FINDINGS.md`: rank is accumulated from the feedforward-dominated conductance during encoding, so it mostly reads the input; and recall delays are mislabelled by the probe durations): which stream is dominant is recoverable from **rank position** (77 % vs a
 57 % permutation null, 10/10 seeds), and rank beats the binary fired vector (66 %).
 **Lehr et al. 2022 sweep: 4/4 pre-registered criteria pass, qualitatively only** — core cells fire at
 the refractory limit (500 Hz) under the literally-read stimulus, so it reproduces the consolidation
@@ -137,6 +139,17 @@ all switches off reproduces a committed run bit-for-bit.
 1. NM was left non-zero before calibration.
 2. The Hebbian fast-forward under-estimated erosion in silence by ~30 %: release and the postsynaptic trace are
    correlated, so the factor is now measured.
+
+## Preregistered experiments (KIT Adaptive Preregistration; registry in `EXPERIMENTS.md`)
+
+- **E01-stentor-map — closed, FAIL** ([RESULTS](experiments/E01-stentor-map/RESULTS.md)). Slowing the slow pool's
+  recovery deepens the decrement (PASS) but moves the half-point later, not earlier as in Stentor; the untrained
+  control drains; no dishabituation anywhere.
+- **E02-local-negative-image — closed, FAIL** ([RESULTS](experiments/E02-local-negative-image/RESULTS.md)), on
+  model-v0.2.0. Depletion carries no specific retention at any delay or overlap (the least-overlapping sound still
+  overlaps at 0.59 in the auditory nerve). Learned feedforward inhibition (iSTDP) is fully reversed by removing its
+  pathway; H is untouched. Rajan & Marshall's receptor model at its own rates drains the untrained baseline under a
+  synthesis block. Spaced training beats massed in no arm. Known defect: a settle crash in plastic B (seed 0).
 
 ## Run
 

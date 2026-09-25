@@ -1,7 +1,7 @@
 """Gap junctions: measured coupling coefficient, and low-pass behaviour."""
 import numpy as np
 import brian2 as b2
-from brian2 import ms, pA, mV, second
+from brian2 import ms, pA, mV
 
 from neurotape.coupling.gap import conductance_for_cc, make_gap, ring_pairs
 from conftest import quiet_cfg, single_cell

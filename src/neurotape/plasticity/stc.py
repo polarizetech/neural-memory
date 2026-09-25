@@ -55,7 +55,7 @@ def plastic_model(cfg: Config) -> str:
     """The synapse equations, with the early-phase WRITE multiplied by a gate when any gating mechanism is on.
     With none on this returns PLASTIC_MODEL unchanged (hash-pinned). Every gate factor reads network-internal
     variables of the postsynaptic cell, except C6's, which is an evaluation mode and is labelled non-biological."""
-    m, g = cfg.mechanisms, cfg.mismatch_gate
+    m = cfg.mechanisms
     factors = []
     if m.mismatch_gate:
         mid = "lab_gain*lab_post" if m.lability_window else "1"     # mid regime: only the reactivated assembly is labile

@@ -26,6 +26,8 @@ Each key of VARIANTS removes ONE of them:
 """
 from __future__ import annotations
 
+import itertools
+
 import numpy as np
 
 from ..config import Config
@@ -195,7 +197,7 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
         return b
     import time as _time
     import brian2 as b2
-    from brian2 import ms, mV, nS, pA, nA, second
+    from brian2 import ms, mV, nS, second
     from ..network import _activate, _worker_build_dir
     from ..neurons import model as nmodel
     from ..plasticity import stc
@@ -330,7 +332,7 @@ def simulate(seed: int, recall: str, variant: str = "as_is", cue: str = "assembl
         if _init.get("creb") is not None and "creb" in E.variables:
             E.creb = _init["creb"]
     edges = sorted({0.0, total} | set(instants.values()) | {round(x + 0.1, 1) for x in instants.values()})
-    for a, b in zip(edges[:-1], edges[1:]):
+    for a, b in itertools.pairwise(edges):
         snap.active = snap_p.active = any(abs(a - x) < 1e-9 for x in instants.values())
         net.run((b - a) * second)
     if cfg.sim.device == "cpp_standalone":

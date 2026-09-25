@@ -60,7 +60,7 @@ def test_mso_tracks_itd_and_neurophonic_comes_from_currents_and_locks_to_the_ton
     best = [x["best_internal_delay_us"] for x in r]
     # characteristic delays map ITD: within ONE delay step (100 us) of the imposed ITD, and in order. An exact
     # match was too strict -- adjacent delay channels are a near-tie on a 0.6 s tone (measured: +300 for +400).
-    assert all(abs(b - i) <= 100.0 for b, i in zip(best, (-400.0, 0.0, 400.0))) and best[0] < best[1] < best[2]
+    assert all(abs(b - i) <= 100.0 for b, i in zip(best, (-400.0, 0.0, 400.0), strict=True)) and best[0] < best[1] < best[2]
     assert all(x["line_db"] > 15 for x in r)                                  # phase-locked to the 500 Hz tone
     assert r[1]["amp"] > r[0]["amp"] and r[1]["amp"] > r[2]["amp"]            # and it varies with ITD
     src = inspect.getsource(brainstem.mso_population)

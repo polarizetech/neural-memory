@@ -4,6 +4,18 @@ import pytest
 from neurotape import monorepo
 
 
+def _have_monorepo() -> bool:
+    try:
+        monorepo.root()
+        return True
+    except monorepo.MonorepoNotFound:
+        return False
+
+
+needs_monorepo = pytest.mark.skipif(not _have_monorepo(), reason="the private audio-projects monorepo is not checked out")
+
+
+@needs_monorepo
 def test_resolves_to_a_checkout_carrying_the_marker():
     assert (monorepo.root() / monorepo.MARKER).is_file()
 
@@ -14,11 +26,13 @@ def test_a_directory_without_the_marker_is_not_the_monorepo(tmp_path, monkeypatc
         monorepo.root()
 
 
+@needs_monorepo
 def test_a_missing_tool_raises_with_the_submodule_line():
     with pytest.raises(monorepo.MonorepoNotFound, match="submodule update"):
         monorepo.tool("no-such-tool")
 
 
+@needs_monorepo
 def test_the_shared_tools_this_repo_uses_resolve():
     assert (monorepo.tool("result-provenance") / "provenance.py").is_file()
     import importlib
