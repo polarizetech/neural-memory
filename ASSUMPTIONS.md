@@ -331,6 +331,21 @@ separate animals and is not a biological operation.
   **Their model drains untrained surface receptors under a synthesis block**; Stentor's untrained baseline survives
   in their account through a hard output threshold, which this network does not have.
 
+### Single-cell Stentor models (model-v0.3.0, 2026-09-25) — `neurotape.singlecell`
+
+- **Receptor inactivation** — Rajan & Marshall 2025, doi:10.1016/j.cub.2025.05.071 — Methods `READ`, authors' MATLAB v9
+  `READ` (reimplemented, not copied; the repo has no licence). Parameters as published: k_int 0.1, k_recycle 0.1,
+  k_synth 0.7, k_deg 0.02, k_des 0.005 (per minute), F_mid 1.5, scale 0.6, S_a 1000, S_b 0.00025, V_th 0.012.
+  `V_i = 1` and `io_max = 1` are the code's stated conventions, not printed in the paper. S* = 35 receptors; a
+  contraction needs more than n_min = 12 open. Forces used in tests (1.0 low, 4.0 high) are `[ARBITRARY]`: the
+  figures' force values are not in the paper or the code.
+- **Gating variant** — Wood 1988 (J Neurosci 8:2248), cited through Rajan et al. 2022 [FT]; Wood itself not read.
+  Modified receptors revert at k_rec and turn over at basal k_deg; none destroyed. The reversion rate is taken from
+  the published model's recycling rate `[ARBITRARY: no measured gating-reversal rate]`.
+- **Two channels** — independent pools with identical parameters, converging on one membrane `[ARBITRARY]`; motivated
+  by Stentor's modality specificity (mechanical does not transfer to light or electrical; Wood, cited in Rajan &
+  Marshall 2025 [FT]).
+
 ## What is NOT built, stated so nobody has to discover it
 
 - **CoNNear inversion (the PRIMARY playback) has never run.** No TensorFlow, no weights; weights are

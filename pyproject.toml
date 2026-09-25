@@ -20,6 +20,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "ruff>=0.6"]
+# single-cell models (model-v0.3.0): libRoadRunner via Tellurium. numpy<2 above still applies (Brian2); tested with
+# tellurium 2.2.13.1 / libroadrunner 2.10.0 on numpy 1.26.4.
+singlecell = ["tellurium>=2.2"]
 
 [project.scripts]
 neurotape = "neurotape.cli:main"
