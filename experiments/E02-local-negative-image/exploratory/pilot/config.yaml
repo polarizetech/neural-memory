@@ -1,0 +1,79 @@
+# E02-local-negative-image -- every parameter the run uses. Read by run.py, analyse.py, predict.py;
+# frozen by the E02-local-negative-image-prereg tag. Decisions are explained in PREREG.md section 9.
+eid: E02-local-negative-image
+model_tag: model-v0.2.0                 # src/neurotape must be unchanged from this tag (run.py refuses otherwise)
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]   # network AND stimulus family
+prediction_seeds: [900, 901, 902, 903, 904, 905, 906, 907, 908, 909]            # off-list: predict.py only
+base_config: configs/habituation.yaml   # periphery: Zilany 2014 via cochlea; everything else HabConfig defaults
+
+# Present, fixed, in EVERY arm: the feedforward-inhibitory pathway at its non-zero resting weight g0.
+common:
+  ffinh: {"on": true, n_ff: 50, w_rf_nS: 0.6, w_fe_nS: 0.3, g0: 1.0}
+  salience: {mode: "off"}
+
+arms:
+  A:                                   # synaptic depletion alone (the membrane-physics premise)
+    config: {depression: {"on": true}, longterm: {mode: "off"}}
+  H:                                   # postsynaptically gated excitatory depression (E01's hebb_only)
+    config: {depression: {"on": false}, longterm: {mode: hebbian, eta_hebb: 0.0125}}
+  B:                                   # A + learned inhibitory negative image (Vogels 2011 iSTDP on FF->E)
+    config: {depression: {"on": true}, longterm: {mode: "off"}, ffinh: {plastic: true, eta: 0.015}}
+  R:                                   # Rajan & Marshall 2025 receptor inactivation, depression off
+    config: {depression: {"on": false}, longterm: {mode: "off"}, receptor: {"on": true, k_int: 2.0e-4}}
+    variants:
+      - {name: syn1.00, config: {receptor: {synthesis_scale: 1.0}}}
+      - {name: syn0.25, config: {receptor: {synthesis_scale: 0.25}}}
+      - {name: syn0.00, config: {receptor: {synthesis_scale: 0.0}}}
+  Z:                                   # plasticity off (control; calibrates the MDE)
+    config: {depression: {"on": false}, longterm: {mode: "off"}}
+  G:                                   # global-gain positive control: Z, relay->E gain stepped per block
+    config: {depression: {"on": false}, longterm: {mode: "off"}}
+    gain_steps: [1.0, 0.9, 0.8]        # relay->E gain from these presentation indices on; held through the delay
+    gain_steps_at: [0, 20, 40]         # same indices in both schedules (spaced: the block starts)
+
+stimulus:
+  duration_s: 1.5
+  isi_s: 3.0                           # onset to onset, within a block
+  onset_window_s: [0.0, 0.2]
+  sustained_window_s: [1.0, 1.5]
+  probe_tail_s: 0.3                    # simulated after the probe, not scored
+
+overlap:                               # metric: cosine of driven relay profiles (analytic.overlap)
+  partial_shifts_oct: [0.0833, 0.125, 0.1667, 0.25, 0.3333]
+  partial_target: 0.5
+  partial_band: [0.7, 0.9]             # REPORT-ONLY flag; achievable range on the prediction seeds (PREREG 9)
+  none_n_draws: 20                     # none = the lowest-overlap draw of these (achieved overlap reported)
+  none_rng_offset: 71_003
+
+schedules:                             # equal presentation count (60), Beck & Rankin 1997 structure
+  massed: {blocks: [60], gap_s: 0}
+  spaced: {blocks: [20, 20, 20], gap_s: 3600}
+
+delays_s: [2, 10, 30, 100, 300, 1200, 1800, 3600, 5400]    # from the end of the last presentation
+
+analysis:
+  first_k: 2                           # R_1 = mean of the first 2 presentations, for every decrement ratio
+  last_k: 4
+  sesoi: 0.05                          # smallest effect of interest, in suppression units (fraction of control)
+  alpha: 0.05                          # TOST: two one-sided tests at alpha (90 % CI inside +/- sesoi)
+  power: 0.80                          # for the paired MDE
+  bootstrap: {n: 4000, seed: 0}
+  axis_null_perms: 1000
+  axis_first_n: 5                      # trials averaged at each end of a block for the axis readout
+  removal_reference_probe: none        # unexposed probe for removal specificity (see PREREG 9 item 6)
+  map_probes: [full, partial, none]
+  removal_delays_s: [300, 1800]
+  r_retention_delays_s: [1200, 1800, 3600, 5400]
+
+sensitivity:                           # every [ARBITRARY] parameter the verdict could rest on (PREREG 5, 6)
+  seeds: [0, 1, 2, 3, 4]
+  seeds_extra: []
+  variants:
+    - {arm: B, name: eta_x0.5,  config: {ffinh: {eta: 0.0075}}}
+    - {arm: B, name: eta_x2,    config: {ffinh: {eta: 0.03}}}
+    - {arm: B, name: wfe_x0.5,  config: {ffinh: {w_fe_nS: 0.15}}}
+    - {arm: B, name: wfe_x2,    config: {ffinh: {w_fe_nS: 0.6}}}
+    - {arm: H, name: wfe_x0.5,  config: {ffinh: {w_fe_nS: 0.15}}}
+    - {arm: H, name: wfe_x2,    config: {ffinh: {w_fe_nS: 0.6}}}
+    - {arm: R, name: kint_x0.5_syn0, config: {receptor: {k_int: 1.0e-4, synthesis_scale: 0.0}}}
+    - {arm: R, name: kint_x2_syn0,   config: {receptor: {k_int: 4.0e-4, synthesis_scale: 0.0}}}
