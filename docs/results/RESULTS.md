@@ -365,3 +365,16 @@ they simply do not carry a waveform.
    change nothing: recall-phase firing is ~0.008 Hz in every mode, so the decoder reads silence. The next
    step is a recall-phase *drive* (disinhibition, or NM acting on E-cell excitability), with its own ablation.
 3. **Fix the Lehr stimulus amplitude** against the paper's own firing-rate figure before extending it.
+
+## Correction — 2026-09-25
+
+A pre-release code review (docs/REVIEW.md) found two things that qualify this report. Nothing above is edited.
+
+1. **Row 2's "one clearly positive finding" is mostly a readout of the input.** Rank is accumulated from each E
+   cell's excitatory conductance (feedforward `g_ext` + recurrent `g_e`, `neurons/model.py`) during the encoding
+   segment, while the stimulus plays, and the feedforward term dominates. No input-only control was run, and the
+   permutation null shuffles 50 ms windows freely. It shows that cell rank tracks the input, not that the network
+   keeps anything.
+2. **Every recall delay is later than its label.** `recall/protocol.py` does not count earlier recall probes'
+   durations, so probe k starts `d_k + k × probe length` after encoding (5 / 40 / 140 s against the labelled
+   5 / 30 / 120 s on quick.yaml). Recall is at chance at every delay, so no verdict changes.

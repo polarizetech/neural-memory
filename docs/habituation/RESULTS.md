@@ -94,3 +94,15 @@ and no arm showed dishabituation. See below.
   - It says nothing about whether *all* memory works this way: there is no recurrence, no hippocampus and no second
     modality.
 - No sound has been listened to. The model has never been compared with a recording of real habituation.
+
+## Correction — 2026-09-25
+
+A pre-release review (docs/REVIEW.md, R1–R2) found two things. Nothing above is edited.
+
+1. **The Hebbian factor L starts at 1, off its resting state.** In silence, spontaneous release times the
+   postsynaptic trace erodes it toward ~0.11 at η 0.05 (time constant ~6 min) and ~0.31 at η 0.0125 (~18 min). So
+   the naive control is not stationary, and **the timescale of `hebb_only`'s recognition (still above chance at
+   30 min) is set by this erosion, not by the 1 h recovery constant** as the text above says.
+2. **hab_memory's naive controls are carried through the delay only, not the training time.** With (1), both
+   S_stored and S_novel are inflated by about the same amount (~13 % efficacy at η 0.05). Recognition, their
+   difference, is protected to first order, but absolute S values are too high.

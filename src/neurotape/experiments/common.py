@@ -7,8 +7,6 @@ REPORT.md. A condition that fails to beat its ablation or the reservoir is repor
 from __future__ import annotations
 
 import json
-import os
-import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
@@ -24,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def results_dir(name: str) -> Path:
-    d = ROOT / "results" / f"{datetime.now():%Y%m%d-%H%M%S}_{name}"
+    d = ROOT / "results" / f"{datetime.now():%Y%m%d-%H%M%S}_{name}"  # noqa: DTZ005 -- a local-time folder name, never compared
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -44,9 +42,15 @@ def fmt(c: dict) -> str:
 
 
 def paired_diff(a, b) -> dict:
-    """a - b per seed, with a 95% CI. 'beats' is claimed only if the whole CI is above zero."""
-    n = min(len(a), len(b))
-    c = ci95(np.asarray(a[:n], float) - np.asarray(b[:n], float))
+    """a - b per seed, with a 95% CI. 'beats' is claimed only if the whole CI is above zero.
+
+    a and b must be the SAME seeds in the same order. Pairing is by position, so unequal lengths now raise
+    (they used to be truncated, which silently misaligns every later pair if one condition lost a seed). Equal
+    lengths with different failed seeds would still misalign; callers pass runs from by_tag, and no committed
+    result had a failed seed in a paired condition (docs/REVIEW.md)."""
+    if len(a) != len(b):
+        raise ValueError(f"paired_diff: {len(a)} vs {len(b)} values -- a failed seed would misalign the pairing")
+    c = ci95(np.asarray(a, float) - np.asarray(b, float))
     c["beats"] = bool(np.isfinite(c["lo"]) and c["lo"] > 0)
     return c
 

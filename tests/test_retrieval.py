@@ -3,6 +3,7 @@ import hashlib
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 import brian2 as b2
 
 from neurotape.config import Config
@@ -37,7 +38,7 @@ def test_c1_intrinsic_trace_raises_excitability_with_the_trace_and_needs_creb():
         c.creb.tau_s = 1e9                                   # hold the trace where the test puts it
     assert _spikes(on, 0.0) == _spikes(off, 0.0)             # no trace -> no effect
     assert _spikes(on, 1.0) > _spikes(off, 1.0) >= _spikes(off, 0.0)   # trace -> less adaptation, lower threshold
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Config.model_validate({"mechanisms": {"intrinsic_trace": True, "creb": False}})
 
 
@@ -181,7 +182,7 @@ def test_c8_timeline_k1_is_the_base_timeline_and_k4_adds_cycles():
     k4 = on1.model_copy(deep=True); k4.settling.k_cycles = 4
     seg = build_timeline(k4).recalls()[0]
     assert len(seg.cue_onsets) == 4 and np.allclose(np.diff(seg.cue_onsets), seg.period_s) and seg.dur >= 4 * seg.period_s
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Config.model_validate({"settling": {"k_cycles": 4}})                                   # needs the switch
 
 

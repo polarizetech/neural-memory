@@ -6,7 +6,6 @@ feedforward one, and CUE-DRIVEN otherwise. The reconstructed fraction of a recal
 spikes the network supplied itself -- the quantity a completion claim has to be about."""
 from __future__ import annotations
 
-import numpy as np
 
 
 def reconstructed_fraction(res, t0: float, t1: float) -> dict:

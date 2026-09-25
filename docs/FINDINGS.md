@@ -5,8 +5,8 @@ tissue, animals or people. Details and numbers live in the linked reports; this 
 
 ## TL;DR
 
-- **As a tape it fails.** Recall is at chance in every condition; the one thing the network keeps is *which stream
-  dominated*, in the rank order of its cells.
+- **As a tape it fails.** Recall is at chance in every condition. Its one positive (which stream dominated can be
+  read from the rank order of cells) is measured *during encoding* and mostly reflects the input itself (§1–3).
 - **Specificity comes only from per-synapse, postsynaptically gated plasticity.** Presynaptic depletion, in every
   form tried, generalises to any sound that shares its input fibres. This holds across the habituation steps, E01
   and E02.
@@ -28,8 +28,18 @@ tissue, animals or people. Details and numbers live in the linked reports; this 
 - **Encoding is readable, recall is not.** Held-out encoding r 0.5–0.8. Recall r ≈ 0 at every delay and in every
   recall mode (cue, no cue, NM pulse, NM-driven excitability). No mechanism's ablation CI excludes zero, including
   frozen weights. A plain echo-state network beats it at encoding (0.730 against 0.535).
-- **Rank order is the positive.** The dominant stream is recoverable from the rank position of cells: 77 % against
-  a 57 % permutation null, 10/10 seeds.
+- **Rank order was reported as the positive, and it is weaker than it looked.** The dominant stream is recoverable
+  from the rank position of cells: 77 % against a permutation 95th percentile of 57 %, 10/10 seeds. But rank is
+  accumulated from each cell's excitatory conductance (feedforward + recurrent) **while the stimulus plays**, and the
+  feedforward term dominates (8 nS against about 1 nS per recurrent spike). It is mostly a readout of which input
+  fibres are active, not something the network keeps. No input-only control was run, and the permutation null
+  shuffles 50 ms windows freely, breaking their autocorrelation; a circular-shift null would be stricter.
+- **Recall delays are mislabelled.** Each recall probe's own duration is not counted before the next one
+  (`recall/protocol.py`), so probe k starts `d_k + k × probe length` after encoding: 5 / 40 / 140 s on
+  `quick.yaml` against the labelled 5 / 30 / 120 s (reported as 5 min / 30 min / 2 h after time compression). Recall
+  is at chance at every delay, so no verdict changes; every delay axis is off by up to that amount.
+- **The echo-state baseline had more units** (250 against the spiking readout's 200 E cells). That favours it; the
+  encoding gap is partly a size effect.
 - **The write is not stream-specific.** The weight change predicted from any of 20 never-played streams matches the
   real one as well as the played stream's does (stored stream ranked 1st in 0/10 seeds). Under the default rule the
   write is pure depression; under a calibrated rule it is pure potentiation. Neither is specific.
@@ -42,7 +52,8 @@ tissue, animals or people. Details and numbers live in the linked reports; this 
 **Spectral specificity.**
 - Steps 1–2: short-term depression, a per-spike slow pool and a presynaptic long-term rule all generalise
   (recognition ≈ 0). Only the postsynaptically gated `hebb_only` rule recognises the stored sound. It does so at
-  30 min, and keeps spectrum, not temporal order.
+  30 min, and keeps spectrum, not temporal order. That 30-min timescale is set by the Hebbian factor eroding in
+  silence (it starts off its resting state), not by its 1 h recovery constant (REVIEW R1).
 - E02, P1: depletion carries **no** specific retention above the 0.05 SESOI at any delay (2 s – 90 min) or overlap
   level. The least-overlapping probe is suppressed as much as the exposed sound (0.425 against 0.420 at 2 s).
 - The cause is the periphery as much as the synapse. At 60 dB SPL, the least-overlapping of 20 random 4-band
@@ -73,7 +84,8 @@ tissue, animals or people. Details and numbers live in the linked reports; this 
   readout, like this network's, exposes the drain.**
 
 **Spacing.** In no mechanism here does spaced training beat massed at equal count (E02, P5). Spaced − massed
-suppression at 5 min: H −0.20, R −0.07, B −0.04, A 0. Every mechanism modelled has one decay timescale, so early
+suppression at 5 min: R −0.07, B −0.04, A 0. H's −0.20 is confounded (its control erodes over the 2 h schedule;
+REVIEW R1). Every mechanism modelled has one decay timescale, so early
 blocks fade. Beck & Rankin 1997 (*C. elegans*) found the opposite for 24 h retention.
 
 **Dishabituation.** No insert produced dishabituation in any arm (E01, SR3), matching Stentor. A strong insert
@@ -97,8 +109,15 @@ deepened the next response in `hebb_only` by 3.5 %.
 
 ## Open defects and loose ends
 
+A pre-release review of the code and statistics is in [`docs/REVIEW.md`](REVIEW.md); the defects below are the
+ones that remain unfixed.
+
 - **model-v0.2.0 settle crash.** A plastic FF pathway that receives an FF spike during the 3 s settle, before α
   exists, crashes. It cost E02 its Arm B seed 0. Fix: use G × W_fe before α is set, as model-v0.2.1.
+- **Recall-delay bookkeeping** (above): the fix changes every future tape timeline, so it waits for a model
+  version that re-runs the tape experiments.
+- **`input_plastic` + `freeze_plasticity_at_recall` would not build** (`network.py`: `pl_t` is added only to the
+  E→E namespace). Never run; it raises.
 - **Kit commit guard false positive.** `.agents/githooks/pre-commit` blocks any staged `experiments/*/PREREG.md`
   once its prereg tag exists, even when the file is unchanged. Merging `main` into an experiment branch therefore
   needs `--no-verify`. The fix belongs in the kit repo: compare the staged file with the tag's copy.

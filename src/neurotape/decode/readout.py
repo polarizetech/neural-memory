@@ -112,9 +112,13 @@ def _lagged(pred, true, max_lag):
 
 
 def bestlag_with_null(pred, true, rate_hz, max_lag_s, n_surr, seed) -> dict:
-    from ..monorepo import import_uwtl
-    import_uwtl()
-    from uwtl.surrogates import iaaft
+    from ..monorepo import MonorepoNotFound, import_uwtl
+    try:                                  # uwtl comes from a private monorepo; without it the SECONDARY null is
+        import_uwtl()                     # skipped and SAID so (p_iaaft None + reason). With it, behaviour is unchanged.
+        from uwtl.surrogates import iaaft
+        iaaft_skip = None
+    except MonorepoNotFound as e:
+        iaaft, iaaft_skip = None, f"uwtl unavailable: {str(e).splitlines()[0]}"
     max_lag = int(max_lag_s * rate_hz)
     cc = _lagged(pred, true, max_lag)
     if not np.isfinite(cc).any():
@@ -129,7 +133,7 @@ def bestlag_with_null(pred, true, rate_hz, max_lag_s, n_surr, seed) -> dict:
     # surrogates x 32 bands x 3 probes it was 3+ minutes of every job (measured by sampling a worker).
     # It runs on at most 20 surrogates and 8 evenly spaced bands; the primary shift null uses n_surr.
     cols = np.unique(np.linspace(0, true.shape[1] - 1, min(8, true.shape[1])).astype(int))
-    for _ in range(min(n_surr, 20)):
+    for _ in range(min(n_surr, 20) if iaaft is not None else 0):
         surr = true.copy()
         for c in cols:
             if true[:, c].std() > 1e-9:
@@ -146,6 +150,11 @@ def bestlag_with_null(pred, true, rate_hz, max_lag_s, n_surr, seed) -> dict:
     null_shift = np.array([np.nanmax(_lagged(pred, np.roll(true, int(s), axis=0), max_lag)) for s in shifts])
     lags_ms = np.arange(-max_lag, max_lag + 1) / rate_hz * 1e3
     half = cc >= (np.nanmax(cc) + np.nanmedian(cc)) / 2.0
+    if iaaft is None:                     # NB: the shift null's RNG draws then differ from a run with uwtl
+        return dict(r=obs, lag_ms=float(lags_ms[int(np.nanargmax(cc))]), null_mean=None, null_p95=None,
+                    p=float((1 + (null_shift >= obs).sum()) / (1 + n_surr)),
+                    null_shift_p95=float(np.percentile(null_shift, 95)), p_iaaft=None, iaaft_skipped=iaaft_skip,
+                    smear_ms=float(half.sum() / rate_hz * 1e3))
     return dict(r=obs, lag_ms=float(lags_ms[int(np.nanargmax(cc))]),
                 null_mean=float(null.mean()), null_p95=float(np.percentile(null, 95)),
                 p=float((1 + (null_shift >= obs).sum()) / (1 + n_surr)),
