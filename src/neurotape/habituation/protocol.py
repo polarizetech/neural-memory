@@ -21,7 +21,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .config import HabConfig
-from .model import Net, Record, State, a_slow_spike, build_net, eta_pre, initial_state, run
+from .model import Net, Record, State, a_slow_spike, build_net, eta_pre, initial_state, receptor_rates, run
 from .periphery import Periphery, relay_spikes
 from .stimuli import SoundSpec, silence
 
@@ -86,6 +86,10 @@ class Sim:
                 R = r0 * U * xf_mid * xs_mid                     # release rate per relay unit
             else:
                 R = np.full_like(st.xf, r0 * U)
+            if cfg.receptor.on:
+                # the release run() applies: U per spike even with depression off (R above uses U = 1 there,
+                # consistently with spont_release/eta_pre; that convention is v0.1.0's and is kept)
+                self._receptor_step(st, R if d.on else np.full_like(st.xf, r0 * d.U), h)
             if lt.mode == "presynaptic":
                 lam = 1 / lt.tau_s + eta_pre(cfg) * R
                 Ls = _star(1 / lt.tau_s, lam)
@@ -96,8 +100,35 @@ class Sim:
                 st.L = np.clip(Ls + (st.L - Ls) * np.exp(-lam * h), lt.L_min, lt.L_max)
         st.nm = st.nm * np.exp(-seconds / cfg.salience.tau_nm_s)
         st.ge[:] = 0; st.gi[:] = 0; st.gei[:] = 0
+        f = cfg.ffinh
+        if f.on:
+            st.gef[:] = 0
+            if st.G is not None:
+                # FF cells are silent at rest at the default operating point, so iSTDP cannot act in silence and G
+                # only relaxes toward g0. tests/test_habituation.py checks this against direct simulation.
+                conn = self.net.W_fe[None] > 0
+                st.G = np.where(conn, f.g0 + (st.G - f.g0) * np.exp(-seconds / f.tau_s), 0.0)
+                st.xpre[:] = 0; st.xpost[:] = 0
         st.post = np.repeat(self.post_spont[None, :], st.B, 0)
         st.t += seconds
+
+    def _receptor_step(self, st: State, R: np.ndarray, h: float, n_sub: int = 4) -> None:
+        """RK4 over h for the receptor pools under constant release rate R (per relay unit)."""
+        rr, k_int = receptor_rates(self.cfg), self.cfg.receptor.k_int
+        k_out = rr["k_rec"] + rr["k_deg"] + rr["k_des"]
+
+        def f(S, I):
+            q = k_int * R * S
+            return rr["k_syn"] - rr["k_deg"] * S + rr["k_rec"] * I - q, q - k_out * I
+        S, I, dt = st.Srec, st.Irec, h / n_sub
+        for _ in range(n_sub):
+            a1 = f(S, I)
+            a2 = f(S + dt / 2 * a1[0], I + dt / 2 * a1[1])
+            a3 = f(S + dt / 2 * a2[0], I + dt / 2 * a2[1])
+            a4 = f(S + dt * a3[0], I + dt * a3[1])
+            S = S + dt / 6 * (a1[0] + 2 * a2[0] + 2 * a3[0] + a4[0])
+            I = I + dt / 6 * (a1[1] + 2 * a2[1] + 2 * a3[1] + a4[1])
+        st.Srec, st.Irec = S, I
 
     def advance(self, st: State, delay_s: float, rng: np.random.Generator,
                 interference: list[SoundSpec] | None = None) -> None:
@@ -134,6 +165,9 @@ def make_sim(cfg: HabConfig, settle_s: float = 3.0) -> tuple[Sim, State]:
     rec = sim.quiet(st, settle_s, rng)
     sim.rate_e_spont = float(rec.e_count.sum() / (net.n_exc * settle_s))
     sim.post_spont = _effective_post(sim, st, rng)
+    if cfg.ffinh.on and cfg.ffinh.plastic:
+        # Vogels et al. 2011: alpha = 2 rho0 tau_stdp, rho0 = the measured spontaneous E rate
+        st.alpha = 2.0 * sim.rate_e_spont * cfg.ffinh.tau_stdp_ms * 1e-3
     return sim, st
 
 
