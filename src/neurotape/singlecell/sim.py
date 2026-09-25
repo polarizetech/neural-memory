@@ -71,6 +71,9 @@ def run(cfg: CellConfig, protocol: list[Stim], t_end: float | None = None, sampl
     t_end = max(t_end or 0.0, ev[-1].t if ev else 0.0)
     t = 0.0
     trace = {"t": [0.0], **{f"S{c}": [rr[f"S{c}"]] for c in range(C)}, **{f"I{c}": [rr[f"I{c}"]] for c in range(C)}}
+    has_x = cfg.recycling == "labile"
+    if has_x:
+        trace["X"] = [rr["X"]]
     rows = []
     blocked = False
 
@@ -88,6 +91,8 @@ def run(cfg: CellConfig, protocol: list[Stim], t_end: float | None = None, sampl
                 for c in range(C):
                     trace[f"S{c}"].append(float(row[cols.index(f"[S{c}]")]))
                     trace[f"I{c}"].append(float(row[cols.index(f"[I{c}]")]))
+                if has_x:
+                    trace["X"].append(float(row[cols.index("[X]")]))
             t = nxt
             if not blocked and cfg.synthesis_scale != 1.0 and t >= cfg.block_from_min - 1e-12:
                 rr["syn"] = cfg.synthesis_scale
@@ -115,6 +120,8 @@ def run(cfg: CellConfig, protocol: list[Stim], t_end: float | None = None, sampl
             for k in range(C):
                 trace[f"S{k}"].append(float(rr[f"S{k}"]))
                 trace[f"I{k}"].append(float(rr[f"I{k}"]))
+            if has_x:
+                trace["X"].append(float(rr["X"]))
     advance(t_end)
     return dict(config=cfg.to_dict(), events=rows, trace=trace)
 

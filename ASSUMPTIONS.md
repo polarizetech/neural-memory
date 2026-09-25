@@ -345,6 +345,11 @@ separate animals and is not a biological operation.
 - **Two channels** — independent pools with identical parameters, converging on one membrane `[ARBITRARY]`; motivated
   by Stentor's modality specificity (mechanical does not transfer to light or electrical; Wood, cited in Rajan &
   Marshall 2025 [FT]).
+- **Labile recycling factor** (model-v0.4.0, off by default) — Rajan et al. 2026, doi:10.1016/j.cub.2026.03.080 [FT]:
+  a translation block accelerates habituation and prolongs retention while untrained responses hold; the authors
+  propose that recovery requires new protein synthesis and that an unstable protein may set the learning rate. The
+  factor's form (first-order turnover, multiplying recycling) and its rate k_x = 1/60 min⁻¹ are `[ARBITRARY]`.
+- **Slower basal turnover** (`k_deg_scale`, model-v0.4.0) — `[ARBITRARY]`; k_syn scales with it so S* stays 35.
 
 ## What is NOT built, stated so nobody has to discover it
 

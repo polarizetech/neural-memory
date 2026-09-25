@@ -4,6 +4,19 @@
 bumps `model-vX.Y.Z`, and each entry says which experiments it invalidates. Tags are made with
 `.agents/tools/tag`, never bare `git tag`.
 
+## model-v0.4.0 — 2026-09-25
+
+Two switches in `neurotape.singlecell`, both defaulting to the published model (the default Antimony text is
+byte-identical to model-v0.3.0; tested), plus a reusable gate. For E03.
+
+- `recycling="labile"`: recycling of internalised receptors runs at k_rec·X, where X is a short-lived,
+  synthesis-dependent factor (dX/dt = k_x(syn − X), X = 1 at rest, k_x default 1/60 min⁻¹). Without a block X stays
+  at 1 and the model is the published one (to integrator tolerance, ~1e-5). Motivated by Rajan et al. 2026
+  (doi 10.1016/j.cub.2026.03.080), whose authors propose that recovery requires new protein synthesis.
+- `k_deg_scale`: scales basal turnover k_deg and synthesis k_syn together, so S* = 35 is unchanged.
+- `gate.py`: the R1–R8 reproduction checks as functions of any `CellConfig`; the tests call them on the published model.
+- Invalidates: nothing (defaults unchanged; no committed experiment uses `neurotape.singlecell`).
+
 ## model-v0.3.0 — 2026-09-25
 
 New package `neurotape.singlecell`, nothing else changed (every existing module and committed run untouched).
