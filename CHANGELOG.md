@@ -24,7 +24,10 @@ E02 mechanisms, every one default OFF; switched-off output unchanged (bit-for-bi
 - `habituation.analytic`: `naive_pools`, `present_pools`, `silence_pools`, `pool_efficacy` (depression and
   receptor pools after any schedule, per probe footprint) and `overlap` (E02's overlap metric).
 - Tests: `tests/test_habituation_v02.py`, 10 new.
-- **Bit-for-bit:** BITCHECK_PLACEHOLDER
+- **Bit-for-bit:** every committed habituation `runs.json` (hab_isi 30, hab_memory 50, hab_salience 70,
+  sweep_eta_x0.25 20, sweep_eta_x4 20, EXPLORATORY_slow_per_spike 20 = 210 job records; v0.1.0's entry counted these
+  as "260 runs") and E01-stentor-map's sr1/sr2/sr3 (90) re-run byte-identically under this code before tagging.
+  Full suite: 100 passed.
 - Invalidates: nothing.
 
 ## model-v0.1.0 — 2026-09-24
