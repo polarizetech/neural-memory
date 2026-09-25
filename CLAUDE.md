@@ -3,6 +3,8 @@
 # CLAUDE.md — sim-neural-memory (the `neurotape` package)
 
 **Stage: SKETCH** (2026-09-20). A bench with no `serve.py`; nothing here is served.
+**PAUSED 2026-09-24.** Every finding across the project is mapped in [`docs/FINDINGS.md`](docs/FINDINGS.md);
+start there.
 
 **Its own repo since 2026-09-24** (`polarizetech/sim-neural-memory`, private). It was `projects/neurotape` in the
 `audio-projects` monorepo; the 32 commits of history came across by `git subtree split`, and the monorepo keeps a
@@ -137,6 +139,17 @@ all switches off reproduces a committed run bit-for-bit.
 1. NM was left non-zero before calibration.
 2. The Hebbian fast-forward under-estimated erosion in silence by ~30 %: release and the postsynaptic trace are
    correlated, so the factor is now measured.
+
+## Preregistered experiments (KIT Adaptive Preregistration; registry in `EXPERIMENTS.md`)
+
+- **E01-stentor-map — closed, FAIL** ([RESULTS](experiments/E01-stentor-map/RESULTS.md)). Slowing the slow pool's
+  recovery deepens the decrement (PASS) but moves the half-point later, not earlier as in Stentor; the untrained
+  control drains; no dishabituation anywhere.
+- **E02-local-negative-image — closed, FAIL** ([RESULTS](experiments/E02-local-negative-image/RESULTS.md)), on
+  model-v0.2.0. Depletion carries no specific retention at any delay or overlap (the least-overlapping sound still
+  overlaps at 0.59 in the auditory nerve). Learned feedforward inhibition (iSTDP) is fully reversed by removing its
+  pathway; H is untouched. Rajan & Marshall's receptor model at its own rates drains the untrained baseline under a
+  synthesis block. Spaced training beats massed in no arm. Known defect: a settle crash in plastic B (seed 0).
 
 ## Run
 
