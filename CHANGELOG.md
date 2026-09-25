@@ -4,6 +4,25 @@
 bumps `model-vX.Y.Z`, and each entry says which experiments it invalidates. Tags are made with
 `.agents/tools/tag`, never bare `git tag`.
 
+## model-v0.3.0 — 2026-09-25
+
+New package `neurotape.singlecell`, nothing else changed (every existing module and committed run untouched).
+
+- Rajan & Marshall 2025's Stentor receptor-inactivation model, reimplemented from their Methods and MATLAB (v9) with
+  their published parameters; continuous dynamics in Antimony, integrated by libRoadRunner (Tellurium); stimulus jumps
+  applied as in the authors' code. Time in minutes.
+- Reproduction gate (`tests/test_singlecell.py`, R1–R8): habituation and recovery, no dishabituation, force dependence,
+  the hidden variable, interleaved weak/strong, subliminal accumulation, frequency dependence, no rate sensitivity --
+  all reproduced with the published parameters and every switch off.
+- Switches, each defaulting to the published model: `n_channels` (independent receptor pools per modality),
+  `mechanism="gating"` (Wood 1988: receptors modified in place, not internalised or destroyed), `synthesis_scale`
+  from `block_from_min` (protein-synthesis block).
+- `export.py`: one self-describing JSON per run (tier MODELLED, source, config, protocol, traces, events, a seeded
+  sampled cell) for the viewer.
+- Dependency: optional extra `singlecell` = tellurium. Installing it upgraded numpy to 2.x once; numpy was pinned
+  back to 1.26.4 and every E01/E02 `ENV.lock` pin still matches (checked).
+- Invalidates: nothing.
+
 ## Unreleased — 2026-09-25 (no numerical change; no model tag)
 
 Pre-release review and lint (`docs/REVIEW.md`). Nothing here changes any number a committed run produced, so no
