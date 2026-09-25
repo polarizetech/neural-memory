@@ -24,6 +24,11 @@ Minimal extensions, each a switch that defaults to the published model:
                     voltage dependence shifts -- and are neither destroyed nor internalised; the modified pool M
                     reverts at k_rec and turns over only at the basal k_deg, like any membrane protein).
   * synthesis_scale multiplies k_syn from a set time (the protein-synthesis block).
+  * recycling       "constitutive" (published) | "labile": recycling needs a short-lived, synthesis-dependent factor X
+                    (dX/dt = k_x (syn - X), X = 1 at rest; recycling runs at k_rec X). Motivated by Rajan et al. 2026
+                    (doi 10.1016/j.cub.2026.03.080): translation block accelerates habituation and prolongs retention,
+                    and the authors propose recovery "requires new protein synthesis". Only the block moves X.
+  * k_deg_scale     multiplies k_deg AND k_syn together (S* unchanged): slower basal turnover of surface receptors.
 """
 from __future__ import annotations
 
@@ -65,6 +70,15 @@ class CellConfig:
     mechanism: Literal["internalisation", "gating"] = "internalisation"
     synthesis_scale: float = 1.0                                     # 1 = published (no block)
     block_from_min: float = 0.0                                      # block applies from this time on
+    recycling: Literal["constitutive", "labile"] = "constitutive"    # published: constitutive
+    k_x: float = 1.0 / 60.0                                          # /min, turnover of the labile factor (labile only)
+    k_deg_scale: float = 1.0                                         # 1 = published turnover
+
+    @property
+    def rates(self) -> dict:
+        """The rates the model integrates: the published ones, with k_deg and k_syn scaled together."""
+        p = self.params
+        return dict(k_syn=p.k_syn * self.k_deg_scale, k_deg=p.k_deg * self.k_deg_scale, k_rec=p.k_rec, k_des=p.k_des)
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -77,19 +91,23 @@ def antimony(cfg: CellConfig) -> str:
     """The continuous (between-stimulus) dynamics as an Antimony model, one receptor pool pair per channel.
     Stimuli are discrete jumps applied by the protocol runner (as in the authors' code), not SBML events."""
     p = cfg.params
+    r = cfg.rates
+    rec = "k_rec*X*" if cfg.recycling == "labile" else "k_rec*"
     lines = ["model stentor_cell"]
     for c in range(cfg.n_channels):
         if cfg.mechanism == "internalisation":
             lines += [f"  -> S{c}; k_syn*syn",
                       f"  S{c} -> ; k_deg*S{c}",
-                      f"  I{c} -> S{c}; k_rec*I{c}",
+                      f"  I{c} -> S{c}; {rec}I{c}",
                       f"  I{c} -> ; (k_deg + k_des)*I{c}"]
         else:  # gating: modified-in-place pool M reverts at k_rec, turns over at basal k_deg, never destroyed
             lines += [f"  -> S{c}; k_syn*syn",
                       f"  S{c} -> ; k_deg*S{c}",
-                      f"  I{c} -> S{c}; k_rec*I{c}",
+                      f"  I{c} -> S{c}; {rec}I{c}",
                       f"  I{c} -> ; k_deg*I{c}"]
         lines += [f"  S{c} = {p.S_star}; I{c} = 0"]
-    lines += [f"  k_syn = {p.k_syn}; k_deg = {p.k_deg}; k_rec = {p.k_rec}; k_des = {p.k_des}",
+    if cfg.recycling == "labile":
+        lines += ["  -> X; k_x*syn", "  X -> ; k_x*X", f"  X = 1; k_x = {cfg.k_x}"]
+    lines += [f"  k_syn = {r['k_syn']}; k_deg = {r['k_deg']}; k_rec = {r['k_rec']}; k_des = {r['k_des']}",
               "  syn = 1", "end"]
     return "\n".join(lines)
