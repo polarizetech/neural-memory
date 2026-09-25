@@ -27,8 +27,7 @@ Where every parameter came from: [`ASSUMPTIONS.md`](ASSUMPTIONS.md). Model versi
 
 The two preregistered experiments follow the KIT Adaptive Preregistration protocol, vendored in `.agents/`.
 Each experiment folder holds its plan (`PREREG.md`), pinned environment (`ENV.lock`), frozen `run.py` and
-`analyse.py`, `DEVIATIONS.md`, `RESULTS.md`, raw outputs with checksums, and the verbatim log of the assistant
-session that ran it (`conversation.jsonl`). Tags `<EID>-prereg`, `-run` and `-closed` mark the order things
+`analyse.py`, `DEVIATIONS.md`, `RESULTS.md`, and raw outputs with checksums. Tags `<EID>-prereg`, `-run` and `-closed` mark the order things
 happened in; the pull requests carry timestamped receipts. Much of the code, analysis and writing was produced
 by an AI coding assistant (Claude) working under that protocol, directed and reviewed by the author.
 
