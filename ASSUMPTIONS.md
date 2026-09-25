@@ -314,6 +314,23 @@ The first setting tried (150 pA, 1.2 nS) gave a response indistinguishable from 
 hippocampus and no second modality. Each probe goes to its own copy of the network, which is the numerical equivalent of
 separate animals and is not a biological operation.
 
+### E02 mechanisms (model-v0.2.0, 2026-09-24) — default OFF; values used by E02 are in its config.yaml
+
+- **Feedforward inhibition** (`ffinh`): 50 tonotopic LIF FF cells (I-cell membrane), relay→FF 0.6 nS with no
+  short-term depression, FF→E 0.3 nS × G, g0 = 1. Operating point chosen by a scan on off-list seeds against a
+  target stated before the scan (FF 20–60 Hz driven, naive E response cut 20–35 %): `[ARBITRARY]`. FF cells are
+  silent at rest at this operating point.
+- **iSTDP** — Vogels et al. 2011, *Science*, doi:10.1126/science.1211095 —
+  abstract `READ` (full text closed); the rule's equation from `MEMORY`. η = 0.015 by an engagement criterion on
+  the synaptic variable (top-decile G ≈ 2 g0 after 20 presentations): `[ARBITRARY]`. τ_s = 1 h, matched to the
+  Hebbian L.
+- **Receptor inactivation** — Rajan & Marshall 2025, *Curr Biol*, doi:10.1016/j.cub.2025.05.071 — `READ` (Methods).
+  k_rec 0.1, k_deg 0.02, k_des 0.005 **read per minute** (the paper gives no unit; stimuli were one per minute).
+  Their eq. 2 prints −(k_rec − k_deg + k_des); +k_deg used, as the text says both pools degrade. k_int = 2e-4 per
+  unit release `[ARBITRARY]`. Per relay fibre, not per synapse (every synapse of a fibre sees the same release).
+  **Their model drains untrained surface receptors under a synthesis block**; Stentor's untrained baseline survives
+  in their account through a hard output threshold, which this network does not have.
+
 ## What is NOT built, stated so nobody has to discover it
 
 - **CoNNear inversion (the PRIMARY playback) has never run.** No TensorFlow, no weights; weights are
