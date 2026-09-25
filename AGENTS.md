@@ -1,5 +1,5 @@
 <!-- kit_ap:start -->
-<!-- Managed by KIT Adaptive Preregistration (https://github.com/polarizetech/kit-adaptive-preregistration.git). Don't edit between these markers: change the kit, then run `.agents/bin/kit_ap update`. -->
+<!-- Managed by KIT Adaptive Preregistration (https://github.com/polarizetech/adaptive-preregistration.git). Don't edit between these markers: change the kit, then run `.agents/bin/kit_ap update`. -->
 
 # Agent protocols
 

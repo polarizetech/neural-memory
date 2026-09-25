@@ -1,5 +1,7 @@
 # Conversation logging
 
+**License:** CC BY 4.0, from [KIT Adaptive Preregistration](https://github.com/polarizetech/adaptive-preregistration). Reuse it with credit.
+
 Every LLM conversation on a branch is recorded twice:
 
 1. **On the branch's PR:** one comment per turn. It's searchable on GitHub and is the history you read later.
@@ -15,7 +17,7 @@ Every LLM conversation on a branch is recorded twice:
 |---|---|
 | One comment per turn | Consecutive user messages are merged into **one** comment. Each assistant reply is **one** comment. |
 | Text only | Your prompts and the assistant's final reply for the turn. Tool calls, diffs, and thinking are **not** logged (the commits already hold the diffs). |
-| Secrets redacted | API keys, tokens, private keys and `key=value` secrets become `[redacted]` before anything is written or posted. |
+| Secrets redacted | Common credential shapes (provider API keys, bearer tokens, JWTs, private keys, passwords in URLs, and `NAME=value` settings whose name mentions a key, secret, token or password) become `[redacted]` before anything is written or posted. This is best-effort pattern matching, not a guarantee: don't paste secrets into a logged session. |
 | Order | A user comment is only posted once the reply arrives (so bursts of messages group). Anything still waiting is posted when the session ends, or by running `.agents/tools/convo-log sync --flush`. |
 | No PR yet | Messages queue in the log and post, in order, on the first reply after the branch has a PR (or run `.agents/tools/convo-log sync`). |
 | Never blocks | If logging fails, it prints a warning and exits 0. The agent carries on. |
@@ -105,7 +107,7 @@ Known tool labels: `claude`, `codex`, `vscode`, `copilot`, `chatgpt`, `cursor`, 
 
 ## 6. Privacy
 
-- On a **public** repo, PR comments are public. Only secrets are auto-redacted, not personal details. Use a private repo for private work, or review the log before opening the PR.
+- On a **public** repo, PR comments are public. Only common secret formats are auto-redacted, and personal details are not. Use a private repo for private work, or review the log before opening the PR.
 - To remove something after posting, edit or delete the PR comment on GitHub **and** the matching line in the log. Removing it from git history needs a history rewrite, so decide before merging.
 
 ## 7. Limits
@@ -114,4 +116,4 @@ Known tool labels: `claude`, `codex`, `vscode`, `copilot`, `chatgpt`, `cursor`, 
 - Messages from sub-agents are not captured.
 - Long replies are split across several comments (GitHub caps a comment at 65,536 characters).
 - If a PR is closed and a new one opened for the same branch, later comments go to the new PR. Earlier ones stay on the old one, and the log still has everything.
-- The script uses `fcntl`, so it runs on macOS and Linux. On Windows it needs WSL.
+- It runs on macOS and Linux. On Windows use WSL: native Windows has no `fcntl`, so it runs without file locking and concurrent hooks can interleave.
