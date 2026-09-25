@@ -39,4 +39,4 @@ def test_the_shared_tools_this_repo_uses_resolve():
     u = monorepo.import_uwtl()           # import the submodule: attribute access passed only if an earlier test had
     assert hasattr(importlib.import_module(u.__name__ + ".surrogates"), "iaaft")   # imported it (found 2026-09-24)
     s = monorepo.stamp(["tools/result-provenance"])
-    assert s["repo"]["name"] == "sim-neural-memory" and "tools/result-provenance" in s["dependencies"]
+    assert s["repo"]["name"] == "neural-memory" and "tools/result-provenance" in s["dependencies"]

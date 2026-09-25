@@ -1,6 +1,6 @@
 """Where the shared tools live: the polarizetech `audio-projects` monorepo, a SEPARATE checkout.
 
-sim-neural-memory was split out of that monorepo (projects/neurotape, 2026-09-24) and still uses its shared
+neural-memory was split out of that monorepo (projects/neurotape, 2026-09-24) and still uses its shared
 infrastructure rather than copying it. Two things are used in code:
 
   tools/result-provenance                 stamps every results folder (provenance.json)
@@ -89,5 +89,5 @@ def stamp(dependencies: list[str]) -> dict:
         return r.stdout.strip() if r.returncode == 0 else None
     s = provenance_module().stamp(dependencies)
     s["monorepo_head"] = s.pop("head", None)
-    s["repo"] = dict(name="sim-neural-memory", sha=git("rev-parse", "HEAD"), dirty=bool(git("status", "--porcelain")))
+    s["repo"] = dict(name="neural-memory", sha=git("rev-parse", "HEAD"), dirty=bool(git("status", "--porcelain")))
     return s
