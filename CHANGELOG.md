@@ -4,6 +4,29 @@
 bumps `model-vX.Y.Z`, and each entry says which experiments it invalidates. Tags are made with
 `.agents/tools/tag`, never bare `git tag`.
 
+## model-v0.2.0 — 2026-09-24
+
+E02 mechanisms, every one default OFF; switched-off output unchanged (bit-for-bit below).
+
+- `habituation.config.FFInh` + model: a feedforward-inhibitory pathway relay → FF (tonotopic LIF) → E, with an
+  optional plastic multiplier G under the inhibitory STDP rule of Vogels et al. 2011 (α = 2ρ0τ, ρ0 = the measured
+  spontaneous E rate; G relaxes to g0 with τ_s). Built on its own RNG stream, so the E network is identical with
+  it on or off.
+- `habituation.config.Receptor` + model: Rajan & Marshall 2025 receptor inactivation (surface / internalised
+  pools, recycling, basal degradation, destruction, synthesis with `synthesis_scale`) per relay fibre; rates read
+  per minute; k_syn derived for S = 1 at spontaneous release.
+- `State.ff_out` (pathway removal), `State.g_in` (global relay→E gain), `run(..., keep_cells=True)` (per-cell
+  spike rasters), `Record.ff_count`.
+- `Sim.fast_forward`: G relaxation and RK4 receptor pools. Found while building it: `fast_forward` and
+  `spont_release` use U = 1 with depression off while `run()` releases U per spike. Left as is (the Hebbian
+  fast-forward is self-consistent with it and v0.1.0 results depend on it); the receptor code uses the release
+  `run()` applies.
+- `habituation.analytic`: `naive_pools`, `present_pools`, `silence_pools`, `pool_efficacy` (depression and
+  receptor pools after any schedule, per probe footprint) and `overlap` (E02's overlap metric).
+- Tests: `tests/test_habituation_v02.py`, 10 new.
+- **Bit-for-bit:** BITCHECK_PLACEHOLDER
+- Invalidates: nothing.
+
 ## model-v0.1.0 — 2026-09-24
 
 Habituation steps 1–3 + analytic.py; 260/260 bit-for-bit.
