@@ -1,4 +1,4 @@
-# FINDINGS — sim-neural-memory, as of 2026-09-24 (project paused)
+# FINDINGS — neural-memory, as of 2026-09-24 (project paused)
 
 Every result below is a statement about **these models**, with their chosen parameters. None is evidence about
 tissue, animals or people. Details and numbers live in the linked reports; this file is the map.

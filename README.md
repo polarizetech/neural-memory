@@ -1,4 +1,6 @@
-# sim-neural-memory
+# neural-memory
+
+**Renamed 2026-09-25 from `sim-neural-memory`**, dropping the kind prefix; GitHub redirects the old URL. See the [study protocol](https://github.com/polarizetech/scientific-research-scaffold/blob/main/PROTOCOL.md).
 
 Simulations that test how a memory of a sound could be held in neural tissue. They are built as falsification
 benches: every mechanism has an off switch, every result sits beside its ablation and a plain baseline, and the
