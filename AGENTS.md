@@ -18,4 +18,15 @@ Read and obey `.agents/protocols/PREREG_PROTOCOL.md` before running, modifying, 
 
 Read and obey `.agents/protocols/EXPERIMENT_PR_LOG.md`. Use one branch (`experiment/<EID>`) and one draft PR per experiment. Tag with `.agents/tools/tag`, never bare `git tag`.
 
+## Tool scope
+
+Before building software that explores a research claim, follow `.agents/protocols/SCOPE_PROTOCOL.md`, and keep its record in a `SCOPE.toml` beside the tool's code.
+
+- Settle the claim first, in the user's exact words, with what would count against it. Build nothing before that.
+- Propose; never substitute. The user's claim, design and decisions are recorded as they give them.
+- Infrastructure is yours to decide, following the organisation's conventions. Anything that implements a research concept, or presents a result in a way that changes what someone would conclude, is science.
+- Build no scientific feature until it has an evidence basis and the user's decision is recorded. A gap blocks that feature only.
+- Ask one decision at a time. If you disagree, say so once, with evidence; then record and follow the user's choice.
+- Never count a source you couldn't verify. `.agents/tools/scope-status` shows what is open and what blocks production.
+
 <!-- kit_ap:end -->
