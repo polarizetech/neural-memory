@@ -4,6 +4,7 @@
 
 Usage:
   scope-status [PATH]           PATH is a SCOPE.toml, or a folder searched for them (default: .)
+                                In a study's root, it also lists the folders under tools/ with no record yet.
   scope-status --check [PATH]   exit 1 if a record breaks the contract, or a production record isn't ready
 
 Prints the claim, each feature's basis and decision, and three lists: open decisions, blocked features,
@@ -319,6 +320,32 @@ def report(path, rec, errors, open_items, blocked, before_production):
     return "\n".join(out)
 
 
+def is_study(root):
+    """A study, as SCOPE_PROTOCOL.md §1 defines it: STUDY.toml says kind = "study", or the README's kind line does."""
+    manifest = os.path.join(root, "STUDY.toml")
+    try:
+        with open(manifest, encoding="utf-8") as fh:
+            if re.search(r'^\s*kind\s*=\s*"study"\s*(#.*)?$', fh.read(), re.M):
+                return True
+    except OSError:
+        pass
+    try:
+        with open(os.path.join(root, "README.md"), encoding="utf-8") as fh:
+            return bool(re.search(r"\*\*Kind:\*\*\s*study\b", fh.read(), re.I))
+    except OSError:
+        return False
+
+
+def unscoped_tools(root):
+    """In a study, the folders directly under tools/ that have no SCOPE.toml (scoping applies to them automatically)."""
+    tools = os.path.join(root, "tools")
+    if not (os.path.isdir(root) and is_study(root) and os.path.isdir(tools)):
+        return []
+    return sorted(os.path.join("tools", d) for d in os.listdir(tools)
+                  if os.path.isdir(os.path.join(tools, d)) and not d.startswith((".", "_"))
+                  and not os.path.exists(os.path.join(tools, d, "SCOPE.toml")))
+
+
 def find_records(path):
     if os.path.isfile(path):
         return [path]
@@ -338,9 +365,14 @@ def main():
                     help="exit 1 on a contract error, or a production record that isn't ready")
     a = ap.parse_args()
     paths = find_records(a.path)
+    unscoped = unscoped_tools(a.path)
+    if unscoped:
+        print("Unscoped tools (in a study, every folder under tools/ is scoped; SCOPE_PROTOCOL.md §1):")
+        print("\n".join(f"  - {d}: no SCOPE.toml yet" for d in unscoped))
     if not paths:
-        print(f"scope-status: no SCOPE.toml under {a.path}")
-        return 1 if a.check else 0
+        if not unscoped:
+            print(f"scope-status: no SCOPE.toml under {a.path}")
+        return 0  # nothing to check: a study with no tools yet is fine
     ok = True
     for p in paths:
         try:

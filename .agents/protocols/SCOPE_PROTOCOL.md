@@ -30,9 +30,19 @@ simulation, an interface that demonstrates a concept. It usually doesn't prove a
 lands in practice, and what it shows shapes where the larger study goes next. A result from a tool is never a
 finding. Findings come from preregistered experiments.
 
-Each tool has one **scope record**, `SCOPE.toml`, next to its code: in the tool's own folder when a study holds
-several tools (each is scoped separately), or at the repository root when the repository is the tool. The
-record holds the claim, the features and every decision, and links to the experiments that test the tool's
+### Where this protocol applies
+
+- **Automatically, to every tool in a study.** In a study repository, each folder directly under `tools/` is a
+  tool, and this protocol applies to it without being asked: nothing scientific is built in it until it is
+  scoped. Its record is `tools/<name>/SCOPE.toml`. Each tool is scoped separately.
+- **Explicitly, everywhere else.** In any other repository (for example one that is itself a tool), the
+  protocol runs when the user asks for a tool to be scoped. The record then goes beside the tool's code, at the
+  repository root when the repository is the tool.
+
+A repository is a **study** when its manifest says so (`STUDY.toml` with `kind = "study"`) or its README
+carries the kind line `**Kind:** study`. If neither is present, the assistant asks the user rather than guess.
+
+Each tool has one **scope record**, `SCOPE.toml`. The record holds the claim, the features and every decision, and links to the experiments that test the tool's
 predictions. It holds no experiments or findings itself: those live with the research corpus, under the
 project's folder, preregistered with `PREREG_PROTOCOL.md`.
 
@@ -54,8 +64,9 @@ Infrastructure never blocks.
 The assistant asks **one question at a time**, in this order, and waits for the answer. If it thinks the
 user's choice is wrong, it says so once, with its evidence, then records and follows the choice.
 
-**Step 0: setup.** Without asking unless something can't be found: which tool this is and where its record
-goes; where the organisation's conventions are documented (a conventions document the repository or its
+**Step 0: setup.** In a study this starts on its own when work begins on a folder under `tools/` that has no
+`SCOPE.toml`; elsewhere it starts when the user asks. Without asking unless something can't be found: which
+tool this is and where its record goes; where the organisation's conventions are documented (a conventions document the repository or its
 profile points to, and existing projects); which research corpus project the tool belongs to. It copies
 `.agents/templates/SCOPE.toml` into place.
 
@@ -176,7 +187,9 @@ becomes `production`.
 
 Other tools may validate a record without dependencies. This section is the contract they implement.
 
-**File:** `SCOPE.toml`, one per tool, beside the tool's code.
+**File:** `SCOPE.toml`, one per tool, beside the tool's code. In a study (§1), every folder directly under
+`tools/` is expected to hold one; a tool folder without it is reported as **unscoped** (an open item, like an
+unsettled claim), so a validator should list those too.
 
 **Syntax: a TOML subset.**
 - tables (`[claim]`) and arrays of tables (`[[features]]`, `[[revisions]]`);
@@ -237,8 +250,8 @@ normal at the exploratory stage.
 
 ## 10. `scope-status`
 
-`.agents/tools/scope-status [PATH]` finds `SCOPE.toml` files (PATH is a file, or a folder searched for them),
-and prints each record's claim, its features with their basis and decision, and its errors, open items,
+`.agents/tools/scope-status [PATH]` finds `SCOPE.toml` files (PATH is a file, or a folder searched for them).
+When PATH is a study's root, it also lists the folders under `tools/` that have no record yet. It prints each record's claim, its features with their basis and decision, and its errors, open items,
 blocked features, and what stands before production. It always exits 0. With `--check` it exits 1 if a record
 breaks the contract, or a production record isn't ready, so it can gate CI.
 
