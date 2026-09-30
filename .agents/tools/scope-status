@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""scope-status — show the state of a tool's scope record (SCOPE.toml).
+"""scope-status — show the state of each unit's scope record (SCOPE.toml).
 
 Usage:
-  scope-status [PATH]           PATH is a SCOPE.toml, or a folder searched for them (default: .)
-                                In a study's root, it also lists the folders under tools/ with no record yet.
+  scope-status [PATH]           PATH is a SCOPE.toml, or a folder whose units are listed (default: .)
+                                Units without a record yet are listed as unscoped.
   scope-status --check [PATH]   exit 1 if a record breaks the contract, or a production record isn't ready
 
 Prints the claim, each feature's basis and decision, and three lists: open decisions, blocked features,
-and what stands between the tool and production. Contract: SCOPE_PROTOCOL.md §9. Stdlib only (Python 3.9+).
+and what stands between the unit and production. Contract: SCOPE_PROTOCOL.md §9. Stdlib only (Python 3.9+).
 """
 import argparse, json, os, re, sys
 
-FORMAT = 1
+FORMATS = (1, 2)  # format 1 named the unit `tool`
+CLAIM_DETAILS = ("concepts", "measure", "smallest_effect", "assumptions")
 STAGES = ("exploratory", "production")
 KINDS = ("science", "infrastructure")
 STATUSES = ("accepted", "changed", "dropped")
@@ -173,6 +174,10 @@ def _value(v, n):
 
 # ---------------------------------------------------------------- the contract (§9)
 
+def unit_name(rec):
+    return text(rec, "tool" if rec.get("format") == 1 else "unit")
+
+
 def text(d, key):
     v = d.get(key, "")
     return v.strip() if isinstance(v, str) else ""
@@ -187,10 +192,10 @@ def assess(rec):
     """(errors, open, blocked, before_production): the contract's rules applied to one parsed record."""
     errors, open_items, blocked, gaps_to_production = [], [], [], []
 
-    if rec.get("format") != FORMAT:
-        errors.append(f"format must be {FORMAT}")
-    if not text(rec, "tool"):
-        errors.append("tool is empty")
+    if rec.get("format") not in FORMATS:
+        errors.append("format must be 1 or 2")
+    if not unit_name(rec):
+        errors.append("unit is empty" if rec.get("format") != 1 else "tool is empty")
     stage = rec.get("stage")
     if stage not in STAGES:
         errors.append(f"stage must be one of {', '.join(STAGES)}")
@@ -273,7 +278,7 @@ def assess(rec):
     revisions = rec.get("revisions", [])
     for i, r in enumerate(revisions if isinstance(revisions, list) else [], 1):
         where = f"revision {i}"
-        if text(r, "feature") not in seen:
+        if text(r, "feature") not in seen | {"claim"}:
             errors.append(f"{where}: feature {text(r, 'feature')!r} isn't in the record")
         if not DATE.match(text(r, "date")):
             errors.append(f"{where}: date must be YYYY-MM-DD")
@@ -296,12 +301,15 @@ def is_ready(rec, errors, before_production):
 
 def report(path, rec, errors, open_items, blocked, before_production):
     claim = rec.get("claim") if isinstance(rec.get("claim"), dict) else {}
-    out = [f"{path}: {text(rec, 'tool') or '(no tool name)'} ({rec.get('stage', '?')})"]
+    out = [f"{path}: {unit_name(rec) or '(no unit name)'} ({rec.get('stage', '?')})"]
     if text(claim, "text"):
         out.append(f'  Claim: "{text(claim, "text")}"' + (f" (decided {text(claim, 'decided')})"
                                                          if text(claim, "decided") else ""))
         if text(claim, "counts_against"):
             out.append(f"    counts against: {text(claim, 'counts_against')}")
+        still_open = [k for k in CLAIM_DETAILS if not text(claim, k)]
+        if still_open:
+            out.append(f"    not yet stated: {', '.join(still_open)} (SCOPE_PROTOCOL.md §3, step 1)")
     features = rec.get("features") if isinstance(rec.get("features"), list) else []
     if features:
         out.append("  Features:")
@@ -320,30 +328,24 @@ def report(path, rec, errors, open_items, blocked, before_production):
     return "\n".join(out)
 
 
-def is_study(root):
-    """A study, as SCOPE_PROTOCOL.md §1 defines it: STUDY.toml says kind = "study", or the README's kind line does."""
-    manifest = os.path.join(root, "STUDY.toml")
-    try:
-        with open(manifest, encoding="utf-8") as fh:
-            if re.search(r'^\s*kind\s*=\s*"study"\s*(#.*)?$', fh.read(), re.M):
-                return True
-    except OSError:
-        pass
-    try:
-        with open(os.path.join(root, "README.md"), encoding="utf-8") as fh:
-            return bool(re.search(r"\*\*Kind:\*\*\s*study\b", fh.read(), re.I))
-    except OSError:
-        return False
+def find_units(root):
+    """The units under root, as PREREG_PROTOCOL.md §1 defines them: every folder with a preregistrations/ folder,
+    plus root itself if it has one or the earlier root experiments/ layout. With none of those, root is the unit."""
+    units = []
+    for dirpath, dirnames, _ in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and d not in ("preregistrations", "experiments"))
+        if os.path.isdir(os.path.join(dirpath, "preregistrations")):
+            units.append(dirpath)
+    if os.path.isdir(os.path.join(root, "experiments")) and root not in units:
+        units.insert(0, root)
+    return units or [root]
 
 
-def unscoped_tools(root):
-    """In a study, the folders directly under tools/ that have no SCOPE.toml (scoping applies to them automatically)."""
-    tools = os.path.join(root, "tools")
-    if not (os.path.isdir(root) and is_study(root) and os.path.isdir(tools)):
+def unscoped_units(root):
+    """Units with no SCOPE.toml at their root: their first work is the claim (SCOPE_PROTOCOL.md §1)."""
+    if not os.path.isdir(root):
         return []
-    return sorted(os.path.join("tools", d) for d in os.listdir(tools)
-                  if os.path.isdir(os.path.join(tools, d)) and not d.startswith((".", "_"))
-                  and not os.path.exists(os.path.join(tools, d, "SCOPE.toml")))
+    return [os.path.relpath(u, root) for u in find_units(root) if not os.path.exists(os.path.join(u, "SCOPE.toml"))]
 
 
 def find_records(path):
@@ -365,14 +367,12 @@ def main():
                     help="exit 1 on a contract error, or a production record that isn't ready")
     a = ap.parse_args()
     paths = find_records(a.path)
-    unscoped = unscoped_tools(a.path)
+    unscoped = unscoped_units(a.path)
     if unscoped:
-        print("Unscoped tools (in a study, every folder under tools/ is scoped; SCOPE_PROTOCOL.md §1):")
-        print("\n".join(f"  - {d}: no SCOPE.toml yet" for d in unscoped))
+        print("Unscoped units (every unit starts with its claim; SCOPE_PROTOCOL.md §1):")
+        print("\n".join(f"  - {'the repository' if d == '.' else d}: no SCOPE.toml yet" for d in unscoped))
     if not paths:
-        if not unscoped:
-            print(f"scope-status: no SCOPE.toml under {a.path}")
-        return 0  # nothing to check: a study with no tools yet is fine
+        return 0  # nothing to check yet: unscoped units are open, not errors
     ok = True
     for p in paths:
         try:

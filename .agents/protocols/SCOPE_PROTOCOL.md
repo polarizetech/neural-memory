@@ -1,59 +1,47 @@
-# SCOPE_PROTOCOL.md — Scoping a research tool before it is built
+# SCOPE_PROTOCOL.md — Claim first: scoping every unit before it is built
 
-**Applies to:** anyone, person or coding assistant, building software that explores a research claim.
+**Applies to:** everyone, person or coding assistant, working on a unit: an app, a sim, a tool, a calculator, a
+dataset analysis.
 **Status of this file:** binding. If a task conflicts with it, stop and say so before doing the task.
-**Installed by:** the KIT Adaptive Preregistration `tool-scope` module, which also adds the rules to `AGENTS.md`.
-**Works with:** `PREREG_PROTOCOL.md` (installed with it), which takes over wherever a prediction is tested.
+**Installed by:** the KIT Adaptive Preregistration `prereg` module, alongside `PREREG_PROTOCOL.md`.
 **License:** CC BY 4.0, from [KIT Adaptive Preregistration](https://github.com/polarizetech/adaptive-preregistration). Reuse it with credit.
 
 ---
 
 ## 0. The rules (read these even if you read nothing else)
 
-1. **The claim first.** Nothing is built until the user has settled what the tool is for, in their own words,
-   with what would count against it.
+1. **The claim first.** Every unit starts with a falsifiable claim, settled with the user in their own words,
+   with what would count against it. Nothing is built in a unit until its claim is settled.
 2. **Propose; never substitute.** The assistant offers options and records what the user chooses. It never
    replaces the user's claim, design or decision with its own, silently or otherwise.
-3. **No scientific feature without a basis and a decision.** Each one is assessed against the research, given
-   an evidence basis (§5), and built only after the user's decision is recorded (§6).
+3. **No scientific feature without a basis and a decision.** Each is assessed against the research, given an
+   evidence basis (§5), and built only after the user's decision is recorded (§6).
 4. **Unverified sources don't count.** A source the assistant couldn't verify is not a source; if nothing
    verifiable remains, the feature is a gap.
-5. **Departures become predictions.** Every override is a place where the tool predicts something. It is
-   drafted as a prediction and tested as a preregistered experiment (§7).
+5. **Departures become predictions.** Every override is a place where the unit predicts something. It is
+   preregistered in the unit's own `preregistrations/` (§7).
 
 ---
 
-## 1. What a tool is here, and where its record lives
+## 1. Where this applies, and where the record lives
 
-A **tool** is a piece of software built to explore a research claim: a calculator, an instrument, a
-simulation, an interface that demonstrates a concept. It usually doesn't prove a claim; it tests how the claim
-lands in practice, and what it shows shapes where the larger study goes next. A result from a tool is never a
-finding. Findings come from preregistered experiments.
+It applies **automatically to every unit** (`PREREG_PROTOCOL.md` §1): every folder with a `preregistrations/`
+folder in a repository that holds several units, or the repository itself when it is one unit. Each unit has
+one **scope record**, `SCOPE.toml`, at the unit's root. A unit without one, or with an unsettled claim, is
+**unscoped**, and the first work on it is step 1.
 
-### Where this protocol applies
-
-- **Automatically, to every tool in a study.** In a study repository, each folder directly under `tools/` is a
-  tool, and this protocol applies to it without being asked: nothing scientific is built in it until it is
-  scoped. Its record is `tools/<name>/SCOPE.toml`. Each tool is scoped separately.
-- **Explicitly, everywhere else.** In any other repository (for example one that is itself a tool), the
-  protocol runs when the user asks for a tool to be scoped. The record then goes beside the tool's code, at the
-  repository root when the repository is the tool.
-
-A repository is a **study** when its manifest says so (`STUDY.toml` with `kind = "study"`) or its README
-carries the kind line `**Kind:** study`. If neither is present, the assistant asks the user rather than guess.
-
-Each tool has one **scope record**, `SCOPE.toml`. The record holds the claim, the features and every decision, and links to the experiments that test the tool's
-predictions. It holds no experiments or findings itself: those live with the research corpus, under the
-project's folder, preregistered with `PREREG_PROTOCOL.md`.
+What a unit shows before a preregistered test is exploration, not a finding. Exploratory work (apps, tools,
+first runs) is the groundwork that makes a later test informative: it settles what the claim's terms mean,
+how they are measured, and what the test assumes. Findings come from preregistered experiments.
 
 ## 2. Stages
 
 | Stage | The project's stage, if it declares one | What the record must show |
 |---|---|---|
-| **exploratory** | SKETCH, PROBE | every scientific feature has a basis and a decision; overrides and resolved gaps are allowed, recorded, and labelled as exploratory in the tool itself |
+| **exploratory** | SKETCH, PROBE | a settled claim; every scientific feature has a basis and a decision; overrides and resolved gaps are allowed, recorded, and labelled as exploratory in the unit itself |
 | **production** | BENCH, SHIPPED | every scientific feature is established, supported or derived and uses the research, or is an override whose preregistered experiment has been run, with its result and the decision taken on it recorded |
 
-A tool starts exploratory. Moving it to production is an explicit step the user takes (§3, step 6).
+A unit starts exploratory. Moving it to production is an explicit step the user takes (§3, step 6).
 
 **Pushback at the exploratory stage is one or two sentences.** An absence of evidence is not a reason to
 refuse to build: it is recorded as a gap, which blocks that one feature until the user answers one question.
@@ -64,27 +52,45 @@ Infrastructure never blocks.
 The assistant asks **one question at a time**, in this order, and waits for the answer. If it thinks the
 user's choice is wrong, it says so once, with its evidence, then records and follows the choice.
 
-**Step 0: setup.** In a study this starts on its own when work begins on a folder under `tools/` that has no
-`SCOPE.toml`; elsewhere it starts when the user asks. Without asking unless something can't be found: which
-tool this is and where its record goes; where the organisation's conventions are documented (a conventions document the repository or its
-profile points to, and existing projects); which research corpus project the tool belongs to. It copies
-`.agents/templates/SCOPE.toml` into place.
+**Step 0: setup.** It starts on its own when work begins on an unscoped unit. Without asking unless something
+can't be found: which unit this is; where the organisation's conventions and layout are documented (a
+conventions document the repository or its profile points to, and existing projects); which research corpus
+project it belongs to. It copies `.agents/templates/SCOPE.toml` to the unit's root.
 
-**Step 1: the claim.** The assistant proposes three to five candidate claims, each one sentence with a
-one-line falsifier. A claim must be falsifiable; it needn't carry scientific weight. *Example: "The transform
-the cochlea uses to turn sound into neural signals can be run in reverse to turn a bioelectric recording into
-audio."*
+**Step 1: the claim.** The claim is the most important thing a person decides about a unit, so this step is
+never skipped or shortened. The assistant proposes three to five candidate claims, each one sentence with a
+one-line falsifier.
 
-- *"Which claim should this tool test? Pick one, merge some, or write your own."*
-- Only if the answer has no falsifier: *"What would you see that counts against it?"*, with one suggestion.
-- *"Recorded as: '…'. Is that settled?"*
+- *"Which claim should this <app/sim/tool/…> test? Pick one, merge some, or write your own."*
 
-The user's wording goes into `claim.text` exactly as given, and the falsifier into `claim.counts_against`.
-The assistant never rewords either afterwards; a change is the user's, recorded as a revision.
+A claim is falsifiable when it says what would be observed if it were wrong. That depends on more than the
+sentence: a test of a claim runs through a chain of concepts, measures, assumptions and a prediction, and a
+loose link anywhere in that chain means a failed prediction can't count against the claim [1]. So, once the
+user has chosen, the assistant asks only for what the answer doesn't already give, one question at a time:
+
+- **Concepts:** *"What exactly do you mean by <term>, here?"* (Only for a term that could be read two ways.)
+- **Measure:** *"What will we observe or compute that shows it?"*
+- **What counts against it:** *"What result would you take as the claim being wrong?"* A result that would
+  support the claim and one that would falsify it are both stated in advance [1].
+- **How big:** *"What is the smallest effect that would still matter?"* Stating it is what makes "no effect"
+  informative [2]. When too large a result would also be implausible for the mechanism, the claim is a range,
+  and a result outside it on either side counts against it [2].
+- **Assumptions and boundaries:** *"What does this assume, and where doesn't it apply?"* A negative result
+  may come from a wrong assumption rather than a wrong claim [1], so the assumptions are written down with the
+  claim.
+
+The claim need not be ready to test. If the user can't yet say how it would be measured or how big an effect
+matters, that is recorded as open, and building the unit is how those answers are found [1]. What must be
+settled before building is the claim itself and what would count against it.
+
+- *"Recorded as: '…', counting against it: '…'. Is that settled?"*
+
+The user's wording goes into `claim.text` and `claim.counts_against` exactly as given; the other answers go in
+their own fields. The assistant never rewords them afterwards; a change is the user's, recorded as a revision.
 
 **Step 2: features.** The assistant proposes features that would test, observe or demonstrate the claim: as a
-calculation, a simulation or something a user sees. Each says what it computes or shows (`does`), what
-outcome would count against the claim (`counts_against`), and whether it is science or infrastructure (§4).
+calculation, a simulation or something a user sees. Each says what it computes or shows (`does`), what outcome
+would count against the claim (`counts_against`), and whether it is science or infrastructure (§4).
 
 - *"Which of these do you keep, change or drop?"* (Asked once for the whole list.)
 
@@ -101,14 +107,14 @@ source with how deeply it was read, and plainly what it couldn't find or verify 
 - If override: *"What are you departing from, and why?"* The answer is recorded verbatim.
 
 **Step 5: predictions.** For each override, the assistant drafts a prediction (§7): what we expect to see
-given the inputs and the function, what would count against it, and what the tool has already shown.
+given the inputs and the function, what would count against it, and what the unit has already shown.
 
-- *"Register this as an experiment in <corpus project>, adjust it, or leave it for later?"*
+- *"Preregister this in <unit>/preregistrations/, adjust it, or leave it for later?"*
 
 **Step 6: production.** Only when the user asks. The assistant runs `scope-status`, lists everything that
 stands in the way, and asks:
 
-- *"Move <tool> to production?"*
+- *"Move <unit> to production?"*
 
 ## 4. Science and infrastructure
 
@@ -117,17 +123,17 @@ stands in the way, and asks:
   and readable. This protocol holds no conventions of its own; it only says where they come from (step 0).
 - **Science** is anything that implements a research concept: equations, models, parameters, transforms,
   thresholds, interpretations.
-- **Presentation can be science.** If a choice changes what someone looking at the tool would conclude (a
+- **Presentation can be science.** If a choice changes what someone looking at the unit would conclude (a
   colour scale that implies a threshold, a label that implies certainty, which of two values is shown), it is
   a scientific feature.
 - When it's unclear which side something falls on, the assistant asks (step 3).
 
 ## 5. The evidence basis
 
-Every scientific feature gets one basis. The scale extends the parameter tags of `PREREG_PROTOCOL.md` §5 from
-parameters to features, so a feature that moves into a simulation or experiment carries its tag with it.
+Every scientific feature gets one basis. The scale extends the parameter tags of `PREREG_PROTOCOL.md` §3
+(section 5) from parameters to features, so a feature that moves into an experiment carries its tag with it.
 
-| Basis | Means | Needs | Tag in `PREREG.md` §5 |
+| Basis | Means | Needs | Tag in `PREREG.md` |
 |---|---|---|---|
 | `established` | Settled science: in standard references or textbooks, or replicated independently. Not theory, and not best practice alone. One paper is never enough. | at least one verified source | `[LIT: …]` |
 | `supported` | Peer-reviewed theory, or accepted and documented best practice. | at least one verified source | `[LIT: …]` |
@@ -157,22 +163,22 @@ changed from and to, the reasoning, and whether the outcome was already known (a
 ## 7. Overrides become predictions
 
 An override says "we expect this to work here even though the research doesn't say so". That is a prediction,
-and it is tested the way `PREREG_PROTOCOL.md` tests predictions:
+and it is tested the way `PREREG_PROTOCOL.md` tests predictions, in the unit's own `preregistrations/`:
 
 - **The prediction** states what we expect to see given the inputs and the function, and what would count
   against it (`PREREG.md` §2–4).
-- **What the tool already showed is prior knowledge.** Once the tool has been used on some data, a prediction
-  about that same data is not risky. The experiment's `PREREG.md` §8 names what the tool showed, and the test
-  uses data the tool hasn't seen.
+- **What the unit already showed is prior knowledge.** Once the unit has been used on some data, a prediction
+  about that same data is not risky [3]. The experiment's `PREREG.md` §8 names what the unit showed, and the
+  test uses data the unit hasn't seen.
 - **An override that sets a value is an `[ARBITRARY]` parameter,** so the experiment's preregistered
   sensitivity analysis (`PREREG.md` §6) covers it.
-- **The experiment lives with the research corpus,** under the project's folder, and follows
-  `PREREG_PROTOCOL.md` unchanged. The feature's `experiments` field links to it.
+- **The feature's `experiments` field links to it** (its EID). Findings that bear on the research corpus are
+  written there, referenced by claim ID.
 - **When the result is in,** `result` records where it is and the decision taken on it. A failed prediction
   doesn't silently stand: before production the user revises the feature, drops it, or keeps it with a stated
   reason, recorded as a revision.
 
-A derived feature's first run is a prediction too. It needs an experiment only if the tool moves to
+A derived feature's first run is a prediction too. It needs an experiment only if the unit moves to
 production relying on it without independent support.
 
 ## 8. Moving to production
@@ -183,13 +189,13 @@ becomes `production`.
 
 ---
 
-## 9. The scope record: format contract (format 1)
+## 9. The scope record: format contract (format 2)
 
 Other tools may validate a record without dependencies. This section is the contract they implement.
 
-**File:** `SCOPE.toml`, one per tool, beside the tool's code. In a study (§1), every folder directly under
-`tools/` is expected to hold one; a tool folder without it is reported as **unscoped** (an open item, like an
-unsettled claim), so a validator should list those too.
+**File:** `SCOPE.toml`, one per unit, at the unit's root. Every unit is expected to have one; a unit without it
+is reported as **unscoped** (an open item, like an unsettled claim), so a validator lists those too. Units are
+found as `PREREG_PROTOCOL.md` §1 defines them.
 
 **Syntax: a TOML subset.**
 - tables (`[claim]`) and arrays of tables (`[[features]]`, `[[revisions]]`);
@@ -204,12 +210,13 @@ string). A parser that finds any of these reports an error, even where a full TO
 
 | Where | Field | Required | Values |
 |---|---|---|---|
-| top | `format` | yes | `1` |
-| top | `tool` | yes | the tool's name |
+| top | `format` | yes | `2` (format `1`, which named the unit `tool`, is still read) |
+| top | `unit` | yes | the unit's name (format 1: `tool`) |
 | top | `stage` | yes | `exploratory` or `production` |
 | top | `corpus_project` | no | the research corpus project |
 | `[claim]` | `text`, `counts_against` | yes, once step 1 is done | the user's wording, verbatim |
 | `[claim]` | `decided` | yes, once step 1 is done | `YYYY-MM-DD` |
+| `[claim]` | `concepts`, `measure`, `smallest_effect`, `assumptions` | no; empty means still open | the user's answers from step 1 |
 | `[claim]` | `candidates` | no | the candidates offered |
 | `[[features]]` | `id`, `name` | yes | `id` unique in the record |
 | `[[features]]` | `kind` | yes | `science` or `infrastructure` |
@@ -222,15 +229,15 @@ string). A parser that finds any of these reports an error, even where a full TO
 | `[[features]]` | `not_found` | no | text |
 | `[[features]]` | `decision` | once the user has decided | `use-research`, `override`, `research-further` |
 | `[[features]]` | `decided` | with a decision | `YYYY-MM-DD` |
-| `[[features]]` | `experiments` | `override`, before production | links to preregistered experiments |
+| `[[features]]` | `experiments` | `override`, before production | the EIDs of preregistered experiments |
 | `[[features]]` | `result` | `override`, before production | where the result is, and the decision taken on it |
-| `[[revisions]]` | `feature`, `date`, `from`, `to`, `outcome_known`, `reasoning` | all | `outcome_known`: `no`, `partial`, `yes` |
+| `[[revisions]]` | `feature`, `date`, `from`, `to`, `outcome_known`, `reasoning` | all | `feature` is a feature id or `claim`; `outcome_known`: `no`, `partial`, `yes` |
 
-Unknown fields are ignored, so later versions can add fields without breaking a format-1 reader.
+Unknown fields are ignored, so later versions can add fields without breaking an older reader.
 
 **Rules.** A record **breaks the contract** if any of these fail:
 
-1. `format`, `tool` and `stage` are present and valid.
+1. `format` is 1 or 2; the unit's name (`unit`, or `tool` in format 1) and `stage` are present and valid.
 2. Feature ids are unique; `kind` and `status` use the values above.
 3. A science feature that isn't dropped has `does` and `counts_against`.
 4. `established` and `supported` cite at least one source; `derived` cites its sources and has a
@@ -239,7 +246,7 @@ Unknown fields are ignored, so later versions can add fields without breaking a 
 6. `use-research` goes only with `established`, `supported` or `derived`; a `gap` has no decision or
    `research-further`.
 7. Every decision has `decided`; every date is `YYYY-MM-DD`.
-8. Every revision names a feature in the record and has all its fields.
+8. Every revision names a feature in the record, or `claim`, and has all its fields.
 
 A record is **open** while the claim isn't settled, a science feature has no basis or no decision, or an
 override has no experiment yet; a feature is **blocked** while its decision is `research-further`. Both are
@@ -250,10 +257,11 @@ normal at the exploratory stage.
 
 ## 10. `scope-status`
 
-`.agents/tools/scope-status [PATH]` finds `SCOPE.toml` files (PATH is a file, or a folder searched for them).
-When PATH is a study's root, it also lists the folders under `tools/` that have no record yet. It prints each record's claim, its features with their basis and decision, and its errors, open items,
-blocked features, and what stands before production. It always exits 0. With `--check` it exits 1 if a record
-breaks the contract, or a production record isn't ready, so it can gate CI.
+`.agents/tools/scope-status [PATH]` finds the units under PATH (default: the repository) and every `SCOPE.toml`
+there. It prints each record's claim, its features with their basis and decision, and its errors, open
+items, blocked features and what stands before production, and lists units that have no record yet. It
+always exits 0. With `--check` it exits 1 if a record breaks the contract, or a production record isn't
+ready, so it can gate CI.
 
 ## 11. What this protocol does not give you
 
@@ -261,26 +269,35 @@ breaks the contract, or a production record isn't ready, so it can gate CI.
   what it was cited for. The assistant's summary of a source can be wrong; read depth says how far to trust it.
 - **Enforcement.** The rules bind the assistant through its instructions, and `scope-status --check` catches a
   malformed or unfinished record. Nothing stops code being written that the record doesn't describe.
-- **Findings.** A tool explores. What it shows becomes evidence only through a preregistered experiment.
+- **Findings.** A unit explores. What it shows becomes evidence only through a preregistered experiment.
 
 ---
 
 ## References
 
-Read depth: [AB] abstract plus secondary summaries. The evidence-basis scale in §5 is this protocol's own; it
-reuses the parameter tags of `PREREG_PROTOCOL.md`, whose references give their sources.
+Read depth: [FT] read in full text, with the passages this protocol relies on checked verbatim; [AB] abstract
+plus secondary summaries. The evidence-basis scale in §5 is this protocol's own; it reuses the parameter tags
+of `PREREG_PROTOCOL.md`, whose references give their sources.
 
-1. Nosek, B. A., Ebersole, C. R., DeHaven, A. C., & Mellor, D. T. (2018). The preregistration revolution.
-   *Proceedings of the National Academy of Sciences*, 115(11), 2600–2606.
-   https://doi.org/10.1073/pnas.1708274114 [AB]. Keeping prediction distinct from postdiction (§7).
-2. Weston, S. J., Ritchie, S. J., Rohrer, J. M., & Przybylski, A. K. (2019). Recommendations for increasing the
+1. Scheel, A. M., Tiokhin, L., Isager, P. M., & Lakens, D. (2021). Why hypothesis testers should spend less
+   time testing hypotheses. *Perspectives on Psychological Science*, 16(4), 744–755.
+   https://doi.org/10.1177/1745691620966795 [FT]. The derivation chain from a claim to a test (concepts,
+   measures, relationships, boundary conditions and auxiliary assumptions, predictions); stating in advance
+   what would support and what would falsify; groundwork before a confirmatory test (§1, §3 step 1).
+2. Lakens, D. (2022). Sample size justification. *Collabra: Psychology*, 8(1), 33267.
+   https://doi.org/10.1525/collabra.33267 [FT]. The smallest effect size of interest; range predictions (§3
+   step 1).
+3. Weston, S. J., Ritchie, S. J., Rohrer, J. M., & Przybylski, A. K. (2019). Recommendations for increasing the
    transparency of analysis of preexisting data sets. *Advances in Methods and Practices in Psychological
    Science*, 2(3), 214–227. https://doi.org/10.1177/2515245919848684 [AB]. Declaring what was already seen
    (§7, prior knowledge).
-3. Vanpaemel, W. (2019). The really risky registered modeling report: Incentivizing strong tests and HONEST
+4. Nosek, B. A., Ebersole, C. R., DeHaven, A. C., & Mellor, D. T. (2018). The preregistration revolution.
+   *Proceedings of the National Academy of Sciences*, 115(11), 2600–2606.
+   https://doi.org/10.1073/pnas.1708274114 [AB]. Keeping prediction distinct from postdiction (§7).
+5. Vanpaemel, W. (2019). The really risky registered modeling report: Incentivizing strong tests and HONEST
    modeling in cognitive science. *Computational Brain & Behavior*, 2, 218–222.
    https://doi.org/10.1007/s42113-019-00056-9 [AB]. Risky predictions from models (§7).
-4. Gould, E., et al. (2026). 'But I can't preregister my research': Improving the reproducibility and
+6. Gould, E., et al. (2026). 'But I can't preregister my research': Improving the reproducibility and
    transparency of ecology and conservation with adaptive preregistration for model-based research.
    *Methods in Ecology and Evolution*, 17(6), 1768–1787. https://doi.org/10.1111/2041-210x.70311 [AB].
    Staged, adaptive plans for model-based work (§2, §7).
