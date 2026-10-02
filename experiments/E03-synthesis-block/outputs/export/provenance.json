@@ -1,0 +1,18 @@
+{
+ "stamped_utc": "2026-09-25T21:33:24.233726+00:00",
+ "dependencies": {
+  "tools/result-provenance": {
+   "sha": "54d55ebba3e27e02ec07ca495bb1929b9df64d83",
+   "dirty": false,
+   "exists": true
+  }
+ },
+ "note": "",
+ "rerun_rule": "Re-run the NULL and the MEASUREMENT together, or not at all. A threshold computed by the same code as the measurement moves with it, and comparing a fresh measurement against a stale bar manufactures a result in the exciting direction.",
+ "monorepo_head": "900f6b96d712a906b31bb1d6b40f2e38d8b60c6b",
+ "repo": {
+  "name": "neural-memory",
+  "sha": "80e5e730c630a66c45093fd15e131faa9a6dfe3c",
+  "dirty": true
+ }
+}
