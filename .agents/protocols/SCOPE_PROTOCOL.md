@@ -19,7 +19,7 @@ dataset analysis.
 4. **Unverified sources don't count.** A source the assistant couldn't verify is not a source; if nothing
    verifiable remains, the feature is a gap.
 5. **Departures become predictions.** Every override is a place where the unit predicts something. It is
-   preregistered in the unit's own `preregistrations/` (§7).
+   preregistered in the unit's own `preregistrations/`, or, in a tool repository, in the research corpus (§7).
 
 ---
 
@@ -29,6 +29,11 @@ It applies **automatically to every unit** (`PREREG_PROTOCOL.md` §1): every fol
 folder in a repository that holds several units, or the repository itself when it is one unit. Each unit has
 one **scope record**, `SCOPE.toml`, at the unit's root. A unit without one, or with an unsettled claim, is
 **unscoped**, and the first work on it is step 1.
+
+**A tool repository holds no research.** A repository that is a tool (its `TOOL.toml` says `kind = "tool"`, or
+its README carries `**Kind:** tool`) is one unit and is scoped like any other, but nothing in it is
+preregistered: its overrides are preregistered in the research corpus, in the project its record names
+(`corpus_project`), and its findings stay there (§7).
 
 What a unit shows before a preregistered test is exploration, not a finding. Exploratory work (apps, tools,
 first runs) is the groundwork that makes a later test informative: it settles what the claim's terms mean,
@@ -163,7 +168,9 @@ changed from and to, the reasoning, and whether the outcome was already known (a
 ## 7. Overrides become predictions
 
 An override says "we expect this to work here even though the research doesn't say so". That is a prediction,
-and it is tested the way `PREREG_PROTOCOL.md` tests predictions, in the unit's own `preregistrations/`:
+and it is tested the way `PREREG_PROTOCOL.md` tests predictions, in the unit's own `preregistrations/`. In a
+tool repository (§1) it is preregistered in the research corpus instead, in the record's `corpus_project`,
+against a pinned tag of the tool:
 
 - **The prediction** states what we expect to see given the inputs and the function, and what would count
   against it (`PREREG.md` §2–4).
@@ -172,8 +179,9 @@ and it is tested the way `PREREG_PROTOCOL.md` tests predictions, in the unit's o
   test uses data the unit hasn't seen.
 - **An override that sets a value is an `[ARBITRARY]` parameter,** so the experiment's preregistered
   sensitivity analysis (`PREREG.md` §6) covers it.
-- **The feature's `experiments` field links to it** (its EID). Findings that bear on the research corpus are
-  written there, referenced by claim ID.
+- **The feature's `experiments` field links to it**: its EID, or, for a tool repository, where it lives in the
+  corpus (`corpus:<project>/preregistrations/<EID>`). Findings that bear on the research corpus are written
+  there, referenced by claim ID.
 - **When the result is in,** `result` records where it is and the decision taken on it. A failed prediction
   doesn't silently stand: before production the user revises the feature, drops it, or keeps it with a stated
   reason, recorded as a revision.
@@ -229,7 +237,7 @@ string). A parser that finds any of these reports an error, even where a full TO
 | `[[features]]` | `not_found` | no | text |
 | `[[features]]` | `decision` | once the user has decided | `use-research`, `override`, `research-further` |
 | `[[features]]` | `decided` | with a decision | `YYYY-MM-DD` |
-| `[[features]]` | `experiments` | `override`, before production | the EIDs of preregistered experiments |
+| `[[features]]` | `experiments` | `override`, before production | the EIDs of preregistered experiments (a tool repository: `corpus:<project>/preregistrations/<EID>`) |
 | `[[features]]` | `result` | `override`, before production | where the result is, and the decision taken on it |
 | `[[revisions]]` | `feature`, `date`, `from`, `to`, `outcome_known`, `reasoning` | all | `feature` is a feature id or `claim`; `outcome_known`: `no`, `partial`, `yes` |
 

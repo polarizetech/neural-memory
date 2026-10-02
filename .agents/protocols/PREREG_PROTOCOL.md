@@ -37,6 +37,10 @@ change to one unit's plan or model never touches another's.
 - **A repository that holds several units** (a study) gives each its own folder, and the kit recognises a
   unit by its `preregistrations/` folder: every folder that contains one is a unit. How units are named and
   arranged (`apps/`, `sims/`, `calculators/`, …) is the organisation's layout convention, not this protocol's.
+- **A study's manifest can list its units too.** Where the layout convention keeps a manifest of a study's
+  units (`STUDY.toml`, with its `[[apps]]`, `[[sims]]`, `[[datasets]]` and `[[calculators]]`), each listed
+  folder is a unit from the moment it is listed, before its first preregistration: an entry's `path`, or its
+  kind's default folder. Units pinned to another repository, and apps marked superseded or abandoned, are not.
 - **Any other repository is one unit**, the repository itself: a sim repo, a tool repo, a single app.
 - **Earlier layout.** A repository whose experiments are in `experiments/<EID>/` at its root is one unit with
   that layout, and keeps it.

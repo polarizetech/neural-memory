@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/polarizetech/adaptive-preregistration.git",
   "ref": "main",
-  "commit": "7e3eb6510beee038dc71295ee3d70ee5d5f6c671",
+  "commit": "a5b3e6aee3689b62c91c958463505e72950953b0",
   "dirty": false,
   "modules": [
     "core",
@@ -14,12 +14,12 @@
     ".agents/githooks/pre-commit": "648bb666b5eb475dcd9a2a4a0227422c2515ae23dd9a9e36a922cf079f3ce2e1",
     ".agents/protocols/ARCHIVING.md": "e379fb8c7741743b662806fc3d87eadfc76ef191aa127e8a8dcde9b6d0846d76",
     ".agents/protocols/EXPERIMENT_PR_LOG.md": "a7acc7424d2c7d0c99f8c32045452fcda2802dabc081064949cffdc07f77cacd",
-    ".agents/protocols/PREREG_PROTOCOL.md": "fb46c3af20844105515a0edc45577593fe3d2e232e5606c68ffce73831933824",
-    ".agents/protocols/SCOPE_PROTOCOL.md": "a27e8c64a74e426465dd657aca8dda6914b4352a6809a95681a7c0a7ce492201",
+    ".agents/protocols/PREREG_PROTOCOL.md": "09ef0e69e9c02d40bfecb38f49020b9fba8834004e0d1cfc6cc296a653ede283",
+    ".agents/protocols/SCOPE_PROTOCOL.md": "0f5f0428dd70b6f14f751670c6f32389ead4a25fa6829a5fb9105a734e023ff6",
     ".agents/templates/SCOPE.toml": "fc7b3f8504372c48207440e300d8f22fed13bf9c5518e2cdbbe150b7e10dce70",
     ".agents/tools/prereg-receipt": "8803de395663ae94deeee7f4f78a6e34755455208580e485d9c144a213643990",
     ".agents/tools/prereg-status": "28439a960eff77db37e3624360a03708dc1cd0013540b6911b85d33408a9236b",
-    ".agents/tools/scope-status": "fd1011f79c81655b548197e5b063b33d0713e22d9e3172b464285255d947f575",
+    ".agents/tools/scope-status": "abc053bf89552594c09c6b019725dd3777e25e2988cf68bb03b6960c2b1951bd",
     ".agents/tools/tag": "775705cadd1ef81e25d3076968291485302d204620b9ecc72289d5da85b42cff",
     ".github/hooks/kit_ap-core.json": "0e5a1a6763aa34c4ac2e48870b4a384fe594ccf1630bd6dc90fb2b6c642dbb8e"
   }
