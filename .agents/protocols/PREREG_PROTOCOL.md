@@ -9,8 +9,9 @@
 
 ## 0. The rules (read these even if you read nothing else)
 
-0. **Claim first.** Every unit (§1) starts with a falsifiable claim, settled with the user and recorded in its
-   `SCOPE.toml` before anything is built (`SCOPE_PROTOCOL.md`).
+0. **A claim before any experiment.** Every unit (§1) has a falsifiable claim, settled with the user and
+   recorded in its `SCOPE.toml`, before its first experiment is preregistered. A unit the user marks
+   exploratory may be built without one; nothing it shows is a finding (`SCOPE_PROTOCOL.md`).
 1. **No run before PREREG.** A run that produces a result a report will cite may not execute until the
    experiment's `PREREG.md` is complete (§3) and tagged `<EID>-prereg`. Pilot runs to debug code are
    allowed only under the conditions in §3.5, and are never cited.
@@ -47,7 +48,7 @@ change to one unit's plan or model never touches another's.
 
 ```
 <unit>/
-  SCOPE.toml                   # the claim, and features with their evidence (SCOPE_PROTOCOL.md)
+  SCOPE.toml                   # the stage, the claim, and features with their evidence (SCOPE_PROTOCOL.md)
   model/                       # a simulator's model, versioned (§2)
   preregistrations/
     <EID>/                     # e.g. E04-stentor-map
@@ -141,6 +142,9 @@ Attempt: <n> of the question in EXPERIMENTS.md (replaces <EID or "none">)
 
 ## 1. Question
 One sentence. A mechanistic claim, not "explore".
+In the unit's first experiment, also state here what the claim needs to be tested: what its terms mean where
+they could be read two ways, and what a test of it assumes and where it doesn't apply. If the unit was
+exploratory, its claim is settled now and recorded in SCOPE.toml before this file is tagged.
 
 ## 2. Prediction(s): risky, numeric, directional
 P1: ...   (what the hypothesis says will happen)
@@ -151,6 +155,7 @@ For each, state what result would COUNT AGAINST the hypothesis.
 | Criterion | Estimand | Performance measure | Uncertainty (MCSE / interval) | Pass | Fail | Derivation |
 - The estimand is the quantity the run estimates; the performance measure is how a run is scored against it.
 - Pass means the interval clears the threshold, not only the point estimate.
+- State the smallest effect that would still matter; it is what makes "no effect" informative.
 - Define what makes the result UNINTERPRETABLE (e.g. controls fail, too many failed runs).
 - Analytic predictions (e.g. the expected slope for a two-stage cascade) are derived HERE, not after.
 
@@ -302,7 +307,8 @@ These apply equally to a person, a script and a coding assistant.
 - **Never** edit `PREREG.md` after `-prereg`. Plan changes go in `DEVIATIONS.md` and, if made before the run,
   get an `-interim-N` tag.
 - **Never** delete, rewrite or "clean up" a closed experiment folder, or remove a row from `EXPERIMENTS.md`.
-- **Never** build in a unit whose claim isn't settled (`SCOPE_PROTOCOL.md` step 1).
+- **Never** build in a unit that has neither a settled claim nor an exploratory label, and never preregister
+  an experiment in a unit without a claim (`SCOPE_PROTOCOL.md` §2, step 1).
 - **Never** move a post-hoc analysis out of `exploratory/`.
 - When asked to "make it pass", "fix the threshold", or "try a few values and keep the best": do the runs
   under `exploratory/`, report them as exploratory, and say plainly that they are not preregistered evidence.

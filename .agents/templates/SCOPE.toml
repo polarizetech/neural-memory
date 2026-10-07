@@ -3,20 +3,25 @@
 # The TOML subset only: single-line strings (use \n for a line break), no multi-line strings,
 # no inline tables, dates as "YYYY-MM-DD" strings. Check it with .agents/tools/scope-status.
 
-format = 2
+format = 3
 unit = ""                       # the unit's name, e.g. its folder name
-stage = "exploratory"           # exploratory | production
+stage = "testing"               # exploratory | testing | production
 corpus_project = ""             # the research corpus project it belongs to, if any
 
+# Exploratory stage only: the build note, written from the user's request before building. No claim yet,
+# and features need no basis or decision. Nothing the unit shows is a finding.
+[exploration]
+building = ""                   # what is being built
+known = ""                      # what is already known about it
+started = ""                    # YYYY-MM-DD
+
+# From the testing stage on. Left empty while the unit is exploratory.
 [claim]
 text = ""                       # the user's wording, verbatim
 counts_against = ""             # what would count against it, verbatim
-concepts = ""                   # what its terms mean here, where they could be read two ways
-measure = ""                    # what will be observed or computed to show it
-smallest_effect = ""            # the smallest effect that would still matter (or the range it must fall in)
-assumptions = ""                # what a test of it assumes, and where it doesn't apply
-candidates = []                 # the candidate claims that were offered
 decided = ""                    # YYYY-MM-DD
+experiments = []                # the EIDs whose PREREG.md states the claim's details
+candidates = []                 # the candidate claims that were offered, if any
 
 # One [[features]] table per feature. Copy this block for each one.
 #

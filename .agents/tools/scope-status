@@ -7,14 +7,16 @@ Usage:
                                 Units without a record yet are listed as unscoped.
   scope-status --check [PATH]   exit 1 if a record breaks the contract, or a production record isn't ready
 
-Prints the claim, each feature's basis and decision, and three lists: open decisions, blocked features,
-and what stands between the unit and production. Contract: SCOPE_PROTOCOL.md §9. Stdlib only (Python 3.9+).
+Prints the stage, the build note or the claim, each feature's basis and decision, and three lists: open
+decisions, blocked features, and what stands between the unit and production. Contract: SCOPE_PROTOCOL.md §9.
+Stdlib only (Python 3.9+).
 """
 import argparse, json, os, re, sys
 
-FORMATS = (1, 2)  # format 1 named the unit `tool`
-CLAIM_DETAILS = ("concepts", "measure", "smallest_effect", "assumptions")
-STAGES = ("exploratory", "production")
+FORMATS = (1, 2, 3)  # format 1 named the unit `tool`
+CLAIM_DETAILS = ("concepts", "measure", "smallest_effect", "assumptions")  # format 2 kept them in the record
+STAGES = ("exploratory", "testing", "production")
+OLD_STAGES = ("exploratory", "production")  # formats 1 and 2, where `exploratory` meant today's `testing`
 KINDS = ("science", "infrastructure")
 STATUSES = ("accepted", "changed", "dropped")
 BASES = ("established", "supported", "derived", "override", "gap")
@@ -178,6 +180,14 @@ def unit_name(rec):
     return text(rec, "tool" if rec.get("format") == 1 else "unit")
 
 
+def stage_of(rec):
+    """The record's stage in today's terms, or None if it isn't a valid one for its format."""
+    stage = rec.get("stage")
+    if rec.get("format") in (1, 2):
+        return {"exploratory": "testing", "production": "production"}.get(stage)
+    return stage if stage in STAGES else None
+
+
 def text(d, key):
     v = d.get(key, "")
     return v.strip() if isinstance(v, str) else ""
@@ -193,15 +203,24 @@ def assess(rec):
     errors, open_items, blocked, gaps_to_production = [], [], [], []
 
     if rec.get("format") not in FORMATS:
-        errors.append("format must be 1 or 2")
+        errors.append("format must be 1, 2 or 3")
     if not unit_name(rec):
         errors.append("unit is empty" if rec.get("format") != 1 else "tool is empty")
-    stage = rec.get("stage")
-    if stage not in STAGES:
-        errors.append(f"stage must be one of {', '.join(STAGES)}")
+    stage = stage_of(rec)
+    if stage is None:
+        allowed = OLD_STAGES if rec.get("format") in (1, 2) else STAGES
+        errors.append(f"stage must be one of {', '.join(allowed)}")
+    exploring = stage == "exploratory"
 
     claim = rec.get("claim") if isinstance(rec.get("claim"), dict) else {}
-    if not (text(claim, "text") and text(claim, "counts_against") and text(claim, "decided")):
+    if exploring:
+        note = rec.get("exploration") if isinstance(rec.get("exploration"), dict) else {}
+        if not text(note, "building"):
+            open_items.append("the build note is empty: exploration.building says what is being built (step 0)")
+        if text(note, "started") and not DATE.match(text(note, "started")):
+            errors.append("exploration.started must be YYYY-MM-DD")
+        gaps_to_production.append("exploratory: it needs its claim, and the testing stage, first (step 1)")
+    elif not (text(claim, "text") and text(claim, "counts_against") and text(claim, "decided")):
         open_items.append("the claim isn't settled (step 1): text, counts_against and decided are required")
     if text(claim, "decided") and not DATE.match(text(claim, "decided")):
         errors.append("claim.decided must be YYYY-MM-DD")
@@ -226,8 +245,8 @@ def assess(rec):
             errors.append(f"{where}: kind must be one of {', '.join(KINDS)}")
         if status not in STATUSES:
             errors.append(f"{where}: status must be one of {', '.join(STATUSES)}")
-        if kind != "science" or status == "dropped":
-            continue
+        if kind != "science" or status == "dropped" or exploring:
+            continue  # an exploratory unit's features need no basis or decision yet
 
         if not text(f, "does"):
             errors.append(f"{where}: `does` is empty (what it computes or shows)")
@@ -294,28 +313,37 @@ def assess(rec):
 
 def is_ready(rec, errors, before_production):
     """--check: a record fails on any contract error, and a production record also on anything unresolved."""
-    return not errors and not (rec.get("stage") == "production" and before_production)
+    return not errors and not (stage_of(rec) == "production" and before_production)
 
 
 # ---------------------------------------------------------------- output
 
 def report(path, rec, errors, open_items, blocked, before_production):
     claim = rec.get("claim") if isinstance(rec.get("claim"), dict) else {}
-    out = [f"{path}: {unit_name(rec) or '(no unit name)'} ({rec.get('stage', '?')})"]
+    stage = stage_of(rec)
+    out = [f"{path}: {unit_name(rec) or '(no unit name)'} ({stage or rec.get('stage', '?')})"]
+    if stage == "exploratory":
+        note = rec.get("exploration") if isinstance(rec.get("exploration"), dict) else {}
+        if text(note, "building"):
+            out.append(f'  Exploring: "{text(note, "building")}"' + (f" (since {text(note, 'started')})"
+                                                                   if text(note, "started") else ""))
+        out.append("    no claim yet; nothing it shows is a finding (SCOPE_PROTOCOL.md §2)")
     if text(claim, "text"):
         out.append(f'  Claim: "{text(claim, "text")}"' + (f" (decided {text(claim, 'decided')})"
                                                          if text(claim, "decided") else ""))
         if text(claim, "counts_against"):
             out.append(f"    counts against: {text(claim, 'counts_against')}")
-        still_open = [k for k in CLAIM_DETAILS if not text(claim, k)]
-        if still_open:
-            out.append(f"    not yet stated: {', '.join(still_open)} (SCOPE_PROTOCOL.md §3, step 1)")
+        stated = items(claim, "experiments")
+        if stated:
+            out.append(f"    details stated in: {', '.join(str(e) for e in stated)}")
+        elif not any(text(claim, k) for k in CLAIM_DETAILS):
+            out.append("    details: stated when its first experiment is preregistered (SCOPE_PROTOCOL.md §3, step 1)")
     features = rec.get("features") if isinstance(rec.get("features"), list) else []
     if features:
         out.append("  Features:")
         for f in features:
             cols = [text(f, "id"), text(f, "name"), f.get("kind", "?"), f.get("status", "?")]
-            if f.get("kind") == "science" and f.get("status") != "dropped":
+            if f.get("kind") == "science" and f.get("status") != "dropped" and stage != "exploratory":
                 cols += [f.get("basis") or "(no basis)", text(f, "decision") or "(open)"]
             out.append("    " + "  ".join(c for c in cols if c))
     for title, lines in (("Errors (break the contract)", errors), ("Open", open_items), ("Blocked", blocked),
@@ -323,7 +351,10 @@ def report(path, rec, errors, open_items, blocked, before_production):
         if lines:
             out.append(f"  {title}:")
             out.extend(f"    - {line}" for line in lines)
-    if not (errors or before_production):
+    if stage == "exploratory":
+        if not (errors or open_items):
+            out.append("  Nothing open at this stage.")
+    elif not (errors or before_production):
         out.append("  Nothing open: every scientific feature has a basis and a decision.")
     return "\n".join(out)
 
@@ -375,7 +406,7 @@ def find_units(root):
 
 
 def unscoped_units(root):
-    """Units with no SCOPE.toml at their root: their first work is the claim (SCOPE_PROTOCOL.md §1)."""
+    """Units with no SCOPE.toml at their root: their first work is step 0 (SCOPE_PROTOCOL.md §1)."""
     if not os.path.isdir(root):
         return []
     return [os.path.relpath(u, root) for u in find_units(root) if not os.path.exists(os.path.join(u, "SCOPE.toml"))]
@@ -402,7 +433,7 @@ def main():
     paths = find_records(a.path)
     unscoped = unscoped_units(a.path)
     if unscoped:
-        print("Unscoped units (every unit starts with its claim; SCOPE_PROTOCOL.md §1):")
+        print("Unscoped units (a unit starts with its claim, or an exploratory label; SCOPE_PROTOCOL.md §1):")
         print("\n".join(f"  - {'the repository' if d == '.' else d}: no SCOPE.toml yet" for d in unscoped))
     if not paths:
         return 0  # nothing to check yet: unscoped units are open, not errors

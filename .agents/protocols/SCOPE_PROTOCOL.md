@@ -1,4 +1,4 @@
-# SCOPE_PROTOCOL.md — Claim first: scoping every unit before it is built
+# SCOPE_PROTOCOL.md — Scoping a unit: exploratory, or claim first
 
 **Applies to:** everyone, person or coding assistant, working on a unit: an app, a sim, a tool, a calculator, a
 dataset analysis.
@@ -10,12 +10,14 @@ dataset analysis.
 
 ## 0. The rules (read these even if you read nothing else)
 
-1. **The claim first.** Every unit starts with a falsifiable claim, settled with the user in their own words,
-   with what would count against it. Nothing is built in a unit until its claim is settled.
+1. **A claim, or an exploratory label.** A unit starts with a falsifiable claim in the user's own words, with
+   what would count against it. If the user says the unit is exploratory, it needs no claim yet: it gets a
+   short build note instead, is labelled exploratory, and nothing it shows is a finding (§2).
 2. **Propose; never substitute.** The assistant offers options and records what the user chooses. It never
    replaces the user's claim, design or decision with its own, silently or otherwise.
-3. **No scientific feature without a basis and a decision.** Each is assessed against the research, given an
-   evidence basis (§5), and built only after the user's decision is recorded (§6).
+3. **Once a unit has a claim, no scientific feature without a basis and a decision.** Each is assessed against
+   the research, given an evidence basis (§5), and built only after the user's decision is recorded (§6). An
+   exploratory unit skips this until it gets its claim.
 4. **Unverified sources don't count.** A source the assistant couldn't verify is not a source; if nothing
    verifiable remains, the feature is a gap.
 5. **Departures become predictions.** Every override is a place where the unit predicts something. It is
@@ -27,8 +29,8 @@ dataset analysis.
 
 It applies **automatically to every unit** (`PREREG_PROTOCOL.md` §1): every folder with a `preregistrations/`
 folder in a repository that holds several units, or the repository itself when it is one unit. Each unit has
-one **scope record**, `SCOPE.toml`, at the unit's root. A unit without one, or with an unsettled claim, is
-**unscoped**, and the first work on it is step 1.
+one **scope record**, `SCOPE.toml`, at the unit's root. A unit without one is **unscoped**, and the first work
+on it is step 0.
 
 **A tool repository holds no research.** A repository that is a tool (its `TOOL.toml` says `kind = "tool"`, or
 its README carries `**Kind:** tool`) is one unit and is scoped like any other, but nothing in it is
@@ -43,14 +45,23 @@ how they are measured, and what the test assumes. Findings come from preregister
 
 | Stage | The project's stage, if it declares one | What the record must show |
 |---|---|---|
-| **exploratory** | SKETCH, PROBE | a settled claim; every scientific feature has a basis and a decision; overrides and resolved gaps are allowed, recorded, and labelled as exploratory in the unit itself |
+| **exploratory** | SKETCH | a build note: what is being built, what is already known, and the date. No claim, and no evidence basis or decision for its features. The unit says it is exploratory wherever someone would read a result from it |
+| **testing** | PROBE | a settled claim; every scientific feature has a basis and a decision; overrides and resolved gaps are allowed and recorded |
 | **production** | BENCH, SHIPPED | every scientific feature is established, supported or derived and uses the research, or is an override whose preregistered experiment has been run, with its result and the decision taken on it recorded |
 
-A unit starts exploratory. Moving it to production is an explicit step the user takes (§3, step 6).
+**Which stage a unit starts in is the user's choice.** By default it starts at **testing**, with its claim
+(step 1). If the user says it is exploratory, in any words, it starts at **exploratory** and step 1 waits.
 
-**Pushback at the exploratory stage is one or two sentences.** An absence of evidence is not a reason to
-refuse to build: it is recorded as a gap, which blocks that one feature until the user answers one question.
-Infrastructure never blocks.
+**An exploratory unit is still written down before it is built.** Its build note is what the user asked for,
+recorded by the assistant without questions. It has no preregistered experiments: an experiment tests a claim,
+so preregistering the first one is when the claim is settled, and the unit moves to testing (§3, step 1).
+Nothing an exploratory unit shows is quoted as a result.
+
+Each move up is an explicit step the user takes: to testing by settling the claim, to production by step 6.
+
+**Pushback before production is one or two sentences.** An absence of evidence is not a reason to refuse to
+build: at the testing stage it is recorded as a gap, which blocks that one feature until the user answers one
+question. Infrastructure never blocks.
 
 ## 3. The process, and the questions asked
 
@@ -62,36 +73,27 @@ can't be found: which unit this is; where the organisation's conventions and lay
 conventions document the repository or its profile points to, and existing projects); which research corpus
 project it belongs to. It copies `.agents/templates/SCOPE.toml` to the unit's root.
 
-**Step 1: the claim.** The claim is the most important thing a person decides about a unit, so this step is
-never skipped or shortened. The assistant proposes three to five candidate claims, each one sentence with a
-one-line falsifier.
+If the user said the unit is exploratory, the assistant sets `stage = "exploratory"`, fills `[exploration]` from
+the request (`building`, `known`, `started`), says so in the unit's README, and builds. Steps 1 to 5 wait until
+the unit gets its claim.
 
-- *"Which claim should this <app/sim/tool/…> test? Pick one, merge some, or write your own."*
+**Step 1: the claim.** One question, for a unit that isn't exploratory, and for an exploratory unit when its
+first experiment is preregistered or the user asks to move it on:
 
-A claim is falsifiable when it says what would be observed if it were wrong. That depends on more than the
-sentence: a test of a claim runs through a chain of concepts, measures, assumptions and a prediction, and a
-loose link anywhere in that chain means a failed prediction can't count against the claim [1]. So, once the
-user has chosen, the assistant asks only for what the answer doesn't already give, one question at a time:
+- *"What claim does this <app/sim/tool/…> test, and what would count against it?"*
 
-- **Concepts:** *"What exactly do you mean by <term>, here?"* (Only for a term that could be read two ways.)
-- **Measure:** *"What will we observe or compute that shows it?"*
-- **What counts against it:** *"What result would you take as the claim being wrong?"* A result that would
-  support the claim and one that would falsify it are both stated in advance [1].
-- **How big:** *"What is the smallest effect that would still matter?"* Stating it is what makes "no effect"
-  informative [2]. When too large a result would also be implausible for the mechanism, the claim is a range,
-  and a result outside it on either side counts against it [2].
-- **Assumptions and boundaries:** *"What does this assume, and where doesn't it apply?"* A negative result
-  may come from a wrong assumption rather than a wrong claim [1], so the assumptions are written down with the
-  claim.
+If the user has already said both, the assistant records them and doesn't ask. If they ask for suggestions, it
+offers up to three candidate claims, each one sentence with a one-line falsifier, in the same message. A claim
+is falsifiable when it says what would be observed if it were wrong [1].
 
-The claim need not be ready to test. If the user can't yet say how it would be measured or how big an effect
-matters, that is recorded as open, and building the unit is how those answers are found [1]. What must be
-settled before building is the claim itself and what would count against it.
+The user's wording goes into `claim.text` and `claim.counts_against` exactly as given, with the date. The
+assistant never rewords them afterwards; a change is the user's, recorded as a revision.
 
-- *"Recorded as: '…', counting against it: '…'. Is that settled?"*
-
-The user's wording goes into `claim.text` and `claim.counts_against` exactly as given; the other answers go in
-their own fields. The assistant never rewords them afterwards; a change is the user's, recorded as a revision.
+**The rest of the claim is stated in the preregistration, not here.** What its terms mean, how it is measured,
+the smallest effect that would still matter [2], and what a test of it assumes are needed to test the claim,
+not to start building, and working on the unit is how those answers are found [1]. They are asked for when the
+first experiment is preregistered and written in its `PREREG.md` (§1–§4 and §8), which `claim.experiments`
+then names.
 
 **Step 2: features.** The assistant proposes features that would test, observe or demonstrate the claim: as a
 calculation, a simulation or something a user sees. Each says what it computes or shows (`does`), what outcome
@@ -191,13 +193,14 @@ production relying on it without independent support.
 
 ## 8. Moving to production
 
-At the user's request, the assistant runs `.agents/tools/scope-status`, lists everything under "Before
+A unit moves to production from testing, so an exploratory unit settles its claim first. At the user's
+request, the assistant runs `.agents/tools/scope-status`, lists everything under "Before
 production", and resolves nothing on the user's behalf. When the list is empty and the user agrees, `stage`
 becomes `production`.
 
 ---
 
-## 9. The scope record: format contract (format 2)
+## 9. The scope record: format contract (format 3)
 
 Other tools may validate a record without dependencies. This section is the contract they implement.
 
@@ -218,18 +221,21 @@ string). A parser that finds any of these reports an error, even where a full TO
 
 | Where | Field | Required | Values |
 |---|---|---|---|
-| top | `format` | yes | `2` (format `1`, which named the unit `tool`, is still read) |
+| top | `format` | yes | `3` (formats `1` and `2` are still read: `1` named the unit `tool`, and in both the stage written `exploratory` meant what is now `testing`) |
 | top | `unit` | yes | the unit's name (format 1: `tool`) |
-| top | `stage` | yes | `exploratory` or `production` |
+| top | `stage` | yes | `exploratory`, `testing` or `production` |
 | top | `corpus_project` | no | the research corpus project |
+| `[exploration]` | `building`, `known` | `building` at the exploratory stage | what is being built; what is already known about it |
+| `[exploration]` | `started` | at the exploratory stage | `YYYY-MM-DD` |
 | `[claim]` | `text`, `counts_against` | yes, once step 1 is done | the user's wording, verbatim |
 | `[claim]` | `decided` | yes, once step 1 is done | `YYYY-MM-DD` |
-| `[claim]` | `concepts`, `measure`, `smallest_effect`, `assumptions` | no; empty means still open | the user's answers from step 1 |
-| `[claim]` | `candidates` | no | the candidates offered |
+| `[claim]` | `experiments` | no | the EIDs whose `PREREG.md` states the claim's details |
+| `[claim]` | `candidates` | no | the candidates offered, if any |
+| `[claim]` | `concepts`, `measure`, `smallest_effect`, `assumptions` | no | format 2 kept the claim's details here; still read, no longer asked for |
 | `[[features]]` | `id`, `name` | yes | `id` unique in the record |
 | `[[features]]` | `kind` | yes | `science` or `infrastructure` |
 | `[[features]]` | `status` | yes | `accepted`, `changed` or `dropped` |
-| `[[features]]` | `does`, `counts_against` | science, not dropped | text |
+| `[[features]]` | `does`, `counts_against` | science, not dropped, from testing on | text |
 | `[[features]]` | `basis` | science, not dropped, once step 4 is done | `established`, `supported`, `derived`, `override`, `gap` |
 | `[[features]]` | `sources` | by basis (below) | `claim:<ID>`, or `doi:10.…` / `https://…` followed by ` [FT]` or ` [AB]` |
 | `[[features]]` | `derivation` | `derived` | text |
@@ -245,7 +251,7 @@ Unknown fields are ignored, so later versions can add fields without breaking an
 
 **Rules.** A record **breaks the contract** if any of these fail:
 
-1. `format` is 1 or 2; the unit's name (`unit`, or `tool` in format 1) and `stage` are present and valid.
+1. `format` is 1, 2 or 3; the unit's name (`unit`, or `tool` in format 1) and `stage` are present and valid.
 2. Feature ids are unique; `kind` and `status` use the values above.
 3. A science feature that isn't dropped has `does` and `counts_against`.
 4. `established` and `supported` cite at least one source; `derived` cites its sources and has a
@@ -256,17 +262,21 @@ Unknown fields are ignored, so later versions can add fields without breaking an
 7. Every decision has `decided`; every date is `YYYY-MM-DD`.
 8. Every revision names a feature in the record, or `claim`, and has all its fields.
 
-A record is **open** while the claim isn't settled, a science feature has no basis or no decision, or an
+**At the exploratory stage** only rules 1, 2 and 8 apply, and `exploration.started`, if given, is a date.
+A feature may be listed with as little as its `id`, `name`, `kind` and `status`. The record is open while
+`exploration.building` is empty.
+
+From testing on, a record is **open** while the claim isn't settled, a science feature has no basis or no decision, or an
 override has no experiment yet; a feature is **blocked** while its decision is `research-further`. Both are
-normal at the exploratory stage.
+normal at the testing stage.
 
 **At the production stage** a record must also have nothing open or blocked, and every override must have
-`experiments` and a `result`.
+`experiments` and a `result`. An exploratory record is never ready for production: it needs its claim first.
 
 ## 10. `scope-status`
 
 `.agents/tools/scope-status [PATH]` finds the units under PATH (default: the repository) and every `SCOPE.toml`
-there. It prints each record's claim, its features with their basis and decision, and its errors, open
+there. It prints each record's stage, its build note or claim, its features with their basis and decision, and its errors, open
 items, blocked features and what stands before production, and lists units that have no record yet. It
 always exits 0. With `--check` it exits 1 if a record breaks the contract, or a production record isn't
 ready, so it can gate CI.
