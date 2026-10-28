@@ -1,0 +1,271 @@
+# Build-vs-reuse register: our own scientific code, and the open-source, peer-reviewed tool that
+# does (or could do) the same job. States: tandem | candidate | none-found | replaced.
+# Format: https://github.com/polarizetech/retrieval-augmented-generation/blob/main/docs/reuse-register.md
+# Seeded from the 2026-10-28 review of this repo; check entries as you touch the code.
+
+# --- tandem ---
+
+[[custom]]
+name = "LT2021 reproduction metrics"
+path = "src/neurotape/experiments/repro_lt2021.py"
+does = "Q (Eq. 17) and mutual-information readouts of the Luboeinski & Tetzlaff 2021 recall test"
+state = "tandem"
+alternative = "memory-consolidation-stc"
+check = "docs/repro/r1_analyse.py"
+note = "r1_analyse.py scores the authors' unmodified C++ run with their own analysis functions and with ours (doi:10.1038/s42003-021-01778-y)"
+
+# --- candidate ---
+
+[[custom]]
+name = "Synaptic tagging and capture"
+path = "src/neurotape/plasticity/stc.py"
+does = "calcium-based early/late-phase plasticity with tagging and capture"
+state = "candidate"
+alternative = "memory-consolidation-stc"
+check = ""
+note = "checked against the authors' unmodified C++ run (docs/repro/REPORT.md, R1 vs R2; tests/test_repro_lt2021.py covers metrics only); no test runs both, so wire one to make it tandem"
+
+[[custom]]
+name = "Stream mixing projection"
+path = "src/neurotape/frontend/mixing.py"
+does = "fixed sparse random projection of band envelopes onto input neurons"
+state = "candidate"
+alternative = "scikit-learn"
+check = ""
+note = "compare with sklearn.random_projection.SparseRandomProjection"
+
+[[custom]]
+name = "Brainstem MSO stage"
+path = "src/neurotape/frontend/brainstem.py"
+does = "Jeffress-style coincidence stage"
+state = "candidate"
+alternative = "cnmodel"
+check = ""
+note = "cnmodel (Manis & Campagnola 2018, Hear Res) is named in the file but not installed; needs NEURON"
+
+[[custom]]
+name = "Population signals"
+path = "src/neurotape/decode/population.py"
+does = "LFP proxy, temporal response functions (mTRF re-implementation), phase-lag test"
+state = "candidate"
+alternative = "mne"
+check = ""
+note = "TRF reimplemented from Crosse 2016, not compared: compare with mne.decoding.ReceptiveField; phase-lag checked against Doelling et al. 2019 PNAS values in tests/test_frontend_decode.py"
+
+# --- none-found ---
+
+[[custom]]
+name = "Noise vocoder"
+path = "src/neurotape/decode/vocoder.py"
+does = "decoded band envelopes to audio by noise vocoding"
+state = "none-found"
+alternative = ""
+check = ""
+note = "no citation"
+
+[[custom]]
+name = "Gap junctions"
+path = "src/neurotape/coupling/gap.py"
+does = "Cx36-like electrical coupling among inhibitory cells (Brian 2 summed variables)"
+state = "none-found"
+alternative = ""
+check = ""
+note = "self-consistency test only; compare coupling coefficients with Galarreta & Hestrin 1999 Nature 402:72"
+
+[[custom]]
+name = "Neuromodulator"
+path = "src/neurotape/neuromod/nm.py"
+does = "LC-like tonic and salience-driven phasic neuromodulation"
+state = "none-found"
+alternative = ""
+check = ""
+note = "Aston-Jones & Cohen 2005 motivation only"
+
+[[custom]]
+name = "Theta pacemaker"
+path = "src/neurotape/neuromod/theta.py"
+does = "external theta oscillator with phase reset on onsets"
+state = "none-found"
+alternative = ""
+check = ""
+note = "Doelling 2019 motivation only"
+
+[[custom]]
+name = "Network assembly"
+path = "src/neurotape/network.py"
+does = "Poisson input -> plastic E <-> gap-coupled I network"
+state = "none-found"
+alternative = ""
+check = ""
+note = "REPORT.md R2: the AdEx cell fails recall"
+
+[[custom]]
+name = "Experiment suite"
+path = "src/neurotape/experiments/suite.py"
+does = "delay, stream and ablation experiments over seeds"
+state = "none-found"
+alternative = ""
+check = ""
+note = "REPORT.md R2: the AdEx cell fails recall"
+
+[[custom]]
+name = "Plasticity calibration"
+path = "src/neurotape/plasticity/calibrate.py"
+does = "plasticity protocols for calibration"
+state = "none-found"
+alternative = ""
+check = ""
+note = "checked against Graupner & Brunel 2012 protocols (tests/test_plasticity_protocols.py): FAILS, 1 of 5 pass at defaults"
+
+[[custom]]
+name = "Lehr neuromodulation sweep"
+path = "src/neurotape/experiments/lehr.py"
+does = "neuromodulation sweep after Lehr et al. 2022"
+state = "none-found"
+alternative = ""
+check = ""
+note = "checked against Lehr et al. 2022 Sci Rep: 4 of 4 (docs/results/exp5_lehr_nm_sweep/REPORT.md)"
+
+[[custom]]
+name = "Storage diagnostic"
+path = "src/neurotape/experiments/diagnostic.py"
+does = "does encoding write stream-specific weight changes"
+state = "none-found"
+alternative = ""
+check = ""
+note = "no reference found"
+
+[[custom]]
+name = "Storage diagnostic 2"
+path = "src/neurotape/experiments/diagnostic2.py"
+does = "follow-up storage diagnostic"
+state = "none-found"
+alternative = ""
+check = ""
+note = "no reference found"
+
+[[custom]]
+name = "Recall storage analysis"
+path = "src/neurotape/recall/storage.py"
+does = "weight-change magnitudes and specificity (analysis only)"
+state = "none-found"
+alternative = ""
+check = ""
+note = "no reference found"
+
+[[custom]]
+name = "Recall evaluation"
+path = "src/neurotape/recall/evaluate.py"
+does = "per-run recall metrics"
+state = "none-found"
+alternative = ""
+check = ""
+note = "no reference found"
+
+[[custom]]
+name = "Recall settling"
+path = "src/neurotape/recall/settling.py"
+does = "per-cycle settling and completion metric"
+state = "none-found"
+alternative = ""
+check = ""
+note = "no reference found"
+
+[[custom]]
+name = "Recall provenance"
+path = "src/neurotape/recall/provenance.py"
+does = "labels recall spikes as feedforward or recurrently reconstructed"
+state = "none-found"
+alternative = ""
+check = ""
+note = "no reference found"
+
+[[custom]]
+name = "Storage evaluation"
+path = "src/neurotape/experiments/storage.py"
+does = "stored size and reconstruction quality against audio codecs"
+state = "none-found"
+alternative = ""
+check = ""
+note = "compared with Opus and AAC only"
+
+[[custom]]
+name = "Habituation network"
+path = "src/neurotape/habituation/model.py"
+does = "relay -> depressing synapses -> LIF E <-> I habituation model"
+state = "none-found"
+alternative = ""
+check = ""
+note = "checked qualitatively against Tsodyks & Markram 1997 and Rankin habituation hallmarks (docs/habituation/PREREG.md, RESULTS.md)"
+
+[[custom]]
+name = "Habituation analytic"
+path = "src/neurotape/habituation/analytic.py"
+does = "mean-field prediction of the two-pool depression cascade"
+state = "none-found"
+alternative = ""
+check = ""
+note = "compared with own simulation only (tests/test_habituation_v02.py)"
+
+[[custom]]
+name = "Habituation stimuli"
+path = "src/neurotape/habituation/stimuli.py"
+does = "synthetic stimulus families"
+state = "none-found"
+alternative = ""
+check = ""
+note = "internal checks only"
+
+[[custom]]
+name = "Habituation measures"
+path = "src/neurotape/habituation/measure.py"
+does = "suppression and recognition readouts"
+state = "none-found"
+alternative = ""
+check = ""
+note = "internal checks only"
+
+[[custom]]
+name = "Habituation protocol"
+path = "src/neurotape/habituation/protocol.py"
+does = "training, delays and probes"
+state = "none-found"
+alternative = ""
+check = ""
+note = "internal checks only"
+
+[[custom]]
+name = "Single-cell learning model"
+path = "src/neurotape/singlecell"
+does = "single-cell models, simulation and gate"
+state = "none-found"
+alternative = ""
+check = ""
+note = "checked against Rajan & Marshall 2025 Curr Biol doi:10.1016/j.cub.2025.05.071 (tests/test_singlecell.py R1-R8)"
+
+[[custom]]
+name = "E01 Stentor map"
+path = "experiments/E01-stentor-map"
+does = "single-cell map experiment"
+state = "none-found"
+alternative = ""
+check = ""
+note = "checked against Rajan et al. 2026 doi:10.1016/j.cub.2026.03.080: FAILED"
+
+[[custom]]
+name = "E02 local negative image"
+path = "experiments/E02-local-negative-image"
+does = "local negative-image prediction"
+state = "none-found"
+alternative = ""
+check = ""
+note = "own analytic model only"
+
+[[custom]]
+name = "E03 synthesis block"
+path = "experiments/E03-synthesis-block"
+does = "synthesis-block experiment"
+state = "none-found"
+alternative = ""
+check = ""
+note = "checked against Rajan et al. 2026 observations"
